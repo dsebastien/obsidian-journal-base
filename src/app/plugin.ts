@@ -1,13 +1,12 @@
 import { Plugin } from 'obsidian'
 import { DEFAULT_SETTINGS } from './types/plugin-settings.intf'
 import type { PluginSettings } from './types/plugin-settings.intf'
-import { MyPluginSettingTab } from './settings/settings-tab'
+import { JournalBasesSettingTab } from './settings/settings-tab'
 import { log } from '../utils/log'
 import { produce } from 'immer'
 import type { Draft } from 'immer'
 
-// TODO: Rename this class to match your plugin name (e.g., MyAwesomePlugin)
-export class MyPlugin extends Plugin {
+export class JournalBasesPlugin extends Plugin {
     /**
      * The plugin settings are immutable
      */
@@ -20,10 +19,8 @@ export class MyPlugin extends Plugin {
         log('Initializing', 'debug')
         await this.loadSettings()
 
-        // TODO
-
         // Add a settings screen for the plugin
-        this.addSettingTab(new MyPluginSettingTab(this.app, this))
+        this.addSettingTab(new JournalBasesSettingTab(this.app, this))
     }
 
     override onunload() {}
@@ -31,32 +28,30 @@ export class MyPlugin extends Plugin {
     /**
      * Load the plugin settings
      */
-    async loadSettings() {
+    async loadSettings(): Promise<void> {
         log('Loading settings', 'debug')
-        let loadedSettings = (await this.loadData()) as PluginSettings
+        const loadedSettings = (await this.loadData()) as PluginSettings | null
 
         if (!loadedSettings) {
             log('Using default settings', 'debug')
-            loadedSettings = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
             return
         }
 
-        let needToSaveSettings = false
-
+        // Merge loaded settings with defaults to handle missing properties
         this.settings = produce(this.settings, (draft: Draft<PluginSettings>) => {
-            if (loadedSettings.enabled) {
-                draft.enabled = loadedSettings.enabled
-            } else {
-                log('The loaded settings miss the [enabled] property', 'debug')
-                needToSaveSettings = true
+            const periodTypes = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'] as const
+            for (const periodType of periodTypes) {
+                const loaded = loadedSettings[periodType]
+                if (loaded) {
+                    draft[periodType].enabled = loaded.enabled ?? false
+                    draft[periodType].folder = loaded.folder ?? ''
+                    draft[periodType].format = loaded.format ?? DEFAULT_SETTINGS[periodType].format
+                    draft[periodType].template = loaded.template ?? ''
+                }
             }
         })
 
-        log(`Settings loaded`, 'debug', loadedSettings)
-
-        if (needToSaveSettings) {
-            this.saveSettings()
-        }
+        log('Settings loaded', 'debug', this.settings)
     }
 
     /**

@@ -1,11 +1,30 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
-import type MyPlugin from '../../main'
+import type JournalBasesPlugin from '../../main'
+import type { PeriodType } from '../types/periodic-note.types'
+import { produce } from 'immer'
+import type { Draft } from 'immer'
+import type { PluginSettings } from '../types/plugin-settings.intf'
 
-// TODO: Rename this class to match your plugin name (e.g., MyAwesomePluginSettingTab)
-export class MyPluginSettingTab extends PluginSettingTab {
-    plugin: MyPlugin
+const PERIOD_LABELS: Record<PeriodType, string> = {
+    daily: 'Daily notes',
+    weekly: 'Weekly notes',
+    monthly: 'Monthly notes',
+    quarterly: 'Quarterly notes',
+    yearly: 'Yearly notes'
+}
 
-    constructor(app: App, plugin: MyPlugin) {
+const PERIOD_FORMAT_HINTS: Record<PeriodType, string> = {
+    daily: 'e.g., YYYY-MM-DD',
+    weekly: 'e.g., gggg-[W]ww',
+    monthly: 'e.g., YYYY-MM',
+    quarterly: 'e.g., YYYY-[Q]Q',
+    yearly: 'e.g., YYYY'
+}
+
+export class JournalBasesSettingTab extends PluginSettingTab {
+    plugin: JournalBasesPlugin
+
+    constructor(app: App, plugin: JournalBasesPlugin) {
         super(app, plugin)
         this.plugin = plugin
     }
@@ -14,30 +33,83 @@ export class MyPluginSettingTab extends PluginSettingTab {
         const { containerEl } = this
         containerEl.empty()
 
-        this.renderFollowButton(containerEl)
+        // Render period type sections
+        const periodTypes: PeriodType[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']
+        for (const periodType of periodTypes) {
+            this.renderPeriodSection(containerEl, periodType)
+        }
+
+        // Render support section
         this.renderSupportHeader(containerEl)
     }
 
-    // TODO: Adapt this or remove
-    renderFollowButton(containerEl: HTMLElement) {
-        new Setting(containerEl)
-            .setName('Follow me on X')
-            .setDesc('Sébastien Dubois (@dSebastien)')
-            .addButton((button) => {
-                button.setCta()
-                button.setButtonText('Follow me on X').onClick(() => {
-                    window.open('https://x.com/dSebastien')
+    private renderPeriodSection(containerEl: HTMLElement, periodType: PeriodType): void {
+        const settings = this.plugin.settings[periodType]
+
+        new Setting(containerEl).setName(PERIOD_LABELS[periodType]).setHeading()
+
+        new Setting(containerEl).setName('Enabled').addToggle((toggle) =>
+            toggle.setValue(settings.enabled).onChange(async (value) => {
+                await this.updateSettings((draft) => {
+                    draft[periodType].enabled = value
                 })
             })
+        )
+
+        new Setting(containerEl)
+            .setName('Folder')
+            .setDesc('Folder where notes are stored')
+            .addText((text) =>
+                text
+                    .setPlaceholder('e.g., Journal/Daily')
+                    .setValue(settings.folder)
+                    .onChange(async (value) => {
+                        await this.updateSettings((draft) => {
+                            draft[periodType].folder = value
+                        })
+                    })
+            )
+
+        new Setting(containerEl)
+            .setName('Format')
+            .setDesc(`Moment.js format string (${PERIOD_FORMAT_HINTS[periodType]})`)
+            .addText((text) =>
+                text
+                    .setPlaceholder(PERIOD_FORMAT_HINTS[periodType])
+                    .setValue(settings.format)
+                    .onChange(async (value) => {
+                        await this.updateSettings((draft) => {
+                            draft[periodType].format = value
+                        })
+                    })
+            )
+
+        new Setting(containerEl)
+            .setName('Template')
+            .setDesc('Path to Templater template file')
+            .addText((text) =>
+                text
+                    .setPlaceholder('e.g., Templates/Daily.md')
+                    .setValue(settings.template)
+                    .onChange(async (value) => {
+                        await this.updateSettings((draft) => {
+                            draft[periodType].template = value
+                        })
+                    })
+            )
     }
 
-    // TODO: Adapt this or remove
-    renderSupportHeader(containerEl: HTMLElement) {
+    private async updateSettings(updater: (draft: Draft<PluginSettings>) => void): Promise<void> {
+        this.plugin.settings = produce(this.plugin.settings, updater)
+        await this.plugin.saveSettings()
+    }
+
+    private renderSupportHeader(containerEl: HTMLElement): void {
         new Setting(containerEl).setName('Support').setHeading()
 
         const supportDesc = new DocumentFragment()
         supportDesc.createDiv({
-            text: 'Buy me a coffee to support the development of this plugin ❤️'
+            text: 'Buy me a coffee to support the development of this plugin'
         })
 
         new Setting(containerEl).setDesc(supportDesc)
@@ -47,8 +119,7 @@ export class MyPluginSettingTab extends PluginSettingTab {
         spacing.classList.add('support-header-margin')
     }
 
-    // TODO: Adapt this or remove
-    renderBuyMeACoffeeBadge(contentEl: HTMLElement | DocumentFragment, width = 175) {
+    private renderBuyMeACoffeeBadge(contentEl: HTMLElement | DocumentFragment, width = 175): void {
         const linkEl = contentEl.createEl('a', {
             href: 'https://www.buymeacoffee.com/dsebastien'
         })
