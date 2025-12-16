@@ -57,34 +57,208 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 `src/app/services/plugin-integration.service.ts`:
 
 ```typescript
-import { App, Notice } from 'obsidian'
-import type { PluginSettings } from '../types/plugin-settings.intf'
+import { App, Notice, EventRef, TFile } from 'obsidian'
+import type { PluginSettings, PeriodicNoteConfig } from '../types/plugin-settings.intf'
+import type { PeriodType } from '../types/periodic-note.types'
+
+// Periodic Notes plugin settings structure (from source analysis)
+interface PeriodicNotesPeriodicConfig {
+    enabled: boolean
+    openAtStartup?: boolean
+    format: string
+    folder: string
+    templatePath?: string
+}
+
+interface PeriodicNotesCalendarSet {
+    id: string
+    ctime: number
+    day?: PeriodicNotesPeriodicConfig
+    week?: PeriodicNotesPeriodicConfig
+    month?: PeriodicNotesPeriodicConfig
+    quarter?: PeriodicNotesPeriodicConfig
+    year?: PeriodicNotesPeriodicConfig
+}
+
+// Templater plugin interface (from source analysis)
+interface TemplaterPlugin {
+    templater: {
+        create_new_note_from_template(
+            template: TFile | string,
+            folder?: string,
+            filename?: string,
+            open_new_note?: boolean
+        ): Promise<TFile | undefined>
+        append_template_to_active_file(template_file: TFile): Promise<void>
+        write_template_to_file(template_file: TFile, file: TFile): Promise<void>
+        current_functions_object?: {
+            file: {
+                find_tfile(templateName: string): TFile | null
+                create_new(
+                    template: TFile | string,
+                    filename?: string,
+                    open_new?: boolean,
+                    folder?: string
+                ): Promise<TFile | undefined>
+            }
+        }
+    }
+}
 
 export class PluginIntegrationService {
+    private periodicNotesEventRef: EventRef | null = null
+
     constructor(private app: App) {}
 
-    // Check if periodic-notes plugin is installed and enabled
+    // ===== Periodic Notes Plugin Integration =====
+
     isPeriodicNotesPluginEnabled(): boolean {
         return this.app.plugins.enabledPlugins.has('periodic-notes')
     }
 
-    // Get settings from periodic-notes plugin
-    getPeriodicNotesSettings(): Partial<PluginSettings> | null {
+    getPeriodicNotesPlugin(): unknown | null {
         if (!this.isPeriodicNotesPluginEnabled()) return null
-        const plugin = this.app.plugins.getPlugin('periodic-notes')
-        return plugin?.settings ?? null
+        return this.app.plugins.getPlugin('periodic-notes')
     }
 
-    // Subscribe to periodic-notes settings changes
-    // Event: this.app.workspace.on('periodic-notes:settings-updated', callback)
+    /**
+     * Convert periodic-notes plugin settings to our format
+     * Periodic-notes uses CalendarSet with granularities: day, week, month, quarter, year
+     */
+    syncFromPeriodicNotesPlugin(): Partial<PluginSettings> | null {
+        const plugin = this.getPeriodicNotesPlugin() as {
+            settings?: PeriodicNotesCalendarSet
+        } | null
+        if (!plugin?.settings) return null
 
-    // Check Templater
+        const settings = plugin.settings
+        const granularityMap: Record<string, PeriodType> = {
+            day: 'daily',
+            week: 'weekly',
+            month: 'monthly',
+            quarter: 'quarterly',
+            year: 'yearly'
+        }
+
+        const result: Partial<PluginSettings> = {}
+
+        for (const [granularity, periodType] of Object.entries(granularityMap)) {
+            const config = settings[granularity as keyof PeriodicNotesCalendarSet] as
+                | PeriodicNotesPeriodicConfig
+                | undefined
+            if (config) {
+                result[periodType] = {
+                    enabled: config.enabled,
+                    folder: config.folder || '',
+                    format: config.format || '',
+                    template: config.templatePath || ''
+                }
+            }
+        }
+
+        return result
+    }
+
+    /**
+     * Subscribe to periodic-notes settings changes
+     */
+    subscribeToPeriodicNotesChanges(callback: () => void): void {
+        if (this.periodicNotesEventRef) {
+            this.app.workspace.offref(this.periodicNotesEventRef)
+        }
+        this.periodicNotesEventRef = this.app.workspace.on(
+            'periodic-notes:settings-updated' as any,
+            callback
+        )
+    }
+
+    unsubscribeFromPeriodicNotesChanges(): void {
+        if (this.periodicNotesEventRef) {
+            this.app.workspace.offref(this.periodicNotesEventRef)
+            this.periodicNotesEventRef = null
+        }
+    }
+
+    // ===== Templater Plugin Integration =====
+
     isTemplaterEnabled(): boolean {
         return this.app.plugins.enabledPlugins.has('templater-obsidian')
     }
 
+    getTemplaterPlugin(): TemplaterPlugin | null {
+        if (!this.isTemplaterEnabled()) return null
+        return this.app.plugins.getPlugin('templater-obsidian') as TemplaterPlugin | null
+    }
+
+    /**
+     * Create a new file from a Templater template
+     * Uses Templater's create_new_note_from_template method
+     */
+    async createFileFromTemplate(
+        templatePath: string,
+        targetFolder: string,
+        filename: string
+    ): Promise<TFile | null> {
+        const templater = this.getTemplaterPlugin()
+        if (!templater) {
+            new Notice('Templater plugin is required for template support', 5000)
+            return null
+        }
+
+        // Get template file
+        const templateFile = this.app.vault.getFileByPath(templatePath)
+        if (!templateFile) {
+            new Notice(`Template not found: ${templatePath}`, 5000)
+            return null
+        }
+
+        try {
+            // Use Templater's API to create file with template
+            const newFile = await templater.templater.create_new_note_from_template(
+                templateFile,
+                targetFolder,
+                filename,
+                false // Don't open the new note automatically
+            )
+            return newFile ?? null
+        } catch (error) {
+            console.error('Failed to create file from template:', error)
+            new Notice('Failed to apply template', 5000)
+            return null
+        }
+    }
+
+    /**
+     * Apply a template to an existing file
+     */
+    async applyTemplateToFile(templatePath: string, targetFile: TFile): Promise<boolean> {
+        const templater = this.getTemplaterPlugin()
+        if (!templater) {
+            new Notice('Templater plugin is required', 5000)
+            return false
+        }
+
+        const templateFile = this.app.vault.getFileByPath(templatePath)
+        if (!templateFile) {
+            new Notice(`Template not found: ${templatePath}`, 5000)
+            return false
+        }
+
+        try {
+            await templater.templater.write_template_to_file(templateFile, targetFile)
+            return true
+        } catch (error) {
+            console.error('Failed to apply template:', error)
+            new Notice('Failed to apply template', 5000)
+            return false
+        }
+    }
+
     showTemplaterMissingNotice(): void {
-        new Notice('Templater plugin is required for template support', 5000)
+        new Notice(
+            'Templater plugin is required for template support. Please install and enable it.',
+            8000
+        )
     }
 }
 ```
@@ -425,59 +599,86 @@ export class PeriodicNotesView extends BasesView {
 `src/app/services/note-creation.service.ts`:
 
 ```typescript
-import { App, TFile, TFolder, Notice } from 'obsidian'
+import { App, TFile, Notice, moment } from 'obsidian'
 import type { PeriodicNoteConfig } from '../types/periodic-note.types'
+import { PluginIntegrationService } from './plugin-integration.service'
+import { formatDate, getExpectedFilePath } from '../../utils/date-utils'
 
 export class NoteCreationService {
-    constructor(private app: App) {}
+    private integrationService: PluginIntegrationService
 
+    constructor(private app: App) {
+        this.integrationService = new PluginIntegrationService(app)
+    }
+
+    /**
+     * Create a periodic note for the given date
+     * Uses Templater if configured, otherwise creates empty file
+     */
     async createPeriodicNote(
         date: moment.Moment,
         config: PeriodicNoteConfig
     ): Promise<TFile | null> {
         const filePath = getExpectedFilePath(date, config)
+        const filename = formatDate(date, config.format)
+
+        // Check if file already exists
+        const existingFile = this.app.vault.getFileByPath(filePath)
+        if (existingFile) {
+            new Notice(`Note already exists: ${filename}`)
+            return existingFile
+        }
 
         // Ensure folder exists
         const folderPath = filePath.substring(0, filePath.lastIndexOf('/'))
         await this.ensureFolderExists(folderPath)
 
-        // Create empty file
-        const file = await this.app.vault.create(filePath, '')
-
-        // Apply Templater template if configured
-        if (config.template) {
-            await this.applyTemplaterTemplate(file, config.template)
+        // Create with template if configured
+        if (config.template && this.integrationService.isTemplaterEnabled()) {
+            const file = await this.integrationService.createFileFromTemplate(
+                config.template,
+                folderPath,
+                filename
+            )
+            if (file) return file
+            // Fall through to create empty file if template fails
         }
 
-        return file
+        // Create empty file (fallback or no template configured)
+        try {
+            const file = await this.app.vault.create(filePath, '')
+            return file
+        } catch (error) {
+            console.error('Failed to create periodic note:', error)
+            new Notice(`Failed to create note: ${filename}`, 5000)
+            return null
+        }
     }
 
     private async ensureFolderExists(path: string): Promise<void> {
+        if (!path) return
+
         const folder = this.app.vault.getFolderByPath(path)
         if (!folder) {
-            await this.app.vault.createFolder(path)
+            // Create nested folders if needed
+            const parts = path.split('/')
+            let currentPath = ''
+            for (const part of parts) {
+                currentPath = currentPath ? `${currentPath}/${part}` : part
+                const existing = this.app.vault.getFolderByPath(currentPath)
+                if (!existing) {
+                    await this.app.vault.createFolder(currentPath)
+                }
+            }
         }
     }
 
-    private async applyTemplaterTemplate(file: TFile, templatePath: string): Promise<void> {
-        const templater = this.app.plugins.getPlugin('templater-obsidian')
-        if (!templater) {
-            new Notice('Templater plugin not found')
-            return
-        }
-
-        // Open the file first (Templater requires active file)
-        await this.app.workspace.getLeaf().openFile(file)
-
-        // Get template file
-        const templateFile = this.app.vault.getFileByPath(templatePath)
-        if (!templateFile) {
-            new Notice(`Template not found: ${templatePath}`)
-            return
-        }
-
-        // Apply template using Templater API
-        // templater.templater.append_template_to_active_file(templateFile)
+    /**
+     * Open a periodic note in the workspace
+     */
+    async openPeriodicNote(file: TFile, newLeaf: boolean = false): Promise<void> {
+        const leaf = newLeaf ? this.app.workspace.getLeaf('tab') : this.app.workspace.getLeaf()
+        await leaf.openFile(file)
     }
 }
 ```
@@ -1070,6 +1271,101 @@ src/
 
 ---
 
+## External Plugin APIs
+
+### Periodic Notes Plugin (`periodic-notes`)
+
+**Settings Structure:**
+
+```typescript
+interface PeriodicNotesCalendarSet {
+    id: string
+    ctime: number
+    day?: PeriodicConfig // daily notes
+    week?: PeriodicConfig // weekly notes
+    month?: PeriodicConfig // monthly notes
+    quarter?: PeriodicConfig // quarterly notes
+    year?: PeriodicConfig // yearly notes
+}
+
+interface PeriodicConfig {
+    enabled: boolean
+    openAtStartup?: boolean
+    format: string // moment.js format
+    folder: string // vault path
+    templatePath?: string // path to template file
+}
+```
+
+**Access:**
+
+```typescript
+const plugin = app.plugins.getPlugin('periodic-notes')
+const settings = plugin?.settings // PeriodicNotesCalendarSet
+```
+
+**Events:**
+
+- `'periodic-notes:settings-updated'` - Triggered when settings change
+
+**Key Methods (on plugin instance):**
+
+- `createPeriodicNote()` - Create a note
+- `getPeriodicNote()` - Get a note by date
+- `isPeriodic(file)` - Check if file is periodic
+- `findAdjacent()` - Find next/previous note
+
+### Templater Plugin (`templater-obsidian`)
+
+**Access:**
+
+```typescript
+const plugin = app.plugins.getPlugin('templater-obsidian')
+const templater = plugin?.templater
+```
+
+**Templater Methods:**
+
+```typescript
+// Create new file from template
+await templater.create_new_note_from_template(
+    template: TFile | string,  // Template file or content
+    folder?: string,           // Target folder path
+    filename?: string,         // New file name (without .md)
+    open_new_note?: boolean    // Whether to open after creation
+): Promise<TFile | undefined>
+
+// Apply template to existing file
+await templater.write_template_to_file(
+    template_file: TFile,      // Template file
+    file: TFile                // Target file to modify
+): Promise<void>
+
+// Append template to active file
+await templater.append_template_to_active_file(
+    template_file: TFile
+): Promise<void>
+```
+
+**Alternative (tp functions object):**
+
+```typescript
+// Note: Only available after Templater has run once
+const tp = plugin.templater.current_functions_object
+if (tp) {
+    const templateFile = tp.file.find_tfile('TemplateName')
+    await tp.file.create_new(templateFile, filename, false, folder)
+}
+```
+
+**Important Notes:**
+
+- Templater's `current_functions_object` is `undefined` until Templater runs once
+- Use `templater.create_new_note_from_template()` for reliability
+- Template processing happens automatically during file creation
+
+---
+
 ## Key Decisions
 
 | Decision            | Choice                                                 |
@@ -1080,3 +1376,4 @@ src/
 | Section matching    | Exact header match (future: configurable mapping)      |
 | Settings sync       | Auto-sync from periodic-notes plugin if available      |
 | Date library        | Use Obsidian's built-in `moment`                       |
+| Template creation   | Use Templater's `create_new_note_from_template()` API  |
