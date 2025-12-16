@@ -91,5 +91,6 @@ At startup, the plugin should also check if Templater is installed and enabled: 
 The plugin should also have specific configuration options for each Base view type (part of the Base view configuration (i.e., specific to each Base file)
 
 ## References
+
 - https://github.com/liamcain/obsidian-periodic-notes
 - https://github.com/SilentVoid13/Templater

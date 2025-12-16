@@ -45,6 +45,10 @@ These files are optimized for conciseness and clarity to quickly onboard agents 
 
 Read the Business Rules document at the start of each session to understand the constraints and requirements.
 
+### Obsidian Base Views
+
+**CRITICAL**: Before making any plans or changes related to Obsidian Base views, you MUST read `documentation/Custom Base View Type Expert Prompt.md`. This document contains essential knowledge for implementing custom views correctly.
+
 **MUST READ** before working on this codebase: `documentation/**/*.md` — system overview, architecture, components, directory structure, configuration, settings, ...
 
 **MUST UPDATE** documentation when making changes. Keep it terse, accurate, no fluff.
