@@ -14,12 +14,7 @@ import {
     extractDateFromNote,
     getEnabledPeriodTypes
 } from '../../../utils/periodic-note-utils'
-import {
-    findMissingDates,
-    getStartOfPeriod,
-    sortDatesDescending,
-    sortDatesAscending
-} from '../../../utils/date-utils'
+import { findMissingDates, getStartOfPeriod, sortDatesDescending } from '../../../utils/date-utils'
 
 /**
  * State for preserving card state during reconciliation
@@ -55,11 +50,9 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
      * Compatibility with the Life Tracker plugin
      * Get files from this view for commands.
      * If cards are being edited, those are returned
-     * Otherwise returns all the current Base view files.
+     * Otherwise returns all the current Base view files sorted newest to oldest.
      */
     getFiles(): TFile[] {
-        console.log('Called')
-
         // Check if any card is currently focused (actively being edited)
         const activeNotes: TFile[] = []
         for (const card of this.noteCards.values()) {
@@ -68,13 +61,11 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             }
         }
         if (activeNotes.length > 0) {
-            console.log('Return active editors')
             return activeNotes
         }
 
-        console.log('Return all current entries (filtered by mode)')
-        // FIXME Using reverse as a temporary workaround
-        return this.currentEntries.map((entry) => entry.file).reverse()
+        // currentEntries is already sorted newest to oldest
+        return this.currentEntries.map((entry) => entry.file)
     }
 
     /**
@@ -118,15 +109,16 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             return
         }
 
-        // Filter entries by current mode (preserves Base sort order)
-        this.currentEntries = this.data.data.filter(
-            (entry) => detectPeriodType(entry.file, this.plugin.settings) === mode
-        )
-
-        // Determine sort direction from Base configuration
-        const sortConfig = this.config.getSort()
-        const firstSort = sortConfig[0]
-        const isAscending = firstSort?.direction === 'ASC'
+        // Filter entries by current mode and sort by date descending (newest to oldest)
+        this.currentEntries = this.data.data
+            .filter((entry) => detectPeriodType(entry.file, this.plugin.settings) === mode)
+            .map((entry) => ({
+                entry,
+                date: extractDateFromNote(entry.file, periodConfig)
+            }))
+            .filter((e): e is { entry: BasesEntry; date: Date } => e.date !== null)
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .map((e) => e.entry)
 
         // Extract dates from entries
         const existingDates = this.currentEntries
@@ -139,13 +131,12 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             missingDates = findMissingDates(existingDates, mode, futurePeriods)
         }
 
-        // Create a combined list of dates (existing + missing) sorted according to Base config
+        // Create a combined list of dates (existing + missing) sorted newest to oldest
         const allDates = this.mergeAndSortDates(
             this.currentEntries,
             missingDates,
             periodConfig,
-            mode,
-            isAscending
+            mode
         )
 
         if (allDates.length === 0) {
@@ -445,8 +436,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
         entries: BasesEntry[],
         missingDates: Date[],
         config: PeriodicNoteConfig,
-        periodType: PeriodType,
-        ascending: boolean
+        periodType: PeriodType
     ): Array<{ date: Date; entry: BasesEntry | null }> {
         const items: Array<{ date: Date; entry: BasesEntry | null }> = []
 
@@ -471,10 +461,8 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             }
         }
 
-        // Sort dates according to Base configuration
-        const sortedDates = ascending
-            ? sortDatesAscending(items.map((i) => i.date))
-            : sortDatesDescending(items.map((i) => i.date))
+        // Always sort dates descending (newest to oldest) - Base sort order is ignored
+        const sortedDates = sortDatesDescending(items.map((i) => i.date))
         const dateToItem = new Map(
             items.map((i) => [getStartOfPeriod(i.date, periodType).getTime(), i])
         )

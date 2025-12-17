@@ -1,7 +1,7 @@
-import { Plugin, type TFile } from 'obsidian'
+import { Plugin } from 'obsidian'
 import { DEFAULT_SETTINGS } from './types/plugin-settings.intf'
 import type { PluginSettings } from './types/plugin-settings.intf'
-import type { FileProvider } from './types/file-provider.intf'
+import type { LifeTrackerPluginFileProvider } from './types/life-tracker-plugin-file-provider.intf'
 import type { AppWithPlugins } from './types/app-with-plugins.intf'
 import { PERIOD_TYPES } from './types/periodic-note.types'
 import { JournalBasesSettingTab } from './settings/settings-tab'
@@ -41,10 +41,10 @@ export class JournalBasesPlugin extends Plugin {
     /**
      * Register a file provider as active (called when view becomes visible)
      */
-    setActiveFileProvider(provider: FileProvider | null): void {
+    setActiveFileProvider(provider: LifeTrackerPluginFileProvider | null): void {
         const lifeTrackerPlugin = this.app.plugins.getPlugin('life-tracker') as
             | (Plugin & {
-                  setActiveFileProvider?: (provider: FileProvider | null) => void
+                  setActiveFileProvider?: (provider: LifeTrackerPluginFileProvider | null) => void
               })
             | null
         if (

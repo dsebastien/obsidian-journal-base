@@ -26,3 +26,7 @@ When new data is received from Obsidian Base:
 - The editor mode (view/edit/source) of cards must be preserved
 - If a card has an active/focused editor, it must not be refreshed (the data update was likely triggered by that editor's save operation)
 - Cards should only be removed if their corresponding file is no longer in the data set
+
+## Periodic Notes Sorting
+
+The periodic notes base view ALWAYS sorts and renders data from most recent (or farther in the future) to oldest (farther in the past). The sort order configured in the Base is fully ignored. The `getFiles` method returns data in the same order (newest to oldest).
