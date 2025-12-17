@@ -117,6 +117,32 @@
     @apply opacity-90;
 }
 
+.pn-create-btn--loading {
+    @apply cursor-not-allowed opacity-70;
+}
+
+.pn-create-btn--loading:hover {
+    @apply opacity-70;
+}
+
+.pn-create-btn__icon {
+    @apply flex items-center justify-center;
+}
+
+/* Spinner animation */
+.pn-spinner {
+    animation: pn-spin 1s linear infinite;
+}
+
+@keyframes pn-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Missing Card (placeholder for missing notes) */
 .pn-missing-card {
     @apply rounded border px-4 py-3 flex items-center justify-between;

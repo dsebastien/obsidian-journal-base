@@ -197,7 +197,9 @@ export class PeriodicNotesView extends BasesView {
             if (file) {
                 // Refresh view to show the new note
                 this.onDataUpdated()
+                return true
             }
+            return false
         })
     }
 

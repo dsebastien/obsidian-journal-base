@@ -342,7 +342,9 @@ export class PeriodicReviewView extends BasesView {
                     if (newEntry && state.selectedDate) {
                         this.selectPeriod(state, state.selectedDate, newEntry)
                     }
+                    return true
                 }
+                return false
             }
         )
     }
