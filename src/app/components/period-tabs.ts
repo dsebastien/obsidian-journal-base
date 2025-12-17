@@ -35,6 +35,11 @@ export class PeriodTabs {
                 }
             })
 
+            // Disable active tab
+            if (isActive) {
+                tab.disabled = true
+            }
+
             tab.onclick = () => {
                 if (mode !== this.currentMode) {
                     this.setActiveMode(mode)
@@ -54,6 +59,7 @@ export class PeriodTabs {
         if (previousTab) {
             previousTab.classList.remove('pn-tab--active')
             previousTab.setAttribute('aria-pressed', 'false')
+            previousTab.disabled = false
         }
 
         // Update new active tab
@@ -61,6 +67,7 @@ export class PeriodTabs {
         if (newTab) {
             newTab.classList.add('pn-tab--active')
             newTab.setAttribute('aria-pressed', 'true')
+            newTab.disabled = true
         }
 
         this.currentMode = mode

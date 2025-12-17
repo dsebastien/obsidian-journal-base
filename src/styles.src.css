@@ -33,8 +33,13 @@
 }
 
 .pn-tab--active {
+    @apply cursor-default font-semibold;
     background-color: var(--interactive-accent);
     color: var(--text-on-accent);
+}
+
+.pn-tab--active:hover {
+    background-color: var(--interactive-accent);
 }
 
 /* Note Cards */
