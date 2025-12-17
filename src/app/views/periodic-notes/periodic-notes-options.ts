@@ -1,4 +1,5 @@
 import type { DropdownOption, SliderOption, ToggleOption, ViewOption } from 'obsidian'
+import { DEFAULT_FUTURE_PERIODS } from './periodic-notes.constants'
 
 export function getPeriodicNotesViewOptions(): ViewOption[] {
     return [
@@ -22,7 +23,7 @@ export function getPeriodicNotesViewOptions(): ViewOption[] {
             min: 0,
             max: 12,
             step: 1,
-            default: 3
+            default: DEFAULT_FUTURE_PERIODS
         } as SliderOption,
         {
             type: 'toggle',
