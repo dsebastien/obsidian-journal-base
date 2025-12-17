@@ -94,7 +94,7 @@ export class PeriodicNotesView extends BasesView {
         let isFirst = true
         for (const item of allDates) {
             if (item.entry) {
-                this.renderNoteCard(cardsEl, item.entry, isFirst && expandFirst)
+                this.renderNoteCard(cardsEl, item.entry, item.date, mode, isFirst && expandFirst)
             } else if (item.date && showMissing) {
                 this.renderMissingCard(cardsEl, item.date, periodConfig, mode)
             }
@@ -150,10 +150,24 @@ export class PeriodicNotesView extends BasesView {
         })
     }
 
-    private renderNoteCard(container: HTMLElement, entry: BasesEntry, expanded: boolean): void {
-        const card = new NoteCard(container, this.app, entry.file, expanded, (file) => {
-            this.app.workspace.getLeaf().openFile(file)
-        })
+    private renderNoteCard(
+        container: HTMLElement,
+        entry: BasesEntry,
+        noteDate: Date | null,
+        periodType: PeriodType,
+        expanded: boolean
+    ): void {
+        const card = new NoteCard(
+            container,
+            this.app,
+            entry.file,
+            periodType,
+            noteDate,
+            expanded,
+            (file) => {
+                this.app.workspace.getLeaf().openFile(file)
+            }
+        )
         this.noteCards.push(card)
     }
 
@@ -163,7 +177,7 @@ export class PeriodicNotesView extends BasesView {
         config: PeriodicNoteConfig,
         periodType: PeriodType
     ): void {
-        new CreateNoteButton(container, date, config, async (d) => {
+        new CreateNoteButton(container, date, config, periodType, async (d) => {
             const file = await this.noteCreationService.createPeriodicNote(d, config, periodType)
             if (file) {
                 // Refresh view to show the new note

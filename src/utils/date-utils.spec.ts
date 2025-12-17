@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { convertMomentToDateFns, formatDate, parseDateFromFormat } from './date-utils'
+import {
+    convertMomentToDateFns,
+    formatDate,
+    formatDateAsFilename,
+    formatFilenameWithSuffix,
+    getPeriodSuffix,
+    parseDateFromFormat
+} from './date-utils'
 
 describe('date-utils', () => {
     describe('convertMomentToDateFns', () => {
@@ -215,6 +222,131 @@ describe('date-utils', () => {
         test('returns null for invalid date string', () => {
             const result = parseDateFromFormat('not-a-date', 'YYYY-MM-DD')
             expect(result).toBeNull()
+        })
+    })
+
+    describe('formatDateAsFilename', () => {
+        test('extracts filename from daily format with path', () => {
+            const date = new Date(2024, 0, 15) // January 15, 2024
+            expect(formatDateAsFilename(date, 'YYYY/WW/YYYY-MM-DD')).toBe('2024-01-15')
+        })
+
+        test('extracts filename from weekly format with path', () => {
+            const date = new Date(2024, 0, 15) // January 15, 2024 (week 3)
+            expect(formatDateAsFilename(date, 'YYYY/gggg-[W]ww')).toBe('2024-W03')
+        })
+
+        test('extracts filename from monthly format with path', () => {
+            const date = new Date(2024, 5, 1) // June 1, 2024
+            expect(formatDateAsFilename(date, 'YYYY/YYYY-MM')).toBe('2024-06')
+        })
+
+        test('extracts filename from quarterly format with path', () => {
+            const date = new Date(2024, 3, 1) // April 1, 2024 (Q2)
+            expect(formatDateAsFilename(date, 'YYYY/YYYY-[Q]Q')).toBe('2024-Q2')
+        })
+
+        test('returns full string when no path separator', () => {
+            const date = new Date(2024, 0, 15)
+            expect(formatDateAsFilename(date, 'YYYY-MM-DD')).toBe('2024-01-15')
+        })
+
+        test('handles deeply nested paths', () => {
+            const date = new Date(2024, 0, 15)
+            expect(formatDateAsFilename(date, 'YYYY/MM/DD/YYYY-MM-DD')).toBe('2024-01-15')
+        })
+    })
+
+    describe('getPeriodSuffix', () => {
+        test('returns day name for daily period', () => {
+            const date = new Date(2024, 11, 17) // December 17, 2024 (Tuesday)
+            expect(getPeriodSuffix(date, 'daily')).toBe('(Tuesday)')
+        })
+
+        test('returns week number for weekly period', () => {
+            const date = new Date(2024, 11, 17) // December 17, 2024 (week 51)
+            expect(getPeriodSuffix(date, 'weekly')).toBe('(Week 51)')
+        })
+
+        test('returns month name for monthly period', () => {
+            const date = new Date(2024, 11, 1) // December 2024
+            expect(getPeriodSuffix(date, 'monthly')).toBe('(December)')
+        })
+
+        test('returns quarter for quarterly period', () => {
+            const date = new Date(2024, 3, 1) // April 2024 (Q2)
+            expect(getPeriodSuffix(date, 'quarterly')).toBe('(Q2)')
+        })
+
+        test('returns empty string for yearly period', () => {
+            const date = new Date(2024, 0, 1)
+            expect(getPeriodSuffix(date, 'yearly')).toBe('')
+        })
+
+        test('returns correct day name for different days of the week', () => {
+            // Monday
+            expect(getPeriodSuffix(new Date(2024, 11, 16), 'daily')).toBe('(Monday)')
+            // Wednesday
+            expect(getPeriodSuffix(new Date(2024, 11, 18), 'daily')).toBe('(Wednesday)')
+            // Friday
+            expect(getPeriodSuffix(new Date(2024, 11, 20), 'daily')).toBe('(Friday)')
+            // Sunday
+            expect(getPeriodSuffix(new Date(2024, 11, 22), 'daily')).toBe('(Sunday)')
+        })
+
+        test('returns correct quarter for each quarter', () => {
+            expect(getPeriodSuffix(new Date(2024, 0, 1), 'quarterly')).toBe('(Q1)') // January
+            expect(getPeriodSuffix(new Date(2024, 3, 1), 'quarterly')).toBe('(Q2)') // April
+            expect(getPeriodSuffix(new Date(2024, 6, 1), 'quarterly')).toBe('(Q3)') // July
+            expect(getPeriodSuffix(new Date(2024, 9, 1), 'quarterly')).toBe('(Q4)') // October
+        })
+
+        test('returns correct month name for each month', () => {
+            expect(getPeriodSuffix(new Date(2024, 0, 1), 'monthly')).toBe('(January)')
+            expect(getPeriodSuffix(new Date(2024, 5, 1), 'monthly')).toBe('(June)')
+            expect(getPeriodSuffix(new Date(2024, 11, 1), 'monthly')).toBe('(December)')
+        })
+    })
+
+    describe('formatFilenameWithSuffix', () => {
+        test('formats daily filename with day name suffix', () => {
+            const date = new Date(2024, 11, 17) // December 17, 2024 (Tuesday)
+            expect(formatFilenameWithSuffix(date, 'YYYY/WW/YYYY-MM-DD', 'daily')).toBe(
+                '2024-12-17 (Tuesday)'
+            )
+        })
+
+        test('formats weekly filename with week number suffix', () => {
+            const date = new Date(2024, 11, 17) // December 17, 2024 (week 51)
+            expect(formatFilenameWithSuffix(date, 'YYYY/gggg-[W]ww', 'weekly')).toBe(
+                '2024-W51 (Week 51)'
+            )
+        })
+
+        test('formats monthly filename with month name suffix', () => {
+            const date = new Date(2024, 11, 1) // December 2024
+            expect(formatFilenameWithSuffix(date, 'YYYY/YYYY-MM', 'monthly')).toBe(
+                '2024-12 (December)'
+            )
+        })
+
+        test('formats quarterly filename with quarter suffix', () => {
+            const date = new Date(2024, 3, 1) // April 2024 (Q2)
+            expect(formatFilenameWithSuffix(date, 'YYYY/YYYY-[Q]Q', 'quarterly')).toBe(
+                '2024-Q2 (Q2)'
+            )
+        })
+
+        test('formats yearly filename without suffix', () => {
+            const date = new Date(2024, 0, 1)
+            expect(formatFilenameWithSuffix(date, 'YYYY', 'yearly')).toBe('2024')
+        })
+
+        test('handles formats without path separators', () => {
+            const date = new Date(2024, 11, 17)
+            expect(formatFilenameWithSuffix(date, 'YYYY-MM-DD', 'daily')).toBe(
+                '2024-12-17 (Tuesday)'
+            )
         })
     })
 })

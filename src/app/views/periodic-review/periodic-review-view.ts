@@ -317,28 +317,34 @@ export class PeriodicReviewView extends BasesView {
             text: `This ${state.periodType} note doesn't exist yet.`
         })
 
-        new CreateNoteButton(createContainer, state.selectedDate!, config, async (date) => {
-            const file = await this.noteCreationService.createPeriodicNote(
-                date,
-                config,
-                state.periodType
-            )
-            if (file) {
-                // Re-render with new file
-                const entries = filterEntriesByPeriodType(
-                    this.data.data,
-                    state.periodType,
-                    this.plugin.settings
+        new CreateNoteButton(
+            createContainer,
+            state.selectedDate!,
+            config,
+            state.periodType,
+            async (date) => {
+                const file = await this.noteCreationService.createPeriodicNote(
+                    date,
+                    config,
+                    state.periodType
                 )
-                state.entries = entries
-                this.renderPeriodSelector(state, config)
-                // Find and select the new entry
-                const newEntry = entries.find((e) => e.file.path === file.path)
-                if (newEntry && state.selectedDate) {
-                    this.selectPeriod(state, state.selectedDate, newEntry)
+                if (file) {
+                    // Re-render with new file
+                    const entries = filterEntriesByPeriodType(
+                        this.data.data,
+                        state.periodType,
+                        this.plugin.settings
+                    )
+                    state.entries = entries
+                    this.renderPeriodSelector(state, config)
+                    // Find and select the new entry
+                    const newEntry = entries.find((e) => e.file.path === file.path)
+                    if (newEntry && state.selectedDate) {
+                        this.selectPeriod(state, state.selectedDate, newEntry)
+                    }
                 }
             }
-        })
+        )
     }
 
     private async renderNoteContent(

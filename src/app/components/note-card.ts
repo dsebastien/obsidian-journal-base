@@ -1,4 +1,6 @@
 import { App, Component, MarkdownRenderer, TFile } from 'obsidian'
+import type { PeriodType } from '../types/periodic-note.types'
+import { getPeriodSuffix } from '../../utils/date-utils'
 
 export class NoteCard extends Component {
     private containerEl!: HTMLElement
@@ -10,6 +12,8 @@ export class NoteCard extends Component {
         parent: HTMLElement,
         private app: App,
         private file: TFile,
+        private periodType: PeriodType,
+        private noteDate: Date | null,
         initiallyExpanded: boolean = false,
         private onOpen?: (file: TFile) => void
     ) {
@@ -26,7 +30,10 @@ export class NoteCard extends Component {
         // Header
         const header = container.createDiv({ cls: 'pn-card__header' })
 
-        const titleEl = header.createSpan({ cls: 'pn-card__title', text: this.file.basename })
+        // Build title with period suffix if date is available
+        const suffix = this.noteDate ? getPeriodSuffix(this.noteDate, this.periodType) : ''
+        const titleText = suffix ? `${this.file.basename} ${suffix}` : this.file.basename
+        const titleEl = header.createSpan({ cls: 'pn-card__title', text: titleText })
 
         // Open button
         const openBtn = header.createEl('button', {

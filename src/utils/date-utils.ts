@@ -347,3 +347,51 @@ export function getMonth(date: Date): number {
 export function getQuarter(date: Date): number {
     return dateFnsGetQuarter(date)
 }
+
+/**
+ * Format a date for display as a filename only (without folder structure).
+ * Extracts the last segment from a formatted date string that may contain path separators.
+ */
+export function formatDateAsFilename(date: Date, formatStr: string): string {
+    const formatted = formatDate(date, formatStr)
+    // Extract only the filename portion (after the last /)
+    const parts = formatted.split('/')
+    return parts[parts.length - 1] ?? formatted
+}
+
+/**
+ * Get a human-readable suffix for a period type.
+ * - Daily: (Wednesday)
+ * - Weekly: (Week 51)
+ * - Monthly: (December)
+ * - Quarterly: (Q4)
+ * - Yearly: (empty string - year is self-explanatory)
+ */
+export function getPeriodSuffix(date: Date, periodType: PeriodType): string {
+    switch (periodType) {
+        case 'daily':
+            return `(${format(date, 'EEEE')})`
+        case 'weekly':
+            return `(Week ${dateFnsGetWeek(date)})`
+        case 'monthly':
+            return `(${format(date, 'MMMM')})`
+        case 'quarterly':
+            return `(Q${dateFnsGetQuarter(date)})`
+        case 'yearly':
+            return ''
+    }
+}
+
+/**
+ * Format a date for display as a filename with period-specific suffix.
+ * Combines the filename portion with a human-readable suffix.
+ */
+export function formatFilenameWithSuffix(
+    date: Date,
+    formatStr: string,
+    periodType: PeriodType
+): string {
+    const filename = formatDateAsFilename(date, formatStr)
+    const suffix = getPeriodSuffix(date, periodType)
+    return suffix ? `${filename} ${suffix}` : filename
+}

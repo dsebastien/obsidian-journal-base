@@ -1,5 +1,5 @@
-import type { PeriodicNoteConfig } from '../types/periodic-note.types'
-import { formatDate } from '../../utils/date-utils'
+import type { PeriodicNoteConfig, PeriodType } from '../types/periodic-note.types'
+import { formatFilenameWithSuffix } from '../../utils/date-utils'
 
 export class CreateNoteButton {
     private containerEl: HTMLElement
@@ -8,6 +8,7 @@ export class CreateNoteButton {
         parent: HTMLElement,
         private date: Date,
         private config: PeriodicNoteConfig,
+        private periodType: PeriodType,
         private onClick: (date: Date) => void
     ) {
         this.containerEl = this.render(parent)
@@ -18,10 +19,10 @@ export class CreateNoteButton {
 
         const header = container.createDiv({ cls: 'pn-card__header pn-card__header--missing' })
 
-        // Date label
+        // Date label (filename with period-specific suffix)
         header.createSpan({
             cls: 'pn-card__title pn-card__title--missing',
-            text: formatDate(this.date, this.config.format)
+            text: formatFilenameWithSuffix(this.date, this.config.format, this.periodType)
         })
 
         // Create button
