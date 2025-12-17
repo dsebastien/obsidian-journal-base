@@ -1,11 +1,17 @@
 import { Component } from 'obsidian'
 
+// SVG icons for fold button
+const ICON_COLLAPSE = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
+const ICON_EXPAND = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`
+
 export class FoldableColumn extends Component {
     private containerEl!: HTMLElement
     private headerEl!: HTMLElement
     private selectorEl!: HTMLElement
     private contentEl!: HTMLElement
+    private foldBtn!: HTMLButtonElement
     private folded: boolean = false
+    private configuredWidth: number | null = null
 
     constructor(
         parent: HTMLElement,
@@ -21,22 +27,25 @@ export class FoldableColumn extends Component {
         // Header
         this.headerEl = container.createDiv({ cls: 'pr-column__header' })
 
-        const titleEl = this.headerEl.createSpan({
+        // Fold button (at the top)
+        this.foldBtn = this.headerEl.createEl('button', {
+            cls: 'pr-column__fold-btn clickable-icon',
+            attr: { 'aria-label': 'Collapse column' }
+        })
+        this.foldBtn.innerHTML = ICON_COLLAPSE
+
+        this.headerEl.createSpan({
             cls: 'pr-column__title',
             text: this.title
         })
 
-        // Fold button
-        const foldBtn = this.headerEl.createEl('button', {
-            cls: 'pr-column__fold-btn clickable-icon',
-            attr: { 'aria-label': 'Toggle column' }
+        this.registerDomEvent(this.foldBtn, 'click', (e) => {
+            e.stopPropagation()
+            this.toggleFold()
         })
-        foldBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
 
-        this.registerDomEvent(foldBtn, 'click', () => this.toggleFold())
-
-        // Also allow clicking header to fold (except on title for selection)
-        this.registerDomEvent(titleEl, 'click', () => this.toggleFold())
+        // Click on header to toggle fold
+        this.registerDomEvent(this.headerEl, 'click', () => this.toggleFold())
 
         // Selector area (for period selection)
         this.selectorEl = container.createDiv({ cls: 'pr-column__selector' })
@@ -50,6 +59,33 @@ export class FoldableColumn extends Component {
     toggleFold(): void {
         this.folded = !this.folded
         this.containerEl.classList.toggle('pr-column--folded', this.folded)
+        this.updateWidthStyles()
+        this.updateFoldButton()
+    }
+
+    private updateFoldButton(): void {
+        this.foldBtn.innerHTML = this.folded ? ICON_EXPAND : ICON_COLLAPSE
+        this.foldBtn.setAttribute('aria-label', this.folded ? 'Expand column' : 'Collapse column')
+    }
+
+    private updateWidthStyles(): void {
+        if (this.folded) {
+            // Clear inline styles so CSS can take over
+            this.containerEl.style.minWidth = ''
+            this.containerEl.style.maxWidth = ''
+        } else if (this.configuredWidth !== null) {
+            // Restore configured width
+            this.containerEl.style.minWidth = `${this.configuredWidth}px`
+            this.containerEl.style.maxWidth = `${this.configuredWidth}px`
+        }
+    }
+
+    setWidth(width: number): void {
+        this.configuredWidth = width
+        if (!this.folded) {
+            this.containerEl.style.minWidth = `${width}px`
+            this.containerEl.style.maxWidth = `${width}px`
+        }
     }
 
     fold(): void {

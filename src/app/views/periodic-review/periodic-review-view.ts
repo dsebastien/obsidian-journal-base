@@ -135,8 +135,7 @@ export class PeriodicReviewView extends BasesView {
         const column = new FoldableColumn(this.columnsEl, PERIOD_TYPE_LABELS[periodType])
 
         // Set column width
-        column.getElement().style.minWidth = `${width}px`
-        column.getElement().style.maxWidth = `${width}px`
+        column.setWidth(width)
 
         // Store column state
         const state: ColumnState = {

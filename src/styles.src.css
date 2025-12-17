@@ -238,40 +238,47 @@
 }
 
 .pr-column {
-    @apply flex flex-col h-full border-r relative;
-    @apply transition-all duration-200;
-    min-width: 350px;
-    max-width: 450px;
+    @apply flex flex-col h-full border-r relative shrink-0 grow-0 transition-all duration-200 min-w-[350px] max-w-[450px];
     border-color: var(--background-modifier-border);
 }
 
-.pr-column--folded {
-    @apply min-w-[48px] w-[48px] overflow-hidden;
+.pr-column.pr-column--folded {
+    @apply overflow-hidden shrink-0 grow-0 min-w-[48px] w-[48px] max-w-[48px] cursor-pointer;
+    flex-basis: 48px;
 }
 
-/* Rotated header (sliding panes spine style) */
+/* Column header */
 .pr-column__header {
-    @apply flex items-center justify-between px-3 py-2;
+    @apply flex items-center gap-2 px-3 py-2 cursor-pointer;
     background-color: var(--background-secondary);
 }
 
+.pr-column__header:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* Folded header - vertical layout */
 .pr-column--folded .pr-column__header {
-    @apply absolute inset-0 flex-col justify-start pt-3;
+    @apply absolute inset-0 flex-col items-center pt-3 px-0;
     writing-mode: vertical-rl;
     text-orientation: mixed;
 }
 
 .pr-column__title {
-    @apply font-medium text-sm cursor-pointer;
+    @apply font-medium text-sm;
     color: var(--text-normal);
 }
 
 .pr-column__fold-btn {
-    @apply p-1 rounded transition-transform duration-200;
+    @apply p-1 rounded cursor-pointer;
+}
+
+.pr-column__fold-btn:hover {
+    background-color: var(--background-modifier-hover);
 }
 
 .pr-column--folded .pr-column__fold-btn {
-    @apply rotate-180 mb-2;
+    @apply mb-2;
 }
 
 .pr-column__selector {
