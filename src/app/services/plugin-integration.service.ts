@@ -40,12 +40,16 @@ interface TemplaterPlugin {
 
 export class PluginIntegrationService {
     private periodicNotesEventRef: EventRef | null = null
-    private periodicNotesEnabledRef: EventRef | null = null
-    private periodicNotesDisabledRef: EventRef | null = null
+    private pluginStateCheckInterval: ReturnType<typeof setInterval> | null = null
+    private lastPeriodicNotesState: boolean = false
+    private onPeriodicNotesEnabled: (() => void) | null = null
+    private onPeriodicNotesDisabled: (() => void) | null = null
     private app: AppWithPlugins
 
     constructor(app: App) {
         this.app = app as AppWithPlugins
+        // Initialize with current state
+        this.lastPeriodicNotesState = this.isPeriodicNotesPluginEnabled()
     }
 
     // ===== Periodic Notes Plugin Integration =====
@@ -113,43 +117,50 @@ export class PluginIntegrationService {
     }
 
     /**
-     * Subscribe to periodic-notes plugin enable/disable events
+     * Subscribe to periodic-notes plugin enable/disable state changes
+     * Uses polling since Obsidian doesn't provide reliable plugin state change events
      * @param onEnabled Callback when periodic-notes plugin is enabled
      * @param onDisabled Callback when periodic-notes plugin is disabled
      */
     subscribeToPeriodicNotesPluginState(onEnabled: () => void, onDisabled: () => void): void {
         this.unsubscribeFromPeriodicNotesPluginState()
 
-        // Listen for plugin enabled event
-        const enabledEvent = 'periodic-notes:loaded'
-        this.periodicNotesEnabledRef = this.app.workspace.on(
-            enabledEvent as Parameters<typeof this.app.workspace.on>[0],
-            () => {
-                log('Periodic Notes plugin enabled', 'debug')
-                onEnabled()
-            }
-        )
+        this.onPeriodicNotesEnabled = onEnabled
+        this.onPeriodicNotesDisabled = onDisabled
+        this.lastPeriodicNotesState = this.isPeriodicNotesPluginEnabled()
 
-        // Listen for plugin disabled event
-        const disabledEvent = 'periodic-notes:unloaded'
-        this.periodicNotesDisabledRef = this.app.workspace.on(
-            disabledEvent as Parameters<typeof this.app.workspace.on>[0],
-            () => {
+        // Poll for plugin state changes every second
+        this.pluginStateCheckInterval = setInterval(() => {
+            this.checkPeriodicNotesPluginState()
+        }, 1000)
+    }
+
+    /**
+     * Check if Periodic Notes plugin state has changed and trigger callbacks
+     */
+    private checkPeriodicNotesPluginState(): void {
+        const currentState = this.isPeriodicNotesPluginEnabled()
+
+        if (currentState !== this.lastPeriodicNotesState) {
+            this.lastPeriodicNotesState = currentState
+
+            if (currentState) {
+                log('Periodic Notes plugin enabled', 'debug')
+                this.onPeriodicNotesEnabled?.()
+            } else {
                 log('Periodic Notes plugin disabled', 'debug')
-                onDisabled()
+                this.onPeriodicNotesDisabled?.()
             }
-        )
+        }
     }
 
     unsubscribeFromPeriodicNotesPluginState(): void {
-        if (this.periodicNotesEnabledRef) {
-            this.app.workspace.offref(this.periodicNotesEnabledRef)
-            this.periodicNotesEnabledRef = null
+        if (this.pluginStateCheckInterval) {
+            clearInterval(this.pluginStateCheckInterval)
+            this.pluginStateCheckInterval = null
         }
-        if (this.periodicNotesDisabledRef) {
-            this.app.workspace.offref(this.periodicNotesDisabledRef)
-            this.periodicNotesDisabledRef = null
-        }
+        this.onPeriodicNotesEnabled = null
+        this.onPeriodicNotesDisabled = null
     }
 
     // ===== Templater Plugin Integration =====
