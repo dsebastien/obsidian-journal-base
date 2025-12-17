@@ -1,7 +1,9 @@
+import { log } from './../../utils/log'
 import { App, Notice, TFile, Plugin } from 'obsidian'
 import type { EventRef } from 'obsidian'
 import type { PluginSettings } from '../types/plugin-settings.intf'
-import type { PeriodType } from '../types/periodic-note.types'
+import { periodicNotesPluginSettingsSchema } from '../types/periodic-notes-plugin-settings.intf'
+import { PERIOD_TYPES } from '../types/periodic-note.types'
 
 // Extend App to include the plugins property (exists at runtime but not in types)
 interface AppWithPlugins extends App {
@@ -9,25 +11,6 @@ interface AppWithPlugins extends App {
         enabledPlugins: Set<string>
         getPlugin(id: string): Plugin | null
     }
-}
-
-// Periodic Notes plugin settings structure (from source analysis)
-interface PeriodicNotesPeriodicConfig {
-    enabled: boolean
-    openAtStartup?: boolean
-    format: string
-    folder: string
-    templatePath?: string
-}
-
-interface PeriodicNotesCalendarSet {
-    id: string
-    ctime: number
-    day?: PeriodicNotesPeriodicConfig
-    week?: PeriodicNotesPeriodicConfig
-    month?: PeriodicNotesPeriodicConfig
-    quarter?: PeriodicNotesPeriodicConfig
-    year?: PeriodicNotesPeriodicConfig
 }
 
 // Templater plugin interface (from source analysis)
@@ -57,6 +40,8 @@ interface TemplaterPlugin {
 
 export class PluginIntegrationService {
     private periodicNotesEventRef: EventRef | null = null
+    private periodicNotesEnabledRef: EventRef | null = null
+    private periodicNotesDisabledRef: EventRef | null = null
     private app: AppWithPlugins
 
     constructor(app: App) {
@@ -79,37 +64,30 @@ export class PluginIntegrationService {
      * Periodic-notes uses CalendarSet with granularities: day, week, month, quarter, year
      */
     syncFromPeriodicNotesPlugin(): Partial<PluginSettings> | null {
-        const plugin = this.getPeriodicNotesPlugin() as {
-            settings?: PeriodicNotesCalendarSet
+        const periodicNotesPlugin = this.getPeriodicNotesPlugin() as {
+            settings?: unknown
         } | null
-        if (!plugin?.settings) return null
+        if (!periodicNotesPlugin?.settings) return null
 
-        const settings = plugin.settings
-        const granularityMap: Record<string, PeriodType> = {
-            day: 'daily',
-            week: 'weekly',
-            month: 'monthly',
-            quarter: 'quarterly',
-            year: 'yearly'
+        log('PeriodicNotes plugin settings', 'debug', periodicNotesPlugin.settings)
+
+        // Validate settings against schema
+        const parseResult = periodicNotesPluginSettingsSchema.safeParse(
+            periodicNotesPlugin.settings
+        )
+        if (!parseResult.success) {
+            log('PeriodicNotes plugin settings validation failed', 'warn', parseResult.error.issues)
+            return null
         }
 
-        const result: Partial<PluginSettings> = {}
+        const periodicNotesPluginSettings = parseResult.data
 
-        for (const [granularity, periodType] of Object.entries(granularityMap)) {
-            const config = settings[granularity as keyof PeriodicNotesCalendarSet] as
-                | PeriodicNotesPeriodicConfig
-                | undefined
-            if (config) {
-                result[periodType] = {
-                    enabled: config.enabled,
-                    folder: config.folder || '',
-                    format: config.format || '',
-                    template: config.templatePath || ''
-                }
-            }
+        const retVal: Partial<PluginSettings> = {}
+        for (const periodType of PERIOD_TYPES) {
+            retVal[periodType] = { ...periodicNotesPluginSettings[periodType] }
         }
 
-        return result
+        return retVal
     }
 
     /**
@@ -131,6 +109,46 @@ export class PluginIntegrationService {
         if (this.periodicNotesEventRef) {
             this.app.workspace.offref(this.periodicNotesEventRef)
             this.periodicNotesEventRef = null
+        }
+    }
+
+    /**
+     * Subscribe to periodic-notes plugin enable/disable events
+     * @param onEnabled Callback when periodic-notes plugin is enabled
+     * @param onDisabled Callback when periodic-notes plugin is disabled
+     */
+    subscribeToPeriodicNotesPluginState(onEnabled: () => void, onDisabled: () => void): void {
+        this.unsubscribeFromPeriodicNotesPluginState()
+
+        // Listen for plugin enabled event
+        const enabledEvent = 'periodic-notes:loaded'
+        this.periodicNotesEnabledRef = this.app.workspace.on(
+            enabledEvent as Parameters<typeof this.app.workspace.on>[0],
+            () => {
+                log('Periodic Notes plugin enabled', 'debug')
+                onEnabled()
+            }
+        )
+
+        // Listen for plugin disabled event
+        const disabledEvent = 'periodic-notes:unloaded'
+        this.periodicNotesDisabledRef = this.app.workspace.on(
+            disabledEvent as Parameters<typeof this.app.workspace.on>[0],
+            () => {
+                log('Periodic Notes plugin disabled', 'debug')
+                onDisabled()
+            }
+        )
+    }
+
+    unsubscribeFromPeriodicNotesPluginState(): void {
+        if (this.periodicNotesEnabledRef) {
+            this.app.workspace.offref(this.periodicNotesEnabledRef)
+            this.periodicNotesEnabledRef = null
+        }
+        if (this.periodicNotesDisabledRef) {
+            this.app.workspace.offref(this.periodicNotesDisabledRef)
+            this.periodicNotesDisabledRef = null
         }
     }
 

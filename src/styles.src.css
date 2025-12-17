@@ -8,3 +8,296 @@
 .support-header-margin {
     @apply mb-5;
 }
+
+/* ========================================
+   PERIODIC NOTES VIEW
+   ======================================== */
+
+.periodic-notes-view {
+    @apply flex flex-col gap-4 p-4;
+}
+
+/* Period Tabs */
+.pn-tabs {
+    @apply flex gap-2 mb-4;
+}
+
+.pn-tab {
+    @apply px-3 py-1.5 rounded cursor-pointer transition-all duration-150;
+    background-color: var(--background-secondary);
+    color: var(--text-muted);
+}
+
+.pn-tab:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.pn-tab--active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+/* Note Cards */
+.pn-cards {
+    @apply flex flex-col gap-3;
+}
+
+.pn-card {
+    @apply rounded border overflow-hidden;
+    background-color: var(--background-primary);
+    border-color: var(--background-modifier-border);
+}
+
+.pn-card__header {
+    @apply flex items-center justify-between px-4 py-3 cursor-pointer;
+    background-color: var(--background-secondary);
+}
+
+.pn-card__header:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.pn-card__title {
+    @apply font-medium;
+    color: var(--text-normal);
+}
+
+.pn-card__title--missing {
+    color: var(--text-muted);
+}
+
+.pn-card__open-btn {
+    @apply p-1 rounded;
+}
+
+.pn-card__toggle {
+    @apply transition-transform duration-200;
+}
+
+.pn-card--expanded .pn-card__toggle {
+    @apply rotate-180;
+}
+
+.pn-card__content {
+    @apply hidden px-4 py-3;
+}
+
+.pn-card--expanded .pn-card__content {
+    @apply block;
+}
+
+.pn-card--missing {
+    @apply opacity-70;
+    border-style: dashed;
+}
+
+.pn-card__header--missing {
+    @apply justify-between;
+}
+
+.pn-card__error {
+    @apply py-2 text-sm;
+    color: var(--text-error);
+}
+
+/* Create Button */
+.pn-create-btn {
+    @apply flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer;
+    @apply transition-all duration-150 text-sm font-medium;
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.pn-create-btn:hover {
+    @apply opacity-90;
+}
+
+/* Missing Card (placeholder for missing notes) */
+.pn-missing-card {
+    @apply rounded border px-4 py-3 flex items-center justify-between;
+    border-style: dashed;
+    background-color: var(--background-secondary-alt, var(--background-secondary));
+    border-color: var(--background-modifier-border);
+}
+
+.pn-missing-card__label {
+    @apply text-sm italic;
+    color: var(--text-muted);
+}
+
+/* Empty State */
+.pn-empty-state {
+    @apply flex flex-col items-center justify-center py-12 gap-4;
+    color: var(--text-muted);
+}
+
+.pn-empty-state__icon {
+    @apply opacity-50;
+}
+
+.pn-empty-state__text {
+    @apply text-center max-w-md;
+}
+
+/* ========================================
+   PERIODIC REVIEW VIEW (Sliding Panes Style)
+   ======================================== */
+
+.periodic-review-view {
+    @apply h-full overflow-x-auto overflow-y-hidden;
+}
+
+.pr-columns {
+    @apply flex h-full;
+}
+
+.pr-column {
+    @apply flex flex-col h-full border-r relative;
+    @apply transition-all duration-200;
+    min-width: 350px;
+    max-width: 450px;
+    border-color: var(--background-modifier-border);
+}
+
+.pr-column--folded {
+    @apply min-w-[48px] w-[48px] overflow-hidden;
+}
+
+/* Rotated header (sliding panes spine style) */
+.pr-column__header {
+    @apply flex items-center justify-between px-3 py-2;
+    background-color: var(--background-secondary);
+}
+
+.pr-column--folded .pr-column__header {
+    @apply absolute inset-0 flex-col justify-start pt-3;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+.pr-column__title {
+    @apply font-medium text-sm cursor-pointer;
+    color: var(--text-normal);
+}
+
+.pr-column__fold-btn {
+    @apply p-1 rounded transition-transform duration-200;
+}
+
+.pr-column--folded .pr-column__fold-btn {
+    @apply rotate-180 mb-2;
+}
+
+.pr-column__selector {
+    @apply flex-shrink-0 overflow-y-auto max-h-[180px] border-b;
+    border-color: var(--background-modifier-border);
+}
+
+.pr-column--folded .pr-column__selector {
+    @apply hidden;
+}
+
+.pr-column__content {
+    @apply flex-1 overflow-y-auto p-3;
+}
+
+.pr-column--folded .pr-column__content {
+    @apply hidden;
+}
+
+/* Period selector items */
+.pr-period-item {
+    @apply px-3 py-2 cursor-pointer text-sm;
+    color: var(--text-muted);
+}
+
+.pr-period-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.pr-period-item--selected {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.pr-period-item--missing {
+    @apply opacity-60 italic;
+}
+
+/* Section styling */
+.pr-section {
+    @apply mb-4 pb-4 border-b;
+    border-color: var(--background-modifier-border);
+}
+
+.pr-section:last-child {
+    @apply border-b-0;
+}
+
+.pr-section__header {
+    @apply flex items-center justify-between mb-2;
+}
+
+.pr-section__title {
+    @apply font-medium;
+    color: var(--text-normal);
+}
+
+.pr-copy-btn {
+    @apply text-xs px-2 py-1 rounded cursor-pointer;
+    background-color: var(--background-modifier-hover);
+    color: var(--text-muted);
+}
+
+.pr-copy-btn:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.pr-section__content {
+    @apply text-sm;
+}
+
+/* Review view empty state */
+.pr-empty-state {
+    @apply flex flex-col items-center justify-center h-full gap-4 p-8;
+    color: var(--text-muted);
+}
+
+.pr-empty-state__icon {
+    @apply opacity-50;
+}
+
+.pr-empty-state__text {
+    @apply text-center max-w-md text-sm;
+}
+
+/* Create note placeholder in review view */
+.pr-create-note {
+    @apply flex flex-col items-center justify-center h-full gap-3 p-4;
+}
+
+.pr-create-note__message {
+    @apply text-sm text-center;
+    color: var(--text-muted);
+}
+
+/* Content wrapper for markdown rendering */
+.pr-markdown-content {
+    @apply text-sm;
+}
+
+.pr-markdown-content h1,
+.pr-markdown-content h2,
+.pr-markdown-content h3,
+.pr-markdown-content h4,
+.pr-markdown-content h5,
+.pr-markdown-content h6 {
+    @apply mt-3 mb-2;
+}
+
+.pr-markdown-content h1:first-child,
+.pr-markdown-content h2:first-child,
+.pr-markdown-content h3:first-child {
+    @apply mt-0;
+}
