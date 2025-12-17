@@ -180,7 +180,7 @@ export class PeriodicNotesView extends BasesView {
             noteDate,
             expanded,
             (file) => {
-                this.app.workspace.getLeaf().openFile(file)
+                this.app.workspace.getLeaf('tab').openFile(file)
             }
         )
         this.noteCards.push(card)
