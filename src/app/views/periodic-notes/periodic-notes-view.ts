@@ -3,10 +3,7 @@ import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import { PERIODIC_NOTES_VIEW_TYPE } from './periodic-notes.constants'
 import type { PeriodType, PeriodicNoteConfig, LifeTrackerPluginFileProvider } from '../../types'
-import { NoteCard } from '../../components/note-card'
-import type { CardMode } from '../../components/note-card'
-import { CreateNoteButton } from '../../components/create-note-button'
-import { PeriodTabs } from '../../components/period-tabs'
+import { NoteCard, CreateNoteButton, PeriodTabs, type CardMode } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
 import {
     detectPeriodType,

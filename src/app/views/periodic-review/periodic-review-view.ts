@@ -3,8 +3,7 @@ import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import { PERIODIC_REVIEW_VIEW_TYPE } from './periodic-review.constants'
 import type { PeriodType, PeriodicNoteConfig } from '../../types'
-import { FoldableColumn } from '../../components/foldable-column'
-import { CreateNoteButton } from '../../components/create-note-button'
+import { FoldableColumn, CreateNoteButton } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
 import {
     extractDateFromNote,
