@@ -1,6 +1,8 @@
-import type { PeriodicNotesSettings } from './periodic-note.types'
+import type { PeriodicNotesSettings } from './periodic-notes-settings.type'
 
-// Using type alias instead of empty interface to satisfy linter
+/**
+ * Plugin settings type
+ */
 export type PluginSettings = PeriodicNotesSettings
 
 export const DEFAULT_SETTINGS: PluginSettings = {

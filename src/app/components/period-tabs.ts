@@ -1,4 +1,4 @@
-import type { PeriodType } from '../types/periodic-note.types'
+import type { PeriodType } from '../types'
 
 const PERIOD_LABELS: Record<PeriodType, string> = {
     daily: 'Daily',

@@ -1,10 +1,9 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
 import type { TextComponent, ToggleComponent } from 'obsidian'
 import type JournalBasesPlugin from '../../main'
-import type { PeriodType } from '../types/periodic-note.types'
+import type { PeriodType, PluginSettings } from '../types'
 import { produce } from 'immer'
 import type { Draft } from 'immer'
-import type { PluginSettings } from '../types/plugin-settings.intf'
 
 const PERIOD_LABELS: Record<PeriodType, string> = {
     daily: 'Daily notes',

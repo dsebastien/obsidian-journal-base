@@ -1,9 +1,11 @@
 import { Plugin } from 'obsidian'
-import { DEFAULT_SETTINGS } from './types/plugin-settings.intf'
-import type { PluginSettings } from './types/plugin-settings.intf'
-import type { LifeTrackerPluginFileProvider } from './types/life-tracker-plugin-file-provider.intf'
-import type { AppWithPlugins } from './types/app-with-plugins.intf'
-import { PERIOD_TYPES } from './types/periodic-note.types'
+import {
+    DEFAULT_SETTINGS,
+    PERIOD_TYPES,
+    type PluginSettings,
+    type LifeTrackerPluginFileProvider,
+    type AppWithPlugins
+} from './types'
 import { JournalBasesSettingTab } from './settings/settings-tab'
 import { log } from '../utils/log'
 import { produce } from 'immer'

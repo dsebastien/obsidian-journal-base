@@ -1,10 +1,12 @@
 import { log } from './../../utils/log'
 import { App, Notice, TFile } from 'obsidian'
 import type { EventRef } from 'obsidian'
-import type { PluginSettings } from '../types/plugin-settings.intf'
-import { periodicNotesPluginSettingsSchema } from '../types/periodic-notes-plugin-settings.intf'
-import { PERIOD_TYPES } from '../types/periodic-note.types'
-import type { AppWithPlugins } from '../types/app-with-plugins.intf'
+import {
+    PERIOD_TYPES,
+    periodicNotesPluginSettingsSchema,
+    type PluginSettings,
+    type AppWithPlugins
+} from '../types'
 
 // Templater plugin interface (from source analysis)
 interface TemplaterPlugin {

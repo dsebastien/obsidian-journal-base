@@ -1,4 +1,4 @@
-import type { PeriodicNoteConfig, PeriodType } from '../types/periodic-note.types'
+import type { PeriodicNoteConfig, PeriodType } from '../types'
 import { formatFilenameWithSuffix, isCurrentPeriod } from '../../utils/date-utils'
 
 // SVG icons

@@ -1,6 +1,5 @@
 import type { TFile, BasesEntry } from 'obsidian'
-import type { PluginSettings } from '../app/types/plugin-settings.intf'
-import type { PeriodType, PeriodicNoteConfig } from '../app/types/periodic-note.types'
+import type { PluginSettings, PeriodType, PeriodicNoteConfig } from '../app/types'
 import { parseDateFromFormat, formatDate } from './date-utils'
 
 /**

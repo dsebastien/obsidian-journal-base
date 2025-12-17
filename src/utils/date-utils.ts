@@ -19,7 +19,7 @@ import {
     getYear as dateFnsGetYear,
     getMonth as dateFnsGetMonth
 } from 'date-fns'
-import type { PeriodType } from '../app/types/periodic-note.types'
+import type { PeriodType } from '../app/types'
 
 /**
  * Parse a date string using a format pattern

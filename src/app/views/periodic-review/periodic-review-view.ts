@@ -2,7 +2,7 @@ import { BasesView, BasesEntry, MarkdownRenderer, TFile, Notice } from 'obsidian
 import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import { PERIODIC_REVIEW_VIEW_TYPE } from './periodic-review.constants'
-import type { PeriodType, PeriodicNoteConfig } from '../../types/periodic-note.types'
+import type { PeriodType, PeriodicNoteConfig } from '../../types'
 import { FoldableColumn } from '../../components/foldable-column'
 import { CreateNoteButton } from '../../components/create-note-button'
 import { NoteCreationService } from '../../services/note-creation.service'

@@ -1,8 +1,7 @@
 import { App, TFile, Notice } from 'obsidian'
-import type { PeriodicNoteConfig } from '../types/periodic-note.types'
+import type { PeriodicNoteConfig, PeriodType } from '../types'
 import { PluginIntegrationService } from './plugin-integration.service'
 import { formatDate, getStartOfPeriod } from '../../utils/date-utils'
-import type { PeriodType } from '../types/periodic-note.types'
 
 export class NoteCreationService {
     private integrationService: PluginIntegrationService

@@ -1,6 +1,6 @@
 import { App, Component, MarkdownRenderer, TFile, debounce, Notice } from 'obsidian'
 import type { Debouncer } from 'obsidian'
-import type { PeriodType } from '../types/periodic-note.types'
+import type { PeriodType } from '../types'
 import { getPeriodSuffix, isCurrentPeriod } from '../../utils/date-utils'
 import { EmbeddableEditor } from '../services/embeddable-editor.service'
 
