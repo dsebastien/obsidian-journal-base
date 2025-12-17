@@ -4,6 +4,25 @@ import type { PeriodType, PeriodicNoteConfig } from '../app/types/periodic-note.
 import { parseDateFromFormat, formatDate } from './date-utils'
 
 /**
+ * Extract the filename portion of a format string.
+ * Format strings may include path separators (e.g., 'YYYY/WW/YYYY-MM-DD').
+ * This function returns only the portion after the last path separator.
+ *
+ * @example
+ * getFilenameFormat('YYYY/WW/YYYY-MM-DD') // Returns 'YYYY-MM-DD'
+ * getFilenameFormat('YYYY-MM-DD') // Returns 'YYYY-MM-DD'
+ * getFilenameFormat('gggg-[W]ww') // Returns 'gggg-[W]ww'
+ */
+export function getFilenameFormat(format: string): string {
+    const lastSeparatorIndex = format.lastIndexOf('/')
+    if (lastSeparatorIndex === -1) {
+        return format
+    }
+    const filenameFormat = format.slice(lastSeparatorIndex + 1)
+    return filenameFormat || format
+}
+
+/**
  * Detect the period type of a file based on its path
  */
 export function detectPeriodType(file: TFile, settings: PluginSettings): PeriodType | null {
@@ -20,11 +39,13 @@ export function detectPeriodType(file: TFile, settings: PluginSettings): PeriodT
 }
 
 /**
- * Extract the date from a periodic note file
+ * Extract the date from a periodic note file.
+ * Uses only the filename portion of the format string to match against the file's basename.
  */
 export function extractDateFromNote(file: TFile, config: PeriodicNoteConfig): Date | null {
     const basename = file.basename
-    return parseDateFromFormat(basename, config.format)
+    const filenameFormat = getFilenameFormat(config.format)
+    return parseDateFromFormat(basename, filenameFormat)
 }
 
 /**
@@ -76,7 +97,8 @@ export function isValidPeriodicNote(file: TFile, config: PeriodicNoteConfig): bo
     }
 
     // Check if filename matches format (can be parsed back)
-    const date = parseDateFromFormat(file.basename, config.format)
+    const filenameFormat = getFilenameFormat(config.format)
+    const date = parseDateFromFormat(file.basename, filenameFormat)
     return date !== null
 }
 

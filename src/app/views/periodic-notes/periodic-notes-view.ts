@@ -10,10 +10,14 @@ import { NoteCreationService } from '../../services/note-creation.service'
 import {
     detectPeriodType,
     extractDateFromNote,
-    getEnabledPeriodTypes,
-    sortEntriesByDate
+    getEnabledPeriodTypes
 } from '../../../utils/periodic-note-utils'
-import { findMissingDates, getStartOfPeriod, sortDatesDescending } from '../../../utils/date-utils'
+import {
+    findMissingDates,
+    getStartOfPeriod,
+    sortDatesDescending,
+    sortDatesAscending
+} from '../../../utils/date-utils'
 
 export class PeriodicNotesView extends BasesView {
     override type = PERIODIC_NOTES_VIEW_TYPE
@@ -60,16 +64,18 @@ export class PeriodicNotesView extends BasesView {
         // Render mode tabs
         this.renderModeTabs(enabledTypes, mode)
 
-        // Filter entries by current mode
+        // Filter entries by current mode (preserves Base sort order)
         const entries = this.data.data.filter(
             (entry) => detectPeriodType(entry.file, this.plugin.settings) === mode
         )
 
-        // Sort entries by date (newest first)
-        const sortedEntries = sortEntriesByDate(entries, periodConfig, false)
+        // Determine sort direction from Base configuration
+        const sortConfig = this.config.getSort()
+        const firstSort = sortConfig[0]
+        const isAscending = firstSort?.direction === 'ASC'
 
         // Extract dates from entries
-        const existingDates = sortedEntries
+        const existingDates = entries
             .map((e) => extractDateFromNote(e.file, periodConfig))
             .filter((d): d is Date => d !== null)
 
@@ -79,8 +85,14 @@ export class PeriodicNotesView extends BasesView {
             missingDates = findMissingDates(existingDates, mode, futurePeriods)
         }
 
-        // Create a combined list of dates (existing + missing) sorted descending
-        const allDates = this.mergeAndSortDates(sortedEntries, missingDates, periodConfig, mode)
+        // Create a combined list of dates (existing + missing) sorted according to Base config
+        const allDates = this.mergeAndSortDates(
+            entries,
+            missingDates,
+            periodConfig,
+            mode,
+            isAscending
+        )
 
         if (allDates.length === 0) {
             this.renderEmptyState('No notes found. Create your first note or check Base filters.')
@@ -106,7 +118,8 @@ export class PeriodicNotesView extends BasesView {
         entries: BasesEntry[],
         missingDates: Date[],
         config: PeriodicNoteConfig,
-        periodType: PeriodType
+        periodType: PeriodType,
+        ascending: boolean
     ): Array<{ date: Date; entry: BasesEntry | null }> {
         const items: Array<{ date: Date; entry: BasesEntry | null }> = []
 
@@ -131,8 +144,10 @@ export class PeriodicNotesView extends BasesView {
             }
         }
 
-        // Sort descending by date (newest first)
-        const sortedDates = sortDatesDescending(items.map((i) => i.date))
+        // Sort dates according to Base configuration
+        const sortedDates = ascending
+            ? sortDatesAscending(items.map((i) => i.date))
+            : sortDatesDescending(items.map((i) => i.date))
         const dateToItem = new Map(
             items.map((i) => [getStartOfPeriod(i.date, periodType).getTime(), i])
         )
