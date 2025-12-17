@@ -50,12 +50,12 @@ export class JournalBasesPlugin extends Plugin {
         this.checkTemplaterPlugin()
 
         // Sync settings from Periodic Notes plugin if enabled
-        this.syncFromPeriodicNotesPlugin()
+        await this.syncFromPeriodicNotesPlugin()
 
         // Listen for Periodic Notes settings changes
-        this.integrationService.subscribeToPeriodicNotesChanges(() => {
+        this.integrationService.subscribeToPeriodicNotesChanges(async () => {
             log('Periodic Notes settings updated, syncing...', 'debug')
-            this.syncFromPeriodicNotesPlugin()
+            await this.syncFromPeriodicNotesPlugin()
             // Refresh settings tab if open
             this.settingTab?.display()
         })
@@ -63,9 +63,9 @@ export class JournalBasesPlugin extends Plugin {
         // Watch for Periodic Notes plugin enable/disable
         this.integrationService.subscribeToPeriodicNotesPluginState(
             // On enabled: sync settings and make read-only
-            () => {
+            async () => {
                 log('Periodic Notes plugin was enabled, syncing settings...', 'debug')
-                this.syncFromPeriodicNotesPlugin()
+                await this.syncFromPeriodicNotesPlugin()
                 this.settingTab?.display()
             },
             // On disabled: make settings editable again
@@ -94,9 +94,24 @@ export class JournalBasesPlugin extends Plugin {
     }
 
     /**
-     * Sync settings from Periodic Notes plugin if it's enabled
+     * Check if synced settings have meaningful configuration
+     * (at least one period type with enabled=true and a non-empty folder)
      */
-    private syncFromPeriodicNotesPlugin(): void {
+    private hasMeaningfulSettings(settings: Partial<PluginSettings>): boolean {
+        for (const periodType of PERIOD_TYPES) {
+            const periodSettings = settings[periodType]
+            if (periodSettings?.enabled && periodSettings.folder?.trim()) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Sync settings from Periodic Notes plugin if it's enabled and has meaningful configuration
+     * Saves the synced settings to disk so they persist even if Periodic Notes is later disabled
+     */
+    private async syncFromPeriodicNotesPlugin(): Promise<void> {
         if (!this.integrationService.isPeriodicNotesPluginEnabled()) {
             this.isPeriodicNotesSynced = false
             return
@@ -104,6 +119,17 @@ export class JournalBasesPlugin extends Plugin {
 
         const syncedSettings = this.integrationService.syncFromPeriodicNotesPlugin()
         if (!syncedSettings) {
+            this.isPeriodicNotesSynced = false
+            return
+        }
+
+        // Only sync if Periodic Notes has meaningful configuration
+        // This preserves our existing settings if Periodic Notes is enabled but unconfigured
+        if (!this.hasMeaningfulSettings(syncedSettings)) {
+            log(
+                'Periodic Notes plugin has no meaningful settings, keeping existing settings',
+                'debug'
+            )
             this.isPeriodicNotesSynced = false
             return
         }
@@ -119,6 +145,9 @@ export class JournalBasesPlugin extends Plugin {
                 }
             }
         })
+
+        // Save to disk so settings persist even if Periodic Notes is later disabled
+        await this.saveSettings()
 
         this.isPeriodicNotesSynced = true
         log('Settings synced from Periodic Notes plugin', 'debug', this.settings)
