@@ -56,17 +56,97 @@ export function formatDate(date: Date, formatStr: string): string {
 
 /**
  * Convert moment.js format string to date-fns format string
+ * Moment.js and date-fns use different format tokens
+ * Reference: https://momentjs.com/docs/#/displaying/format/
+ * Reference: https://github.com/date-fns/date-fns/issues/2991
  */
 export function convertMomentToDateFns(momentFormat: string): string {
-    return momentFormat
-        .replace(/YYYY/g, 'yyyy') // Year
-        .replace(/YY/g, 'yy') // 2-digit year
-        .replace(/gggg/g, 'yyyy') // ISO week year (approximate)
-        .replace(/DD/g, 'dd') // Day of month
-        .replace(/D/g, 'd') // Day of month (no padding)
-        .replace(/\[([^\]]+)\]/g, "'$1'") // Escape literals [W] → 'W'
-        .replace(/ww/g, 'ww') // Week number (same)
-        .replace(/w/g, 'w') // Week number (no padding)
+    // First, escape literal text in brackets [text] → 'text'
+    // Must be done first before other replacements
+    let result = momentFormat.replace(/\[([^\]]+)\]/g, "'$1'")
+
+    // Day of week tokens (lowercase d in moment = day of week)
+    // Must be done BEFORE day of month (D) conversion to avoid conflicts
+    // Using 'eeee' format (stand-alone) as recommended by date-fns community
+    result = result.replace(/dddd/g, 'eeee') // Full day name (e.g., "Monday")
+    result = result.replace(/ddd/g, 'eee') // Short day name (e.g., "Mon")
+    // Only replace standalone dd (day of week), not after D
+    result = result.replace(/(?<!D)dd(?!d)/g, 'eeeeee') // Min day name (2-letter, e.g., "Mo")
+
+    // Year tokens (must process longer tokens first)
+    result = result.replace(/YYYY/g, 'yyyy') // 4-digit year
+    result = result.replace(/YY/g, 'yy') // 2-digit year
+    result = result.replace(/Y/g, 'y') // Year with any number of digits
+
+    // ISO week-numbering year
+    // GGGG/GG in moment = ISO week year = RRRR/RR in date-fns
+    result = result.replace(/GGGG/g, 'RRRR') // ISO week year, 4-digit
+    result = result.replace(/GG/g, 'RR') // ISO week year, 2-digit
+    // gggg/gg in moment = locale week year (we treat as ISO for simplicity)
+    result = result.replace(/gggg/g, 'RRRR') // Week year, 4-digit
+    result = result.replace(/gg/g, 'RR') // Week year, 2-digit
+
+    // ISO week number (WW, W in moment = II, I in date-fns)
+    result = result.replace(/WW/g, 'II') // ISO week, 2-digit
+    result = result.replace(/Wo/g, 'Io') // ISO week with ordinal
+    result = result.replace(/(?<!'[^']*)\bW\b(?![^']*')/g, 'I') // ISO week, single digit (not in quotes)
+
+    // Local week number (ww, w in moment)
+    // When used with ISO week year (RRRR), use ISO week (II)
+    if (result.includes('RRRR') || result.includes('RR')) {
+        result = result.replace(/ww/g, 'II') // ISO week, 2-digit
+        result = result.replace(/wo/g, 'Io') // ISO week with ordinal
+        result = result.replace(/(?<!'[^']*)\bw\b(?![^']*')/g, 'I') // ISO week, single digit
+    }
+    // If no ISO week year context, ww stays as ww (local week in date-fns)
+
+    // Day of year and day of month tokens
+    // Use placeholders to avoid cascading replacements
+    // Process in order: DDDD, DDDo, DDD, DD, Do, D
+    result = result.replace(/DDDD/g, '##DOY3##') // Day of year, 3-digit padded → placeholder
+    result = result.replace(/DDDo/g, '##DOYo##') // Day of year with ordinal → placeholder
+    result = result.replace(/DDD/g, '##DOY##') // Day of year → placeholder
+    result = result.replace(/DD/g, 'dd') // Day of month, 2-digit
+    result = result.replace(/Do/g, 'do') // Day of month with ordinal
+    result = result.replace(/(?<!'[^']*)\bD\b(?![^']*')/g, 'd') // Day of month (not in quotes)
+
+    // Replace placeholders with date-fns tokens
+    result = result.replace(/##DOY3##/g, 'DDD') // Day of year, 3-digit padded
+    result = result.replace(/##DOYo##/g, 'Do') // Day of year with ordinal
+    result = result.replace(/##DOY##/g, 'D') // Day of year
+
+    // Month tokens (MM, MMM, MMMM are the same in both)
+    // Mo (month with ordinal) is the same in both
+    // M is the same in both
+
+    // Quarter tokens (Q is the same in both)
+    // Qo (quarter with ordinal) is the same in both
+
+    // Hour tokens (mostly the same)
+    // HH, H, hh, h, kk, k are the same in both
+
+    // Minute tokens (mm, m are the same in both)
+
+    // Second tokens (ss, s are the same in both)
+
+    // Fractional seconds (S, SS, SSS are the same in both)
+
+    // AM/PM tokens
+    result = result.replace(/(?<!'[^']*)\bA\b(?![^']*')/g, 'a') // AM/PM uppercase → a in date-fns
+
+    // Timezone tokens
+    result = result.replace(/ZZ/g, 'xx') // +0000 format
+    result = result.replace(/(?<!'[^']*)\bZ\b(?![^']*')/g, 'xxx') // +00:00 format
+
+    // Unix timestamps
+    result = result.replace(/(?<!'[^']*)\bX\b(?![^']*')/g, 't') // Unix seconds
+    result = result.replace(/(?<!'[^']*)\bx\b(?![^']*')/g, 'T') // Unix milliseconds
+
+    // Day of week (numeric)
+    result = result.replace(/(?<!'[^']*)\be\b(?![^']*')/g, 'c') // Day of week (0-6) locale
+    result = result.replace(/(?<!'[^']*)\bE\b(?![^']*')/g, 'i') // ISO day of week (1-7)
+
+    return result
 }
 
 /**

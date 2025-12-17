@@ -18,6 +18,9 @@ interface MockTFile {
     name?: string
     basename?: string
     extension?: string
+    stat?: unknown
+    vault?: unknown
+    parent?: unknown
 }
 
 interface MockEventRef {
@@ -490,7 +493,7 @@ describe('PluginIntegrationService', () => {
                     '2024-01-01',
                     false
                 )
-                expect(result).toBe(mockFile)
+                expect(result).toBe(mockFile as unknown as import('obsidian').TFile)
             })
 
             test('returns null when Templater API throws error', async () => {

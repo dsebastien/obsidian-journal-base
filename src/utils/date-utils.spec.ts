@@ -1,0 +1,220 @@
+import { describe, expect, test } from 'bun:test'
+import { convertMomentToDateFns, formatDate, parseDateFromFormat } from './date-utils'
+
+describe('date-utils', () => {
+    describe('convertMomentToDateFns', () => {
+        // Basic token conversions
+        test('converts YYYY to yyyy', () => {
+            expect(convertMomentToDateFns('YYYY')).toBe('yyyy')
+        })
+
+        test('converts YY to yy', () => {
+            expect(convertMomentToDateFns('YY')).toBe('yy')
+        })
+
+        test('converts DD to dd', () => {
+            expect(convertMomentToDateFns('DD')).toBe('dd')
+        })
+
+        // ISO week year tokens
+        test('converts ISO week year gggg to RRRR', () => {
+            expect(convertMomentToDateFns('gggg')).toBe('RRRR')
+        })
+
+        test('converts ISO week year gg to RR', () => {
+            expect(convertMomentToDateFns('gg')).toBe('RR')
+        })
+
+        test('converts ISO week year GGGG to RRRR', () => {
+            expect(convertMomentToDateFns('GGGG')).toBe('RRRR')
+        })
+
+        test('converts ISO week year GG to RR', () => {
+            expect(convertMomentToDateFns('GG')).toBe('RR')
+        })
+
+        // ISO week number tokens
+        test('converts ISO week WW to II', () => {
+            expect(convertMomentToDateFns('WW')).toBe('II')
+        })
+
+        test('converts ISO week W to I', () => {
+            expect(convertMomentToDateFns('W')).toBe('I')
+        })
+
+        // Literal escaping
+        test('escapes literal text in brackets', () => {
+            expect(convertMomentToDateFns('[Hello]')).toBe("'Hello'")
+        })
+
+        test('escapes W in brackets [W]', () => {
+            expect(convertMomentToDateFns('[W]')).toBe("'W'")
+        })
+
+        test('escapes Q in brackets [Q]', () => {
+            expect(convertMomentToDateFns('[Q]')).toBe("'Q'")
+        })
+
+        // Day of week tokens
+        test('converts full day name dddd to eeee', () => {
+            expect(convertMomentToDateFns('dddd')).toBe('eeee')
+        })
+
+        test('converts short day name ddd to eee', () => {
+            expect(convertMomentToDateFns('ddd')).toBe('eee')
+        })
+
+        test('converts min day name dd to eeeeee', () => {
+            expect(convertMomentToDateFns('dd')).toBe('eeeeee')
+        })
+
+        // Day of year tokens
+        test('converts day of year DDD to D', () => {
+            expect(convertMomentToDateFns('DDD')).toBe('D')
+        })
+
+        test('converts padded day of year DDDD to DDD', () => {
+            expect(convertMomentToDateFns('DDDD')).toBe('DDD')
+        })
+
+        // Real-world format tests (user's actual formats)
+        describe('real-world formats with path separators', () => {
+            test('converts daily format: YYYY/WW/YYYY-MM-DD', () => {
+                // Daily: includes path separator and ISO week
+                expect(convertMomentToDateFns('YYYY/WW/YYYY-MM-DD')).toBe('yyyy/II/yyyy-MM-dd')
+            })
+
+            test('converts weekly format: YYYY/gggg-[W]ww', () => {
+                // Weekly: includes path separator, ISO week year, and escaped W
+                expect(convertMomentToDateFns('YYYY/gggg-[W]ww')).toBe("yyyy/RRRR-'W'II")
+            })
+
+            test('converts monthly format: YYYY/YYYY-MM', () => {
+                // Monthly: includes path separator
+                expect(convertMomentToDateFns('YYYY/YYYY-MM')).toBe('yyyy/yyyy-MM')
+            })
+
+            test('converts quarterly format: YYYY/YYYY-[Q]Q', () => {
+                // Quarterly: includes path separator and escaped Q
+                expect(convertMomentToDateFns('YYYY/YYYY-[Q]Q')).toBe("yyyy/yyyy-'Q'Q")
+            })
+
+            test('converts yearly format: YYYY', () => {
+                expect(convertMomentToDateFns('YYYY')).toBe('yyyy')
+            })
+        })
+
+        // Standard formats without path separators
+        describe('standard formats', () => {
+            test('converts daily format YYYY-MM-DD', () => {
+                expect(convertMomentToDateFns('YYYY-MM-DD')).toBe('yyyy-MM-dd')
+            })
+
+            test('converts weekly format gggg-[W]ww', () => {
+                expect(convertMomentToDateFns('gggg-[W]ww')).toBe("RRRR-'W'II")
+            })
+
+            test('converts monthly format YYYY-MM', () => {
+                expect(convertMomentToDateFns('YYYY-MM')).toBe('yyyy-MM')
+            })
+
+            test('converts quarterly format YYYY-[Q]Q', () => {
+                expect(convertMomentToDateFns('YYYY-[Q]Q')).toBe("yyyy-'Q'Q")
+            })
+        })
+    })
+
+    describe('formatDate', () => {
+        // Basic formatting
+        test('formats daily date correctly', () => {
+            const date = new Date(2024, 0, 15) // January 15, 2024
+            expect(formatDate(date, 'YYYY-MM-DD')).toBe('2024-01-15')
+        })
+
+        test('formats weekly date correctly', () => {
+            const date = new Date(2024, 0, 15) // January 15, 2024 (week 3)
+            expect(formatDate(date, 'gggg-[W]ww')).toBe('2024-W03')
+        })
+
+        test('formats monthly date correctly', () => {
+            const date = new Date(2024, 5, 1) // June 1, 2024
+            expect(formatDate(date, 'YYYY-MM')).toBe('2024-06')
+        })
+
+        test('formats quarterly date correctly', () => {
+            const date = new Date(2024, 3, 1) // April 1, 2024 (Q2)
+            expect(formatDate(date, 'YYYY-[Q]Q')).toBe('2024-Q2')
+        })
+
+        test('formats yearly date correctly', () => {
+            const date = new Date(2024, 0, 1)
+            expect(formatDate(date, 'YYYY')).toBe('2024')
+        })
+
+        // Real-world formats with path separators
+        describe('formats with path separators', () => {
+            test('formats daily with path: YYYY/WW/YYYY-MM-DD', () => {
+                const date = new Date(2024, 0, 15) // January 15, 2024 (week 3)
+                expect(formatDate(date, 'YYYY/WW/YYYY-MM-DD')).toBe('2024/03/2024-01-15')
+            })
+
+            test('formats weekly with path: YYYY/gggg-[W]ww', () => {
+                const date = new Date(2024, 0, 15) // January 15, 2024 (week 3)
+                expect(formatDate(date, 'YYYY/gggg-[W]ww')).toBe('2024/2024-W03')
+            })
+
+            test('formats monthly with path: YYYY/YYYY-MM', () => {
+                const date = new Date(2024, 5, 1) // June 1, 2024
+                expect(formatDate(date, 'YYYY/YYYY-MM')).toBe('2024/2024-06')
+            })
+
+            test('formats quarterly with path: YYYY/YYYY-[Q]Q', () => {
+                const date = new Date(2024, 3, 1) // April 1, 2024 (Q2)
+                expect(formatDate(date, 'YYYY/YYYY-[Q]Q')).toBe('2024/2024-Q2')
+            })
+        })
+
+        // ISO week edge cases
+        describe('ISO week edge cases', () => {
+            test('formats date at year boundary (Dec 31, 2024)', () => {
+                // Dec 31, 2024 is in ISO week 1 of 2025
+                const date = new Date(2024, 11, 31)
+                expect(formatDate(date, 'gggg-[W]ww')).toBe('2025-W01')
+            })
+
+            test('formats date at year boundary (Jan 1, 2024)', () => {
+                // Jan 1, 2024 is in ISO week 1 of 2024
+                const date = new Date(2024, 0, 1)
+                expect(formatDate(date, 'gggg-[W]ww')).toBe('2024-W01')
+            })
+        })
+    })
+
+    describe('parseDateFromFormat', () => {
+        test('parses daily format', () => {
+            const result = parseDateFromFormat('2024-01-15', 'YYYY-MM-DD')
+            expect(result).not.toBeNull()
+            expect(result?.getFullYear()).toBe(2024)
+            expect(result?.getMonth()).toBe(0) // January
+            expect(result?.getDate()).toBe(15)
+        })
+
+        test('parses monthly format', () => {
+            const result = parseDateFromFormat('2024-06', 'YYYY-MM')
+            expect(result).not.toBeNull()
+            expect(result?.getFullYear()).toBe(2024)
+            expect(result?.getMonth()).toBe(5) // June
+        })
+
+        test('parses quarterly format with literal Q', () => {
+            const result = parseDateFromFormat('2024-Q2', 'YYYY-[Q]Q')
+            expect(result).not.toBeNull()
+            expect(result?.getFullYear()).toBe(2024)
+        })
+
+        test('returns null for invalid date string', () => {
+            const result = parseDateFromFormat('not-a-date', 'YYYY-MM-DD')
+            expect(result).toBeNull()
+        })
+    })
+})
