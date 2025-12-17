@@ -1,17 +1,10 @@
 import { log } from './../../utils/log'
-import { App, Notice, TFile, Plugin } from 'obsidian'
+import { App, Notice, TFile } from 'obsidian'
 import type { EventRef } from 'obsidian'
 import type { PluginSettings } from '../types/plugin-settings.intf'
 import { periodicNotesPluginSettingsSchema } from '../types/periodic-notes-plugin-settings.intf'
 import { PERIOD_TYPES } from '../types/periodic-note.types'
-
-// Extend App to include the plugins property (exists at runtime but not in types)
-interface AppWithPlugins extends App {
-    plugins: {
-        enabledPlugins: Set<string>
-        getPlugin(id: string): Plugin | null
-    }
-}
+import type { AppWithPlugins } from '../types/app-with-plugins.intf'
 
 // Templater plugin interface (from source analysis)
 interface TemplaterPlugin {

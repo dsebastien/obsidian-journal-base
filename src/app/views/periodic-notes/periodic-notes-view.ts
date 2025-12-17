@@ -1,8 +1,9 @@
-import { BasesView, BasesEntry } from 'obsidian'
+import { BasesView, BasesEntry, type TFile } from 'obsidian'
 import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import { PERIODIC_NOTES_VIEW_TYPE } from './periodic-notes.constants'
 import type { PeriodType, PeriodicNoteConfig } from '../../types/periodic-note.types'
+import type { LifeTrackerPluginFileProvider } from '../../types/life-tracker-plugin-file-provider.intf'
 import { NoteCard } from '../../components/note-card'
 import type { CardMode } from '../../components/note-card'
 import { CreateNoteButton } from '../../components/create-note-button'
@@ -29,7 +30,7 @@ interface CardState {
     hasActiveEditor: boolean
 }
 
-export class PeriodicNotesView extends BasesView {
+export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFileProvider {
     override type = PERIODIC_NOTES_VIEW_TYPE
 
     private plugin: JournalBasesPlugin
@@ -38,12 +39,50 @@ export class PeriodicNotesView extends BasesView {
     private noteCreationService: NoteCreationService
     private noteCards: Map<string, NoteCard> = new Map() // Keyed by file path
     private currentMode: PeriodType | null = null
+    private currentEntries: BasesEntry[] = [] // Filtered entries for the current mode
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
         this.plugin = plugin
         this.noteCreationService = new NoteCreationService(this.app)
         this.containerEl = scrollEl.createDiv({ cls: 'periodic-notes-view' })
+
+        // Register as active file provider for commands
+        this.plugin.setActiveFileProvider(this)
+    }
+
+    /**
+     * Compatibility with the Life Tracker plugin
+     * Get files from this view for commands.
+     * If cards are being edited, those are returned
+     * Otherwise returns all the current Base view files.
+     */
+    getFiles(): TFile[] {
+        console.log('Called')
+
+        // Check if any card is currently focused (actively being edited)
+        const activeNotes: TFile[] = []
+        for (const card of this.noteCards.values()) {
+            if (card.hasActiveEditor()) {
+                activeNotes.push(card.getFile())
+            }
+        }
+        if (activeNotes.length > 0) {
+            console.log('Return active editors')
+            return activeNotes
+        }
+
+        console.log('Return all current entries (filtered by mode)')
+        // FIXME Using reverse as a temporary workaround
+        return this.currentEntries.map((entry) => entry.file).reverse()
+    }
+
+    /**
+     * Compatibility with the Life Tracker plugin
+     * @returns
+     */
+    getFilterMode(): 'never' {
+        return 'never'
     }
 
     override onDataUpdated(): void {
@@ -80,7 +119,7 @@ export class PeriodicNotesView extends BasesView {
         }
 
         // Filter entries by current mode (preserves Base sort order)
-        const entries = this.data.data.filter(
+        this.currentEntries = this.data.data.filter(
             (entry) => detectPeriodType(entry.file, this.plugin.settings) === mode
         )
 
@@ -90,7 +129,7 @@ export class PeriodicNotesView extends BasesView {
         const isAscending = firstSort?.direction === 'ASC'
 
         // Extract dates from entries
-        const existingDates = entries
+        const existingDates = this.currentEntries
             .map((e) => extractDateFromNote(e.file, periodConfig))
             .filter((d): d is Date => d !== null)
 
@@ -102,7 +141,7 @@ export class PeriodicNotesView extends BasesView {
 
         // Create a combined list of dates (existing + missing) sorted according to Base config
         const allDates = this.mergeAndSortDates(
-            entries,
+            this.currentEntries,
             missingDates,
             periodConfig,
             mode,
@@ -516,6 +555,8 @@ export class PeriodicNotesView extends BasesView {
     }
 
     override onunload(): void {
+        // Unregister as file provider
+        this.plugin.setActiveFileProvider(null)
         this.cleanupCards()
     }
 }

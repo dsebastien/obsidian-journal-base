@@ -1,6 +1,8 @@
-import { Plugin } from 'obsidian'
+import { Plugin, type TFile } from 'obsidian'
 import { DEFAULT_SETTINGS } from './types/plugin-settings.intf'
 import type { PluginSettings } from './types/plugin-settings.intf'
+import type { FileProvider } from './types/file-provider.intf'
+import type { AppWithPlugins } from './types/app-with-plugins.intf'
 import { PERIOD_TYPES } from './types/periodic-note.types'
 import { JournalBasesSettingTab } from './settings/settings-tab'
 import { log } from '../utils/log'
@@ -15,6 +17,7 @@ import { getPeriodicReviewViewOptions } from './views/periodic-review/periodic-r
 import { PluginIntegrationService } from './services/plugin-integration.service'
 
 export class JournalBasesPlugin extends Plugin {
+    declare app: AppWithPlugins
     /**
      * The plugin settings are immutable
      */
@@ -34,6 +37,23 @@ export class JournalBasesPlugin extends Plugin {
      * Settings tab reference for refreshing
      */
     private settingTab!: JournalBasesSettingTab
+
+    /**
+     * Register a file provider as active (called when view becomes visible)
+     */
+    setActiveFileProvider(provider: FileProvider | null): void {
+        const lifeTrackerPlugin = this.app.plugins.getPlugin('life-tracker') as
+            | (Plugin & {
+                  setActiveFileProvider?: (provider: FileProvider | null) => void
+              })
+            | null
+        if (
+            lifeTrackerPlugin !== null &&
+            typeof lifeTrackerPlugin.setActiveFileProvider === 'function'
+        ) {
+            lifeTrackerPlugin.setActiveFileProvider(provider)
+        }
+    }
 
     /**
      * Executed as soon as the plugin loads
