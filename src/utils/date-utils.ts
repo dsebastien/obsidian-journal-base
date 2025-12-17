@@ -289,6 +289,13 @@ export function isSamePeriod(date1: Date, date2: Date, periodType: PeriodType): 
 }
 
 /**
+ * Check if a date falls within the current period (today, this week, this month, etc.)
+ */
+export function isCurrentPeriod(date: Date, periodType: PeriodType): boolean {
+    return isSamePeriod(date, new Date(), periodType)
+}
+
+/**
  * Get a human-readable label for a period
  */
 export function getPeriodLabel(date: Date, periodType: PeriodType): string {

@@ -1,6 +1,6 @@
 import { App, Component, MarkdownRenderer, TFile } from 'obsidian'
 import type { PeriodType } from '../types/periodic-note.types'
-import { getPeriodSuffix } from '../../utils/date-utils'
+import { getPeriodSuffix, isCurrentPeriod } from '../../utils/date-utils'
 
 export class NoteCard extends Component {
     private containerEl!: HTMLElement
@@ -23,8 +23,9 @@ export class NoteCard extends Component {
     }
 
     private render(parent: HTMLElement): HTMLElement {
+        const isCurrent = this.noteDate ? isCurrentPeriod(this.noteDate, this.periodType) : false
         const container = parent.createDiv({
-            cls: `pn-card ${this.expanded ? 'pn-card--expanded' : ''}`
+            cls: `pn-card ${this.expanded ? 'pn-card--expanded' : ''} ${isCurrent ? 'pn-card--current' : ''}`
         })
 
         // Header

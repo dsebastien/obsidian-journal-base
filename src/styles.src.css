@@ -96,6 +96,15 @@
     border-style: dashed;
 }
 
+.pn-card--current {
+    border-color: var(--interactive-accent);
+    border-width: 2px;
+}
+
+.pn-card--current.pn-card--missing {
+    @apply opacity-100;
+}
+
 .pn-card__header--missing {
     @apply justify-between;
 }
