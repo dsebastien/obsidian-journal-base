@@ -10,7 +10,7 @@ const PERIOD_LABELS: Record<PeriodType, string> = {
 
 export class PeriodTabs {
     private containerEl: HTMLElement
-    private tabs: Map<PeriodType, HTMLElement> = new Map()
+    private tabs: Map<PeriodType, HTMLButtonElement> = new Map()
 
     constructor(
         parent: HTMLElement,

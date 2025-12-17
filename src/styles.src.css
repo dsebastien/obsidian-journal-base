@@ -71,8 +71,54 @@
     color: var(--text-muted);
 }
 
-.pn-card__open-btn {
-    @apply p-1 rounded mr-2;
+.pn-card__actions {
+    @apply flex items-center gap-2 mr-2;
+}
+
+.pn-card__action-btn {
+    @apply p-1 rounded;
+}
+
+/* Mode toggle buttons */
+.pn-card__mode-toggle {
+    @apply flex items-center gap-0.5 p-0.5 rounded;
+    background-color: var(--background-modifier-hover);
+}
+
+.pn-card__mode-btn {
+    @apply p-1 rounded transition-all duration-150;
+    color: var(--text-muted);
+}
+
+.pn-card__mode-btn:hover {
+    color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+}
+
+.pn-card__mode-btn--active {
+    color: var(--text-on-accent);
+    background-color: var(--interactive-accent);
+}
+
+.pn-card__mode-btn--active:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+/* Embedded editor container */
+.pn-card__editor {
+    @apply min-h-[100px];
+}
+
+.pn-card__editor .cm-editor {
+    background-color: transparent;
+}
+
+.pn-card__editor .cm-scroller {
+    @apply overflow-auto;
+}
+
+.pn-card__editor .cm-content {
+    @apply py-0;
 }
 
 .pn-card__toggle {

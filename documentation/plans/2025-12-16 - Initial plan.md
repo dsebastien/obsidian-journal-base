@@ -2,7 +2,7 @@ Ultrathink. Make a plan to implement the following Obsidian plugin
 
 ## Overview
 
-In a second stage, another Base view type should be added: "Periodic Review". That Base view type should show different types of periodic notes side-by-side with [[Andy Matuschak]]'s vertical tabs style (foldable columns). Columns again based on the enabled periodic note types: daily, weekly, monthly, quarterly, yearly (same order for the columns).
+The "Periodic Review" Base view type should show different types of periodic notes side-by-side with [[Andy Matuschak]]'s vertical tabs style (foldable columns). Columns again based on the enabled periodic note types: daily, weekly, monthly, quarterly, yearly (same order for the columns).
 
 In that Base view type:
 

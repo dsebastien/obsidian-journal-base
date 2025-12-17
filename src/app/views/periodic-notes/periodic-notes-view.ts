@@ -4,6 +4,7 @@ import type JournalBasesPlugin from '../../../main'
 import { PERIODIC_NOTES_VIEW_TYPE } from './periodic-notes.constants'
 import type { PeriodType, PeriodicNoteConfig } from '../../types/periodic-note.types'
 import { NoteCard } from '../../components/note-card'
+import type { CardMode } from '../../components/note-card'
 import { CreateNoteButton } from '../../components/create-note-button'
 import { PeriodTabs } from '../../components/period-tabs'
 import { NoteCreationService } from '../../services/note-creation.service'
@@ -19,13 +20,24 @@ import {
     sortDatesAscending
 } from '../../../utils/date-utils'
 
+/**
+ * State for preserving card state during reconciliation
+ */
+interface CardState {
+    expanded: boolean
+    mode: CardMode
+    hasActiveEditor: boolean
+}
+
 export class PeriodicNotesView extends BasesView {
     override type = PERIODIC_NOTES_VIEW_TYPE
 
     private plugin: JournalBasesPlugin
     private containerEl!: HTMLElement
+    private cardsContainerEl: HTMLElement | null = null
     private noteCreationService: NoteCreationService
-    private noteCards: NoteCard[] = []
+    private noteCards: Map<string, NoteCard> = new Map() // Keyed by file path
+    private currentMode: PeriodType | null = null
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -35,19 +47,22 @@ export class PeriodicNotesView extends BasesView {
     }
 
     override onDataUpdated(): void {
-        // Clean up previous cards
-        this.cleanupCards()
-        this.containerEl.empty()
-
         // Get current options from view config
         const mode = (this.config.get('mode') as PeriodType) ?? 'daily'
         const futurePeriods = (this.config.get('futurePeriods') as number) ?? 3
         const expandFirst = (this.config.get('expandFirst') as boolean) ?? true
         const showMissing = (this.config.get('showMissing') as boolean) ?? true
 
+        // Check if mode changed - requires full rebuild
+        const modeChanged = this.currentMode !== mode
+        this.currentMode = mode
+
         // Check if mode is enabled in plugin settings
         const periodConfig = this.plugin.settings[mode]
         if (!periodConfig?.enabled) {
+            this.cleanupCards()
+            this.containerEl.empty()
+            this.cardsContainerEl = null
             this.renderEmptyState(
                 `${this.capitalize(mode)} notes are not configured. Enable them in plugin settings.`
             )
@@ -57,12 +72,12 @@ export class PeriodicNotesView extends BasesView {
         // Get enabled period types for tabs
         const enabledTypes = getEnabledPeriodTypes(this.plugin.settings)
         if (enabledTypes.length === 0) {
+            this.cleanupCards()
+            this.containerEl.empty()
+            this.cardsContainerEl = null
             this.renderEmptyState('No period types are enabled. Configure them in plugin settings.')
             return
         }
-
-        // Render mode tabs
-        this.renderModeTabs(enabledTypes, mode)
 
         // Filter entries by current mode (preserves Base sort order)
         const entries = this.data.data.filter(
@@ -95,23 +110,296 @@ export class PeriodicNotesView extends BasesView {
         )
 
         if (allDates.length === 0) {
+            this.cleanupCards()
+            this.containerEl.empty()
+            this.cardsContainerEl = null
             this.renderEmptyState('No notes found. Create your first note or check Base filters.')
             return
         }
 
-        // Render cards container
-        const cardsEl = this.containerEl.createDiv({ cls: 'pn-cards' })
+        // If mode changed or container doesn't exist, do a full rebuild
+        if (modeChanged || !this.cardsContainerEl) {
+            this.cleanupCards()
+            this.containerEl.empty()
 
-        // Render cards for each date
-        let isFirst = true
+            // Render mode tabs
+            this.renderModeTabs(enabledTypes, mode)
+
+            // Render cards container
+            this.cardsContainerEl = this.containerEl.createDiv({ cls: 'pn-cards' })
+
+            // Render cards for each date
+            let isFirst = true
+            for (const item of allDates) {
+                if (item.entry) {
+                    this.renderNoteCard(
+                        this.cardsContainerEl,
+                        item.entry,
+                        item.date,
+                        mode,
+                        isFirst && expandFirst
+                    )
+                } else if (item.date && showMissing) {
+                    this.renderMissingCard(this.cardsContainerEl, item.date, periodConfig, mode)
+                }
+                isFirst = false
+            }
+        } else {
+            // Reconcile existing cards with new data
+            this.reconcileCards(allDates, periodConfig, mode, showMissing)
+        }
+    }
+
+    /**
+     * Reconcile existing cards with new data, preserving state where possible
+     */
+    private reconcileCards(
+        allDates: Array<{ date: Date; entry: BasesEntry | null }>,
+        config: PeriodicNoteConfig,
+        periodType: PeriodType,
+        showMissing: boolean
+    ): void {
+        if (!this.cardsContainerEl) return
+
+        // Capture current state of all cards
+        const cardStates = new Map<string, CardState>()
+        for (const [path, card] of this.noteCards) {
+            cardStates.set(path, {
+                expanded: card.isExpanded(),
+                mode: card.getMode(),
+                hasActiveEditor: card.hasActiveEditor()
+            })
+        }
+
+        // Build set of file paths in new data
+        const newFilePaths = new Set<string>()
         for (const item of allDates) {
             if (item.entry) {
-                this.renderNoteCard(cardsEl, item.entry, item.date, mode, isFirst && expandFirst)
-            } else if (item.date && showMissing) {
-                this.renderMissingCard(cardsEl, item.date, periodConfig, mode)
+                newFilePaths.add(item.entry.file.path)
             }
-            isFirst = false
         }
+
+        // Remove cards that are no longer in the data
+        const cardsToRemove: string[] = []
+        for (const [path, card] of this.noteCards) {
+            if (!newFilePaths.has(path)) {
+                card.unload()
+                cardsToRemove.push(path)
+            }
+        }
+        for (const path of cardsToRemove) {
+            this.noteCards.delete(path)
+        }
+
+        // Refresh existing cards (if they don't have active editors)
+        for (const [path, card] of this.noteCards) {
+            const state = cardStates.get(path)
+            // Skip refresh if editor is active - the data update was likely caused by this editor
+            if (state && !state.hasActiveEditor) {
+                card.refreshContent()
+            }
+        }
+
+        // Rebuild the DOM order to match new data order
+        // We need to preserve the DOM elements but reorder them
+        this.rebuildCardOrder(allDates, config, periodType, showMissing, cardStates)
+    }
+
+    /**
+     * Rebuild the card order in DOM to match the new data order.
+     * Uses smart DOM manipulation to preserve focus on active editors.
+     */
+    private rebuildCardOrder(
+        allDates: Array<{ date: Date; entry: BasesEntry | null }>,
+        config: PeriodicNoteConfig,
+        periodType: PeriodType,
+        showMissing: boolean,
+        cardStates: Map<string, CardState>
+    ): void {
+        if (!this.cardsContainerEl) return
+
+        // Check if any card has an active editor - we need to be careful not to disrupt it
+        let activeEditorPath: string | null = null
+        for (const [path, state] of cardStates) {
+            if (state.hasActiveEditor) {
+                activeEditorPath = path
+                break
+            }
+        }
+
+        // Build the expected order of elements
+        const expectedOrder: Array<{
+            type: 'card' | 'missing'
+            path?: string
+            entry?: BasesEntry
+            date: Date
+        }> = []
+
+        for (const item of allDates) {
+            if (item.entry) {
+                expectedOrder.push({
+                    type: 'card',
+                    path: item.entry.file.path,
+                    entry: item.entry,
+                    date: item.date
+                })
+            } else if (item.date && showMissing) {
+                expectedOrder.push({
+                    type: 'missing',
+                    date: item.date
+                })
+            }
+        }
+
+        // If there's an active editor, use careful DOM manipulation
+        if (activeEditorPath) {
+            this.reconcileDOMWithActiveEditor(
+                expectedOrder,
+                config,
+                periodType,
+                cardStates,
+                activeEditorPath
+            )
+        } else {
+            // No active editor - safe to do simple rebuild
+            this.cardsContainerEl.empty()
+            for (const item of expectedOrder) {
+                if (item.type === 'card' && item.entry) {
+                    const existingCard = this.noteCards.get(item.path!)
+                    if (existingCard) {
+                        this.cardsContainerEl.appendChild(this.getCardElement(existingCard))
+                    } else {
+                        this.createCardElement(item.entry, item.date, periodType, cardStates)
+                    }
+                } else if (item.type === 'missing') {
+                    this.renderMissingCard(this.cardsContainerEl, item.date, config, periodType)
+                }
+            }
+        }
+    }
+
+    /**
+     * Reconcile DOM when there's an active editor, being careful not to disrupt focus.
+     * Uses insertBefore to reorder elements without detaching the active card.
+     */
+    private reconcileDOMWithActiveEditor(
+        expectedOrder: Array<{
+            type: 'card' | 'missing'
+            path?: string
+            entry?: BasesEntry
+            date: Date
+        }>,
+        config: PeriodicNoteConfig,
+        periodType: PeriodType,
+        cardStates: Map<string, CardState>,
+        activeEditorPath: string
+    ): void {
+        if (!this.cardsContainerEl) return
+
+        // Get current children (we'll work with these)
+        const currentChildren = Array.from(this.cardsContainerEl.children) as HTMLElement[]
+
+        // Build a map of existing elements by their card path
+        const elementByPath = new Map<string, HTMLElement>()
+        for (const [path, card] of this.noteCards) {
+            elementByPath.set(path, card.getElement())
+        }
+
+        // Remove "missing" cards (they don't have stable identity, will be recreated)
+        // But keep track of their positions to avoid unnecessary DOM changes
+        for (const child of currentChildren) {
+            if (child.classList.contains('pn-create-card')) {
+                child.remove()
+            }
+        }
+
+        // Now process the expected order
+        let insertPosition: HTMLElement | null = null
+
+        for (let i = expectedOrder.length - 1; i >= 0; i--) {
+            const item = expectedOrder[i]!
+
+            if (item.type === 'card' && item.path) {
+                const existingCard = this.noteCards.get(item.path)
+                if (existingCard) {
+                    const element = existingCard.getElement()
+                    // Only move if not already in correct position
+                    if (element.nextSibling !== insertPosition) {
+                        // Skip moving the active editor's element to preserve focus
+                        if (item.path !== activeEditorPath) {
+                            this.cardsContainerEl.insertBefore(element, insertPosition)
+                        }
+                    }
+                    insertPosition = element
+                } else if (item.entry) {
+                    // Create new card
+                    const newElement = this.createCardElement(
+                        item.entry,
+                        item.date,
+                        periodType,
+                        cardStates
+                    )
+                    if (insertPosition) {
+                        this.cardsContainerEl.insertBefore(newElement, insertPosition)
+                    }
+                    insertPosition = newElement
+                }
+            } else if (item.type === 'missing') {
+                // Create missing card placeholder
+                const tempContainer = document.createElement('div')
+                this.renderMissingCard(tempContainer, item.date, config, periodType)
+                const missingElement = tempContainer.firstElementChild as HTMLElement
+                if (missingElement) {
+                    if (insertPosition) {
+                        this.cardsContainerEl.insertBefore(missingElement, insertPosition)
+                    } else {
+                        this.cardsContainerEl.appendChild(missingElement)
+                    }
+                    insertPosition = missingElement
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the DOM element for a card
+     */
+    private getCardElement(card: NoteCard): HTMLElement {
+        return card.getElement()
+    }
+
+    /**
+     * Create a new card element and add it to the container
+     */
+    private createCardElement(
+        entry: BasesEntry,
+        date: Date,
+        periodType: PeriodType,
+        cardStates: Map<string, CardState>
+    ): HTMLElement {
+        const previousState = cardStates.get(entry.file.path)
+        const shouldExpand = previousState?.expanded ?? false
+
+        const card = new NoteCard(
+            this.cardsContainerEl!,
+            this.app,
+            entry.file,
+            periodType,
+            date,
+            shouldExpand,
+            (file) => {
+                this.app.workspace.getLeaf('tab').openFile(file)
+            }
+        )
+        this.noteCards.set(entry.file.path, card)
+
+        // Restore mode if there was a previous state
+        if (previousState && previousState.mode !== 'view') {
+            card.setMode(previousState.mode)
+        }
+
+        // Return the last child added to container (the card's element)
+        return this.cardsContainerEl!.lastElementChild as HTMLElement
     }
 
     private mergeAndSortDates(
@@ -183,7 +471,7 @@ export class PeriodicNotesView extends BasesView {
                 this.app.workspace.getLeaf('tab').openFile(file)
             }
         )
-        this.noteCards.push(card)
+        this.noteCards.set(entry.file.path, card)
     }
 
     private renderMissingCard(
@@ -221,10 +509,10 @@ export class PeriodicNotesView extends BasesView {
     }
 
     private cleanupCards(): void {
-        for (const card of this.noteCards) {
+        for (const card of this.noteCards.values()) {
             card.unload()
         }
-        this.noteCards = []
+        this.noteCards.clear()
     }
 
     override onunload(): void {
