@@ -338,7 +338,7 @@ export function getPeriodSuffix(date: Date, periodType: PeriodType): string {
         case 'daily':
             return `(${format(date, 'EEEE')})`
         case 'weekly':
-            return `(Week ${dateFnsGetISOWeek(date)})`
+            return `(Week ${String(dateFnsGetISOWeek(date)).padStart(2, '0')})`
         case 'monthly':
             return `(${format(date, 'MMMM')})`
         case 'quarterly':
