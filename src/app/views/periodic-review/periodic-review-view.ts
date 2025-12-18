@@ -74,6 +74,18 @@ export class PeriodicReviewView extends BasesView {
     }
 
     override onDataUpdated(): void {
+        // Check if we can do an incremental update (structure unchanged, just data changed)
+        const newEnabledTypes = getEnabledPeriodTypes(this.plugin.settings)
+        const newVisibleTypes = this.getVisiblePeriodTypes(newEnabledTypes)
+        const structureChanged = this.hasStructureChanged(newEnabledTypes, newVisibleTypes)
+
+        // If structure hasn't changed and we have columns, do incremental update
+        if (!structureChanged && this.columns.size > 0 && !this.isFirstLoad) {
+            this.incrementalUpdate()
+            return
+        }
+
+        // Full rebuild needed
         // Save current selection state before rebuilding
         const savedSnapshot = this.context.saveSnapshot()
         const hadSelection = !this.isFirstLoad
@@ -85,14 +97,13 @@ export class PeriodicReviewView extends BasesView {
         this.columnsEl.empty()
         this.savedNoteCardStates = savedNoteCardStates
 
-        this.enabledTypes = getEnabledPeriodTypes(this.plugin.settings)
+        this.enabledTypes = newEnabledTypes
         if (this.enabledTypes.length === 0) {
             this.renderEmptyState('No period types are enabled. Configure them in plugin settings.')
             return
         }
 
-        const visibleTypes = this.getVisiblePeriodTypes(this.enabledTypes)
-        if (visibleTypes.length === 0) {
+        if (newVisibleTypes.length === 0) {
             this.renderEmptyState(
                 'No columns are enabled for this view. Enable columns in view options.'
             )
@@ -103,7 +114,7 @@ export class PeriodicReviewView extends BasesView {
 
         // Create columns for each visible period type in order
         for (const periodType of PERIOD_TYPE_ORDER) {
-            if (!visibleTypes.includes(periodType)) continue
+            if (!newVisibleTypes.includes(periodType)) continue
 
             const config = this.plugin.settings[periodType]
             if (!config.enabled) continue
@@ -124,6 +135,59 @@ export class PeriodicReviewView extends BasesView {
             // First load - auto-select most recent
             this.autoSelectMostRecent()
             this.isFirstLoad = false
+        }
+    }
+
+    /**
+     * Check if the view structure has changed (enabled types, visible columns)
+     */
+    private hasStructureChanged(
+        newEnabledTypes: PeriodType[],
+        newVisibleTypes: PeriodType[]
+    ): boolean {
+        // Check if enabled types changed
+        if (newEnabledTypes.length !== this.enabledTypes.length) return true
+        for (const type of newEnabledTypes) {
+            if (!this.enabledTypes.includes(type)) return true
+        }
+
+        // Check if visible columns changed
+        const currentVisibleTypes = Array.from(this.columns.keys())
+        if (newVisibleTypes.length !== currentVisibleTypes.length) return true
+        for (const type of newVisibleTypes) {
+            if (!currentVisibleTypes.includes(type)) return true
+        }
+
+        return false
+    }
+
+    /**
+     * Perform an incremental update without rebuilding the entire view.
+     * This preserves NoteCard instances and just refreshes their content.
+     */
+    private incrementalUpdate(): void {
+        // Update entries for each column
+        for (const [periodType, state] of this.columns) {
+            const config = this.plugin.settings[periodType]
+            if (!config.enabled) continue
+
+            const entries = filterEntriesByPeriodType(
+                this.data.data,
+                periodType,
+                this.plugin.settings
+            )
+            state.entries = sortEntriesByDate(entries, config, false)
+
+            // Update the period selector (in case entries changed)
+            this.renderPeriodSelector(state, config)
+
+            // If there's a selected period, refresh the NoteCard
+            if (state.selectedDate && state.noteCard) {
+                // Skip refresh if editor is active - the data update was likely caused by this editor
+                if (!state.noteCard.hasActiveEditor()) {
+                    state.noteCard.refreshContent()
+                }
+            }
         }
     }
 
