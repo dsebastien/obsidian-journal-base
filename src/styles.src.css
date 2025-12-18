@@ -317,6 +317,29 @@
     @apply mb-0;
 }
 
+/* Header actions container (right side) */
+.pr-column__header-actions {
+    @apply flex items-center gap-1 ml-auto;
+}
+
+.pr-column--folded .pr-column__header-actions {
+    @apply hidden;
+}
+
+.pr-column__create-btn {
+    @apply p-1 rounded cursor-pointer;
+    color: var(--text-muted);
+}
+
+.pr-column__create-btn:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.pr-column__create-btn--loading {
+    @apply cursor-not-allowed opacity-50;
+}
+
 .pr-column__selector {
     @apply flex-shrink-0 overflow-y-auto max-h-[180px] border-b;
     border-color: var(--background-modifier-border);

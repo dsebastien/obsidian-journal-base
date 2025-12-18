@@ -7,6 +7,7 @@ const ICON_EXPAND = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="
 export class FoldableColumn extends Component {
     private containerEl!: HTMLElement
     private headerEl!: HTMLElement
+    private headerActionsEl!: HTMLElement
     private selectorEl!: HTMLElement
     private contentEl!: HTMLElement
     private foldBtn!: HTMLButtonElement
@@ -39,13 +40,20 @@ export class FoldableColumn extends Component {
             text: this.title
         })
 
+        // Header actions container (for action buttons on the right)
+        this.headerActionsEl = this.headerEl.createDiv({ cls: 'pr-column__header-actions' })
+
         this.registerDomEvent(this.foldBtn, 'click', (e) => {
             e.stopPropagation()
             this.toggleFold()
         })
 
-        // Click on header to toggle fold
-        this.registerDomEvent(this.headerEl, 'click', () => this.toggleFold())
+        // Click on header to toggle fold (but not on the actions area)
+        this.registerDomEvent(this.headerEl, 'click', (e) => {
+            if (!this.headerActionsEl.contains(e.target as Node)) {
+                this.toggleFold()
+            }
+        })
 
         // Selector area (for period selection)
         this.selectorEl = container.createDiv({ cls: 'pr-column__selector' })
@@ -110,6 +118,10 @@ export class FoldableColumn extends Component {
 
     getContentEl(): HTMLElement {
         return this.contentEl
+    }
+
+    getHeaderActionsEl(): HTMLElement {
+        return this.headerActionsEl
     }
 
     getElement(): HTMLElement {

@@ -29,6 +29,9 @@ import { SelectionContext, type SelectionContextSnapshot } from './selection-con
 import { generatePeriodsForContext } from './period-generator'
 import { filterEntriesByContext } from './entry-filter'
 
+// Plus icon for create button in column header
+const PLUS_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+
 interface ColumnState {
     periodType: PeriodType
     column: FoldableColumn
@@ -139,7 +142,76 @@ export class PeriodicReviewView extends BasesView {
 
         const state: ColumnState = { periodType, column, selectedDate: null, entries }
         this.columns.set(periodType, state)
+
+        // Add create next year button for yearly column
+        if (periodType === 'yearly') {
+            this.renderCreateNextYearButton(state, config)
+        }
+
         this.renderPeriodSelector(state, config)
+    }
+
+    private renderCreateNextYearButton(state: ColumnState, config: PeriodicNoteConfig): void {
+        const headerActionsEl = state.column.getHeaderActionsEl()
+        headerActionsEl.empty()
+
+        // Find the latest year from existing entries
+        const currentYear = new Date().getFullYear()
+        let latestYear = currentYear
+
+        for (const entry of state.entries) {
+            const date = extractDateFromNote(entry.file, config)
+            if (date) {
+                const year = date.getFullYear()
+                if (year > latestYear) {
+                    latestYear = year
+                }
+            }
+        }
+
+        // Next year to create
+        const nextYear = latestYear + 1
+        const nextYearDate = new Date(nextYear, 0, 1)
+
+        // Check if next year's note already exists
+        const nextYearExists = state.entries.some((entry) => {
+            const date = extractDateFromNote(entry.file, config)
+            return date && date.getFullYear() === nextYear
+        })
+
+        if (nextYearExists) {
+            return
+        }
+
+        // Create the "+" button
+        const createBtn = headerActionsEl.createEl('button', {
+            cls: 'pr-column__create-btn clickable-icon',
+            attr: { 'aria-label': `Create ${nextYear} note` }
+        })
+        createBtn.innerHTML = PLUS_ICON
+
+        createBtn.addEventListener('click', async (e) => {
+            e.stopPropagation()
+            createBtn.disabled = true
+            createBtn.addClass('pr-column__create-btn--loading')
+
+            const file = await this.noteCreationService.createPeriodicNote(
+                nextYearDate,
+                config,
+                'yearly'
+            )
+
+            if (file) {
+                const newEntry = { file } as BasesEntry
+                state.entries = [...state.entries, newEntry]
+                this.renderCreateNextYearButton(state, config)
+                this.renderPeriodSelector(state, config)
+                new Notice(`Created ${nextYear} note`)
+            } else {
+                createBtn.disabled = false
+                createBtn.removeClass('pr-column__create-btn--loading')
+            }
+        })
     }
 
     private renderPeriodSelector(state: ColumnState, config: PeriodicNoteConfig): void {
