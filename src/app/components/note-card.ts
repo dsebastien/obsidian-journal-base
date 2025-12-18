@@ -2,6 +2,7 @@ import { App, Component, MarkdownRenderer, TFile, debounce, Notice } from 'obsid
 import type { Debouncer } from 'obsidian'
 import type { PeriodType } from '../types'
 import { getPeriodSuffix, isCurrentPeriod } from '../../utils/date-utils'
+import { log } from '../../utils/log'
 import { EmbeddableEditor } from '../services/embeddable-editor.service'
 
 export type CardMode = 'view' | 'edit' | 'source'
@@ -26,6 +27,7 @@ export class NoteCard extends Component {
     private modeButtons: Map<CardMode, HTMLButtonElement> = new Map()
     private saveDebounced: Debouncer<[string], Promise<void>>
     private foldable: boolean
+    private lastRenderedContent: string | null = null
 
     constructor(
         parent: HTMLElement,
@@ -149,6 +151,7 @@ export class NoteCard extends Component {
                     this.file.path,
                     this
                 )
+                this.lastRenderedContent = content
                 this.contentLoaded = true
             } else {
                 // Create embedded editor
@@ -169,7 +172,7 @@ export class NoteCard extends Component {
                 this.contentLoaded = true
             }
         } catch (error) {
-            console.error('Failed to load note content:', error)
+            log('Failed to load note content:', 'error', error)
             this.contentEl.createDiv({
                 cls: 'pn-card__error',
                 text: 'Failed to load content'
@@ -213,8 +216,10 @@ export class NoteCard extends Component {
         this.mode = mode
         this.updateModeButtons()
 
-        // Force reload content with new mode
+        // Clear cached content to force fresh render
+        this.lastRenderedContent = null
         this.contentLoaded = false
+
         if (this.expanded) {
             this.loadContent()
         }
@@ -228,7 +233,7 @@ export class NoteCard extends Component {
         try {
             await this.app.vault.modify(this.file, content)
         } catch (error) {
-            console.error('Failed to save content:', error)
+            log('Failed to save content:', 'error', error)
             new Notice('Failed to save changes')
         }
     }
@@ -265,6 +270,7 @@ export class NoteCard extends Component {
     /**
      * Refresh the card content without destroying the card.
      * If the card has an active editor, the refresh is skipped to preserve user edits.
+     * Only re-renders if content has actually changed to avoid visual flashing.
      * @param force - If true, refresh even if editor is active (use with caution)
      * @returns true if content was refreshed, false if skipped
      */
@@ -279,30 +285,31 @@ export class NoteCard extends Component {
             return false
         }
 
-        // If in view mode, re-render the markdown
-        if (this.mode === 'view') {
-            this.contentEl.empty()
-            try {
-                const content = await this.app.vault.cachedRead(this.file)
+        try {
+            const fileContent = await this.app.vault.cachedRead(this.file)
+
+            // If in view mode, re-render the markdown only if content changed
+            if (this.mode === 'view') {
+                // Check if content has changed by comparing with cached content
+                if (fileContent === this.lastRenderedContent) {
+                    return false // Content unchanged, skip re-render
+                }
+
+                this.contentEl.empty()
                 await MarkdownRenderer.render(
                     this.app,
-                    content,
+                    fileContent,
                     this.contentEl,
                     this.file.path,
                     this
                 )
+                this.lastRenderedContent = fileContent
                 return true
-            } catch (error) {
-                console.error('Failed to refresh note content:', error)
-                return false
             }
-        }
 
-        // If in edit/source mode with an editor, update the content
-        // but only if the file content differs from editor content
-        if (this.editor) {
-            try {
-                const fileContent = await this.app.vault.cachedRead(this.file)
+            // If in edit/source mode with an editor, update the content
+            // but only if the file content differs from editor content
+            if (this.editor) {
                 const editorContent = this.editor.getValue()
 
                 // Only update if content differs (external change)
@@ -313,9 +320,9 @@ export class NoteCard extends Component {
                         return true
                     }
                 }
-            } catch (error) {
-                console.error('Failed to check file content:', error)
             }
+        } catch (error) {
+            log('Failed to refresh note content:', 'error', error)
         }
 
         return false

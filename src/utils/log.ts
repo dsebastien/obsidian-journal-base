@@ -27,6 +27,7 @@ export const log = (message: string, level?: LogLevel, ...data: unknown[]): void
             console.error(logMessage, data)
             break
         default:
-            console.log(logMessage, data)
+            // Obsidian requires console.debug for normal logs
+            console.debug(logMessage, data)
     }
 }
