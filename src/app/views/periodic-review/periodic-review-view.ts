@@ -14,7 +14,7 @@ import {
 import {
     getStartOfPeriod,
     getEndOfPeriod,
-    getPeriodLabel,
+    formatFilenameWithSuffix,
     getYear,
     getWeek,
     getMonth,
@@ -203,7 +203,7 @@ export class PeriodicReviewView extends BasesView {
         // Render selector items
         for (const date of allDates) {
             const entry = dateEntryMap.get(date.getTime())
-            const label = getPeriodLabel(date, state.periodType)
+            const label = formatFilenameWithSuffix(date, config.format, state.periodType)
             const isMissing = !entry
             const isFuture = date.getTime() > now
 
@@ -462,7 +462,12 @@ export class PeriodicReviewView extends BasesView {
         })
 
         if (state.selectedDate) {
-            const label = getPeriodLabel(state.selectedDate, state.periodType)
+            const config = this.plugin.settings[state.periodType]
+            const label = formatFilenameWithSuffix(
+                state.selectedDate,
+                config.format,
+                state.periodType
+            )
             items.forEach((item) => {
                 if (item.textContent === label) {
                     item.addClass('pr-period-item--selected')
@@ -662,7 +667,7 @@ export class PeriodicReviewView extends BasesView {
             if (!entry) continue
 
             const menuItem = menu.createDiv({ cls: 'menu-item' })
-            menuItem.textContent = `${PERIOD_TYPE_LABELS[periodType]}: ${getPeriodLabel(state.selectedDate, periodType)}`
+            menuItem.textContent = `${PERIOD_TYPE_LABELS[periodType]}: ${formatFilenameWithSuffix(state.selectedDate, config.format, periodType)}`
 
             menuItem.addEventListener('click', async () => {
                 await this.copySectionToFile(section, entry.file)
