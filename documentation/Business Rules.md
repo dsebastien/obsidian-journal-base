@@ -1,6 +1,6 @@
 # Business Rules
 
-This document defines the core business rules. These rules MUST be respected in all implementations unless explicitly approved otherwise.
+Core business rules. MUST be respected unless explicitly approved otherwise.
 
 ---
 
@@ -9,32 +9,145 @@ This document defines the core business rules. These rules MUST be respected in 
 When a new business rule is mentioned:
 
 1. Add it to this document immediately
-2. Use a concise format (single line or brief paragraph)
-3. Maintain precision - do not lose important details for brevity
+2. Use concise format (single line or paragraph)
+3. Maintain precision
 4. Include rationale where it adds clarity
+
+---
+
+## Sorting
+
+### Periodic Notes Sorting
+
+Notes are ALWAYS sorted newest to oldest (most recent first). The Base sort configuration is fully ignored. This applies to:
+
+- Card rendering order in Periodic Notes view
+- Period selector order in Periodic Review view
+- `getFiles()` return order for Life Tracker integration
 
 ---
 
 ## UI State Preservation
 
-### Card State Preservation on Data Updates
+### Card State on Data Updates
 
-When new data is received from Obsidian Base:
+When `onDataUpdated()` is called:
 
-- Existing cards must not be destroyed and recreated; instead, they should be refreshed if needed
-- The expanded/collapsed state of cards must be preserved
-- The editor mode (view/edit/source) of cards must be preserved
-- If a card has an active/focused editor, it must not be refreshed (the data update was likely triggered by that editor's save operation)
-- Cards should only be removed if their corresponding file is no longer in the data set
+- Existing cards must NOT be destroyed and recreated
+- Expanded/collapsed state must be preserved
+- Editor mode (view/edit/source) must be preserved
+- Cards with active/focused editors must NOT be refreshed
+- Cards removed only when file is no longer in dataset
 
-## Periodic Notes Sorting
+### Selection State on Data Updates (Periodic Review)
 
-The periodic notes base view ALWAYS sorts and renders data from most recent (or farther in the future) to oldest (farther in the past). The sort order configured in the Base is fully ignored. The `getFiles` method returns data in the same order (newest to oldest).
+When data updates:
+
+- Current selection context is saved before rebuild
+- Selection is restored after rebuild
+- Existence flags are updated based on new data
+
+---
 
 ## Disabled Period Types Filtering
 
-When a period type is disabled (e.g., yearly notes), it must be ignored for filtering purposes:
+When a period type is disabled:
 
-- **Period generation**: Child period types show expanded ranges when their parent is disabled. For example, if yearly is disabled, the quarterly column shows quarters across multiple years (not limited to the current year).
-- **Context inheritance**: When a user selects a period at an enabled level (e.g., 2025-Q4), this implicitly determines parent values (year 2025). Child columns filter based on the enabled parent's selection, not the disabled one.
-- **Cascading behavior**: Only enabled period types influence filtering. If yearly is disabled but quarterly is enabled and a quarter is selected, months are filtered by that quarter (which includes the year). If both yearly and quarterly are disabled, months span a broader range.
+**Period Generation**: Child types show expanded ranges. Example: if yearly is disabled, quarterly column shows quarters across multiple years.
+
+**Context Inheritance**: Selecting an enabled child implicitly determines parent values. Example: selecting Q4 2025 sets year to 2025 even if yearly is disabled.
+
+**Cascading Behavior**: Only enabled period types influence filtering. Disabled types are skipped in the hierarchy.
+
+---
+
+## Week Boundary Handling
+
+Weeks spanning period boundaries appear in BOTH parent periods.
+
+Example: Week 2025-W01 (Dec 30, 2024 - Jan 5, 2025) appears in:
+
+- December 2024 monthly column
+- January 2025 monthly column
+- 2024 yearly column
+- 2025 yearly column
+
+Uses overlap logic: `periodStart <= parentEnd AND periodEnd >= parentStart`
+
+---
+
+## ISO Week Year
+
+Weekly notes use ISO week numbering:
+
+- Week starts on Monday
+- First week contains January 4
+- ISO week year can differ from calendar year at boundaries
+- Example: 2025-12-31 is in ISO week 1 of 2026
+
+---
+
+## Settings Sync
+
+### Periodic Notes Plugin Sync
+
+When Periodic Notes plugin is enabled with meaningful configuration:
+
+- Settings sync automatically on load and on changes
+- Plugin settings become read-only
+- Settings persist to disk (remain if Periodic Notes is disabled)
+
+"Meaningful configuration" = at least one period type with `enabled=true` AND non-empty `folder`.
+
+If Periodic Notes has no meaningful config, sync is skipped and local settings remain editable.
+
+---
+
+## Note Creation
+
+### File Path Construction
+
+`{folder}/{formatted_date}.md`
+
+Where `formatted_date` uses the moment.js format string. Format may include nested folders (e.g., `YYYY/MM/YYYY-MM-DD`).
+
+### Template Application
+
+1. If template configured AND Templater enabled → use Templater
+2. Otherwise → create empty file
+
+### Folder Creation
+
+Missing folders are created recursively before file creation.
+
+### Duplicate Prevention
+
+If file already exists at target path, return existing file (no overwrite).
+
+---
+
+## Period Type Hierarchy
+
+Strict ordering from largest to smallest:
+
+```
+yearly → quarterly → monthly → weekly → daily
+```
+
+Parent-child relationships:
+
+- Yearly: parent of quarterly
+- Quarterly: parent of monthly
+- Monthly: parent of weekly
+- Weekly: parent of daily
+
+---
+
+## Current Period Detection
+
+A period is "current" if it contains today's date. Used for:
+
+- Visual highlighting (`.pn-card--current`)
+- Auto-selection in Periodic Review
+
+Comparison uses `getStartOfPeriod()` normalization.
