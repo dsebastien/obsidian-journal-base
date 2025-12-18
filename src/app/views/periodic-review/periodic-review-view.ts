@@ -45,6 +45,7 @@ export class PeriodicReviewView extends BasesView {
     private noteCreationService: NoteCreationService
     private columns: Map<PeriodType, ColumnState> = new Map()
     private context: SelectionContext = new SelectionContext()
+    private enabledTypes: PeriodType[] = []
     private unsubscribeFromSettings: (() => void) | null = null
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
@@ -64,13 +65,13 @@ export class PeriodicReviewView extends BasesView {
         this.cleanupColumns()
         this.columnsEl.empty()
 
-        const enabledTypes = getEnabledPeriodTypes(this.plugin.settings)
-        if (enabledTypes.length === 0) {
+        this.enabledTypes = getEnabledPeriodTypes(this.plugin.settings)
+        if (this.enabledTypes.length === 0) {
             this.renderEmptyState('No period types are enabled. Configure them in plugin settings.')
             return
         }
 
-        const visibleTypes = this.getVisiblePeriodTypes(enabledTypes)
+        const visibleTypes = this.getVisiblePeriodTypes(this.enabledTypes)
         if (visibleTypes.length === 0) {
             this.renderEmptyState(
                 'No columns are enabled for this view. Enable columns in view options.'
@@ -197,7 +198,8 @@ export class PeriodicReviewView extends BasesView {
             state.entries,
             state.periodType,
             config,
-            this.context
+            this.context,
+            this.enabledTypes
         )
         const dateEntryMap = new Map<number, BasesEntry>()
 
@@ -209,7 +211,11 @@ export class PeriodicReviewView extends BasesView {
             }
         }
 
-        const contextPeriods = generatePeriodsForContext(state.periodType, this.context)
+        const contextPeriods = generatePeriodsForContext(
+            state.periodType,
+            this.context,
+            this.enabledTypes
+        )
         contextPeriods.sort((a, b) => b.getTime() - a.getTime())
 
         return { dates: contextPeriods, dateEntryMap }
