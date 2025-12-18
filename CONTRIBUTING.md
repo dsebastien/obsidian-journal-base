@@ -14,12 +14,12 @@ Thank you for your interest in contributing to this project!
 1. Fork this repository by clicking the "Fork" button on GitHub
 2. Clone your fork locally:
     ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-    cd YOUR_REPO_NAME
+    git clone https://github.com/YOUR_USERNAME/obsidian-journal-bases.git
+    cd obsidian-journal-bases
     ```
 3. Add the upstream repository as a remote:
     ```bash
-    git remote add upstream https://github.com/ORIGINAL_OWNER/YOUR_REPO_NAME.git
+    git remote add upstream https://github.com/dsebastien/obsidian-journal-bases.git
     ```
 
 ### Install Dependencies
@@ -109,7 +109,7 @@ git push origin feature/your-feature-name
 
 1. Go to your fork on GitHub
 2. Click "Compare & pull request"
-3. Ensure the base repository and branch are correct
+3. Ensure the base repository is `dsebastien/obsidian-journal-bases` and base branch is `main`
 4. Fill in the PR template:
     - Provide a clear title
     - Describe what changes you made and why

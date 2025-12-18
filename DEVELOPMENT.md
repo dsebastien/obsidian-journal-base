@@ -13,8 +13,8 @@ This guide explains how to build, run, and test the plugin locally.
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-cd YOUR_REPO_NAME
+git clone https://github.com/dsebastien/obsidian-journal-bases.git
+cd obsidian-journal-bases
 ```
 
 ### Install Dependencies
@@ -132,7 +132,7 @@ This creates optimized production files in the `dist/` directory:
 
 ### Manual Installation
 
-If you prefer not to use the environment variable, manually copy these files to `<YourVault>/.obsidian/plugins/<your-plugin-id>/`:
+If you prefer not to use the environment variable, manually copy these files to `<YourVault>/.obsidian/plugins/journal-bases/`:
 
 - `dist/main.js`
 - `dist/manifest.json`
@@ -158,7 +158,7 @@ If you prefer not to use the environment variable, manually copy these files to 
 ### Plugin not appearing in Obsidian
 
 - Verify `OBSIDIAN_VAULT_LOCATION` points to the correct vault
-- Check that files exist in `<vault>/.obsidian/plugins/<your-plugin-id>/`
+- Check that files exist in `<vault>/.obsidian/plugins/journal-bases/`
 - Restart Obsidian
 - Ensure Community plugins are enabled
 
