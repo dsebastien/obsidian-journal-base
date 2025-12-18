@@ -300,6 +300,16 @@ export class PeriodicReviewView extends BasesView {
             this.context,
             this.enabledTypes
         )
+
+        // Include any dates from existing entries that aren't in the generated periods
+        // This ensures future notes (e.g., 2026 yearly) are shown if they exist
+        const contextPeriodSet = new Set(contextPeriods.map((d) => d.getTime()))
+        for (const entryTime of dateEntryMap.keys()) {
+            if (!contextPeriodSet.has(entryTime)) {
+                contextPeriods.push(new Date(entryTime))
+            }
+        }
+
         contextPeriods.sort((a, b) => b.getTime() - a.getTime())
 
         return { dates: contextPeriods, dateEntryMap }
