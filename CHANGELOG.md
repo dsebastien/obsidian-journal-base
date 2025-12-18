@@ -1,3 +1,9 @@
+## [0.1.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.0.2...0.1.0) (2025-12-18)
+
+### Features
+
+* **all:** improved the create button look and feel ([c8f77ef](https://github.com/dsebastien/obsidian-journal-bases/commit/c8f77ef32d940e273722c6e114608351e8016023))
+* **all:** keep the current selection after creating a new periodic note ([5058cad](https://github.com/dsebastien/obsidian-journal-bases/commit/5058cadab2e1b04c2eb9edbd2d97241d8525c86d))
 ## [0.0.2](https://github.com/dsebastien/obsidian-journal-bases/compare/0.0.1...0.0.2) (2025-12-18)
 
 ### Features
