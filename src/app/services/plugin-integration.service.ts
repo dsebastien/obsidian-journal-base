@@ -201,7 +201,7 @@ export class PluginIntegrationService {
             )
             return newFile ?? null
         } catch (error) {
-            console.error('Failed to create file from template:', error)
+            log('Failed to create file from template:', 'error', error)
             new Notice('Failed to apply template', 5000)
             return null
         }
@@ -227,7 +227,7 @@ export class PluginIntegrationService {
             await templater.templater.write_template_to_file(templateFile, targetFile)
             return true
         } catch (error) {
-            console.error('Failed to apply template:', error)
+            log('Failed to apply template:', 'error', error)
             new Notice('Failed to apply template', 5000)
             return false
         }

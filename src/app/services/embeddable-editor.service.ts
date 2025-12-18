@@ -2,6 +2,7 @@ import { App, Component, TFile, Scope } from 'obsidian'
 import { EditorView } from '@codemirror/view'
 import { EditorSelection } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
+import { log } from '../../utils/log'
 
 /**
  * Type definitions for internal Obsidian APIs used for embedded editors.
@@ -353,7 +354,7 @@ export class EmbeddableEditorService {
         try {
             resolveEditorPrototype(this.app)
         } catch (error) {
-            console.warn('Failed to warm editor prototype cache:', error)
+            log('Failed to warm editor prototype cache:', 'warn', error)
         }
     }
 }

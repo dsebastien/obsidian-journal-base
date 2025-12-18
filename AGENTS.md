@@ -246,6 +246,16 @@ Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particula
 - Bundle everything into `main.js` (no unbundled runtime deps).
 - Avoid Node/Electron APIs if you want mobile compatibility; set `isDesktopOnly` accordingly.
 - Prefer `async/await` over promise chains; handle errors gracefully.
+- **Always use the `log` utility**: Never use `console.log`, `console.error`, `console.warn`, etc. directly. Always use the `log` function from `src/utils/log.ts` which adds a consistent plugin prefix to all messages.
+
+```typescript
+// ✗ Don't use console directly
+console.error('Failed to load:', error)
+
+// ✓ Use the log utility
+import { log } from '../../utils/log'
+log('Failed to load:', 'error', error)
+```
 
 ### TypeScript Configuration
 

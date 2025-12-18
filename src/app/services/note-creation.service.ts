@@ -2,6 +2,7 @@ import { App, TFile, Notice } from 'obsidian'
 import type { PeriodicNoteConfig, PeriodType } from '../types'
 import { PluginIntegrationService } from './plugin-integration.service'
 import { formatDate, getStartOfPeriod } from '../../utils/date-utils'
+import { log } from '../../utils/log'
 
 export class NoteCreationService {
     private integrationService: PluginIntegrationService
@@ -54,7 +55,7 @@ export class NoteCreationService {
             new Notice(`Created: ${filename}`)
             return file
         } catch (error) {
-            console.error('Failed to create periodic note:', error)
+            log('Failed to create periodic note:', 'error', error)
             new Notice(`Failed to create note: ${filename}`, 5000)
             return null
         }
