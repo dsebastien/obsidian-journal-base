@@ -1,3 +1,10 @@
+## [0.4.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.3.0...0.4.0) (2025-12-18)
+
+### Features
+
+* **all:** also handle read-only editor updates gracefully when files change ([f4d7671](https://github.com/dsebastien/obsidian-journal-bases/commit/f4d76714c0a421bae77aebb3cc653ffcfde5cd56))
+* **all:** better handle file updates while the editor is opened ([6a817b5](https://github.com/dsebastien/obsidian-journal-bases/commit/6a817b564fe76f5198a4cf0155e0d894f7b7c17e))
+* **all:** use the same editor in the periodic review view as in the periodic notes view ([399e9ad](https://github.com/dsebastien/obsidian-journal-bases/commit/399e9ad88cc68ac60313edaf2b7e3d235af18b78))
 ## [0.3.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.2.0...0.3.0) (2025-12-18)
 
 ### Features
