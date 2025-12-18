@@ -1,4 +1,11 @@
-## 0.0.1 (2025-12-18)
+## [0.0.2](https://github.com/dsebastien/obsidian-journal-bases/compare/0.0.1...0.0.2) (2025-12-18)
+
+### Features
+
+* **all:** adapt to plugin setting changes ([118d84d](https://github.com/dsebastien/obsidian-journal-bases/commit/118d84d58cec1ceb14c3e8c4c0b1405a0462d45f))
+* **all:** display minimized column names ([2b25ea4](https://github.com/dsebastien/obsidian-journal-bases/commit/2b25ea40fbb612cc4a34b14384a6c979d6d75ac6))
+* **all:** improved behavior when certain periodic note types are disabled ([5cb31e7](https://github.com/dsebastien/obsidian-journal-bases/commit/5cb31e79e45534232755fec83529743e64cec494))
+## [0.0.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1cfbf3f4ace889cd9a750669df91dc418778390e...0.0.1) (2025-12-18)
 
 ### Features
 
