@@ -11,6 +11,11 @@ const VIEW_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14
 const EDIT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`
 const SOURCE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
 
+export interface NoteCardOptions {
+    /** Whether the card can be folded/collapsed. Defaults to true. */
+    foldable?: boolean
+}
+
 export class NoteCard extends Component {
     private containerEl!: HTMLElement
     private contentEl!: HTMLElement
@@ -20,6 +25,7 @@ export class NoteCard extends Component {
     private editor: EmbeddableEditor | null = null
     private modeButtons: Map<CardMode, HTMLButtonElement> = new Map()
     private saveDebounced: Debouncer<[string], Promise<void>>
+    private foldable: boolean
 
     constructor(
         parent: HTMLElement,
@@ -28,10 +34,12 @@ export class NoteCard extends Component {
         private periodType: PeriodType,
         private noteDate: Date | null,
         initiallyExpanded: boolean = false,
-        private onOpen?: (file: TFile) => void
+        private onOpen?: (file: TFile) => void,
+        options?: NoteCardOptions
     ) {
         super()
-        this.expanded = initiallyExpanded
+        this.foldable = options?.foldable ?? true
+        this.expanded = this.foldable ? initiallyExpanded : true // Always expanded if not foldable
         this.saveDebounced = debounce((content: string) => this.saveContent(content), 1000, true)
         this.containerEl = this.render(parent)
     }
@@ -71,15 +79,19 @@ export class NoteCard extends Component {
             this.onOpen?.(this.file)
         })
 
-        // Toggle icon
-        const toggleIcon = header.createSpan({ cls: 'pn-card__toggle' })
-        toggleIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
+        // Toggle icon (only if foldable)
+        if (this.foldable) {
+            const toggleIcon = header.createSpan({ cls: 'pn-card__toggle' })
+            toggleIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
+        }
 
         // Content area
         this.contentEl = container.createDiv({ cls: 'pn-card__content' })
 
-        // Click header to toggle
-        this.registerDomEvent(header, 'click', () => this.toggle())
+        // Click header to toggle (only if foldable)
+        if (this.foldable) {
+            this.registerDomEvent(header, 'click', () => this.toggle())
+        }
 
         // Double-click title to open
         this.registerDomEvent(titleEl, 'dblclick', (e) => {
@@ -96,6 +108,9 @@ export class NoteCard extends Component {
     }
 
     toggle(): void {
+        // Don't toggle if not foldable
+        if (!this.foldable) return
+
         this.expanded = !this.expanded
         this.containerEl.classList.toggle('pn-card--expanded', this.expanded)
 

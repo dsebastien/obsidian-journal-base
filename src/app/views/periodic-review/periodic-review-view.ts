@@ -1,8 +1,8 @@
-import { BasesView, BasesEntry, MarkdownRenderer, TFile, Notice } from 'obsidian'
+import { BasesView, BasesEntry, Notice } from 'obsidian'
 import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import type { PeriodType, PeriodicNoteConfig } from '../../types'
-import { FoldableColumn, CreateNoteButton } from '../../components'
+import { FoldableColumn, CreateNoteButton, NoteCard, type CardMode } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
 import {
     extractDateFromNote,
@@ -15,13 +15,6 @@ import {
     formatFilenameWithSuffix,
     isCurrentPeriod
 } from '../../../utils/date-utils'
-import {
-    parseMarkdownSections,
-    sectionExists,
-    appendToSection,
-    addSection,
-    type MarkdownSection
-} from '../../../utils/markdown-section-utils'
 import {
     PERIODIC_REVIEW_VIEW_TYPE,
     PERIOD_TYPE_ORDER,
@@ -36,11 +29,21 @@ import { filterEntriesByContext } from './entry-filter'
 // Plus icon for create button in column header
 const PLUS_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
 
+/**
+ * State for preserving NoteCard state during reconciliation
+ */
+interface NoteCardState {
+    expanded: boolean
+    mode: CardMode
+    hasActiveEditor: boolean
+}
+
 interface ColumnState {
     periodType: PeriodType
     column: FoldableColumn
     selectedDate: Date | null
     entries: BasesEntry[]
+    noteCard: NoteCard | null
 }
 
 export class PeriodicReviewView extends BasesView {
@@ -55,6 +58,7 @@ export class PeriodicReviewView extends BasesView {
     private enabledTypes: PeriodType[] = []
     private isFirstLoad: boolean = true
     private unsubscribeFromSettings: (() => void) | null = null
+    private savedNoteCardStates: Map<string, NoteCardState> = new Map()
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -74,8 +78,12 @@ export class PeriodicReviewView extends BasesView {
         const savedSnapshot = this.context.saveSnapshot()
         const hadSelection = !this.isFirstLoad
 
+        // Save NoteCard states before cleanup (keyed by file path)
+        const savedNoteCardStates = this.captureNoteCardStates()
+
         this.cleanupColumns()
         this.columnsEl.empty()
+        this.savedNoteCardStates = savedNoteCardStates
 
         this.enabledTypes = getEnabledPeriodTypes(this.plugin.settings)
         if (this.enabledTypes.length === 0) {
@@ -144,7 +152,13 @@ export class PeriodicReviewView extends BasesView {
         const column = new FoldableColumn(this.columnsEl, PERIOD_TYPE_LABELS[periodType])
         column.setWidth(width)
 
-        const state: ColumnState = { periodType, column, selectedDate: null, entries }
+        const state: ColumnState = {
+            periodType,
+            column,
+            selectedDate: null,
+            entries,
+            noteCard: null
+        }
         this.columns.set(periodType, state)
 
         // Add create next year button for yearly column
@@ -369,8 +383,15 @@ export class PeriodicReviewView extends BasesView {
         }
     }
 
-    private async renderColumnContent(state: ColumnState, entry: BasesEntry | null): Promise<void> {
+    private renderColumnContent(state: ColumnState, entry: BasesEntry | null): void {
         const contentEl = state.column.getContentEl()
+
+        // Cleanup existing NoteCard if present
+        if (state.noteCard) {
+            state.noteCard.unload()
+            state.noteCard = null
+        }
+
         contentEl.empty()
 
         if (!entry) {
@@ -380,7 +401,28 @@ export class PeriodicReviewView extends BasesView {
             return
         }
 
-        await this.renderNoteContent(contentEl, entry.file, state)
+        // Check for saved state for this file (to restore editor mode)
+        const savedState = this.savedNoteCardStates.get(entry.file.path)
+
+        // Create NoteCard with the same component used in periodic notes view
+        // In review view, cards are not foldable (always expanded)
+        state.noteCard = new NoteCard(
+            contentEl,
+            this.app,
+            entry.file,
+            state.periodType,
+            state.selectedDate,
+            true, // Always expanded
+            (file) => {
+                this.app.workspace.getLeaf('tab').openFile(file)
+            },
+            { foldable: false }
+        )
+
+        // Restore editor mode if there was a previous state
+        if (savedState && savedState.mode !== 'view') {
+            state.noteCard.setMode(savedState.mode)
+        }
     }
 
     private renderCreateNoteUI(contentEl: HTMLElement, state: ColumnState): void {
@@ -411,143 +453,6 @@ export class PeriodicReviewView extends BasesView {
             },
             'large'
         )
-    }
-
-    private async renderNoteContent(
-        contentEl: HTMLElement,
-        file: TFile,
-        state: ColumnState
-    ): Promise<void> {
-        try {
-            const content = await this.app.vault.cachedRead(file)
-            const sections = parseMarkdownSections(content)
-
-            if (sections.length === 0) {
-                const markdownEl = contentEl.createDiv({ cls: 'pr-markdown-content' })
-                await MarkdownRenderer.render(this.app, content, markdownEl, file.path, this)
-            } else {
-                for (const section of sections) {
-                    this.renderSection(contentEl, section, state, file)
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load note content:', error)
-            contentEl.createDiv({ cls: 'pn-card__error', text: 'Failed to load content' })
-        }
-    }
-
-    private renderSection(
-        containerEl: HTMLElement,
-        section: MarkdownSection,
-        state: ColumnState,
-        file: TFile
-    ): void {
-        const sectionEl = containerEl.createDiv({ cls: 'pr-section' })
-        const headerEl = sectionEl.createDiv({ cls: 'pr-section__header' })
-
-        headerEl.createEl(`h${section.level}` as keyof HTMLElementTagNameMap, {
-            cls: 'pr-section__title',
-            text: section.heading
-        })
-
-        if (this.columns.size > 1) {
-            const copyBtn = headerEl.createEl('button', { cls: 'pr-copy-btn', text: 'Copy to...' })
-            copyBtn.addEventListener('click', () => this.showCopyMenu(copyBtn, section, state))
-        }
-
-        const contentEl = sectionEl.createDiv({ cls: 'pr-section__content pr-markdown-content' })
-        MarkdownRenderer.render(this.app, section.content, contentEl, file.path, this)
-    }
-
-    private showCopyMenu(
-        button: HTMLElement,
-        section: MarkdownSection,
-        sourceState: ColumnState
-    ): void {
-        const menu = document.createElement('div')
-        menu.addClass('menu')
-        menu.style.position = 'absolute'
-        menu.style.zIndex = '1000'
-
-        const rect = button.getBoundingClientRect()
-        menu.style.top = `${rect.bottom + 5}px`
-        menu.style.left = `${rect.left}px`
-
-        for (const [periodType, state] of this.columns) {
-            if (periodType === sourceState.periodType || !state.selectedDate) continue
-
-            const config = this.plugin.settings[periodType]
-            const entry = this.findEntryForDate(state, config)
-            if (!entry) continue
-
-            const menuItem = menu.createDiv({ cls: 'menu-item' })
-            menuItem.textContent = `${PERIOD_TYPE_LABELS[periodType]}: ${formatFilenameWithSuffix(state.selectedDate, config.format, periodType)}`
-            menuItem.addEventListener('click', async () => {
-                await this.copySectionToFile(section, entry.file)
-                document.body.removeChild(menu)
-            })
-        }
-
-        if (menu.children.length === 0) {
-            const emptyItem = menu.createDiv({ cls: 'menu-item' })
-            emptyItem.textContent = 'No target notes available'
-            emptyItem.style.opacity = '0.5'
-        }
-
-        const closeMenu = (e: MouseEvent): void => {
-            if (!menu.contains(e.target as Node)) {
-                if (menu.parentNode) document.body.removeChild(menu)
-                document.removeEventListener('click', closeMenu)
-            }
-        }
-
-        document.body.appendChild(menu)
-        setTimeout(() => document.addEventListener('click', closeMenu), 0)
-    }
-
-    private findEntryForDate(
-        state: ColumnState,
-        config: PeriodicNoteConfig
-    ): BasesEntry | undefined {
-        return state.entries.find((e) => {
-            const date = extractDateFromNote(e.file, config)
-            return (
-                date &&
-                getStartOfPeriod(date, state.periodType).getTime() === state.selectedDate!.getTime()
-            )
-        })
-    }
-
-    private async copySectionToFile(section: MarkdownSection, targetFile: TFile): Promise<void> {
-        try {
-            const content = await this.app.vault.cachedRead(targetFile)
-            let newContent: string
-
-            if (sectionExists(content, section.heading, section.level)) {
-                newContent = appendToSection(content, section, section.content)
-                await this.app.vault.modify(targetFile, newContent)
-                new Notice(`Appended to "${section.heading}" in ${targetFile.basename}`)
-            } else {
-                newContent = addSection(content, section)
-                await this.app.vault.modify(targetFile, newContent)
-                new Notice(`Added "${section.heading}" to ${targetFile.basename}`)
-            }
-
-            this.refreshAllColumns()
-        } catch (error) {
-            console.error('Failed to copy section:', error)
-            new Notice('Failed to copy section')
-        }
-    }
-
-    private refreshAllColumns(): void {
-        for (const state of this.columns.values()) {
-            if (state.selectedDate) {
-                const config = this.plugin.settings[state.periodType]
-                const entry = this.findEntryForDate(state, config)
-                this.renderColumnContent(state, entry ?? null)
-            }
-        }
     }
 
     private autoSelectMostRecent(): void {
@@ -690,8 +595,30 @@ export class PeriodicReviewView extends BasesView {
         emptyEl.createDiv({ cls: 'pr-empty-state__text', text: message })
     }
 
+    /**
+     * Capture the state of all NoteCards before cleanup.
+     * Returns a map keyed by file path.
+     */
+    private captureNoteCardStates(): Map<string, NoteCardState> {
+        const states = new Map<string, NoteCardState>()
+        for (const state of this.columns.values()) {
+            if (state.noteCard) {
+                states.set(state.noteCard.getFile().path, {
+                    expanded: state.noteCard.isExpanded(),
+                    mode: state.noteCard.getMode(),
+                    hasActiveEditor: state.noteCard.hasActiveEditor()
+                })
+            }
+        }
+        return states
+    }
+
     private cleanupColumns(): void {
         for (const state of this.columns.values()) {
+            // Unload NoteCard if present
+            if (state.noteCard) {
+                state.noteCard.unload()
+            }
             state.column.unload()
         }
         this.columns.clear()
