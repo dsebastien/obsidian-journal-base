@@ -1,18 +1,29 @@
-## [2.0.2](https://github.com/your-username/obsidian-my-plugin/compare/2.0.1...2.0.2) (2025-12-12)
+## 0.0.1 (2025-12-18)
+
+### Features
+
+* **all:** added compatibility with the Life Tracker plugin's command (expose files) ([44096ca](https://github.com/dsebastien/obsidian-journal-bases/commit/44096ca6fb0825aad3ae84e46ffde3c4e9d6e4ee))
+* **all:** added Custom Base View Type Expert prompt and rule ([1cfbf3f](https://github.com/dsebastien/obsidian-journal-bases/commit/1cfbf3f4ace889cd9a750669df91dc418778390e))
+* **all:** always keep the notes sorted from most recent (or farther in the future) to oldest ([21f7daa](https://github.com/dsebastien/obsidian-journal-bases/commit/21f7daa148870b44b8666630a21a94f8e78088e0))
+* **all:** better format display names for the different periods in periodic reviews ([f504be3](https://github.com/dsebastien/obsidian-journal-bases/commit/f504be330067d01a176c71109487c6a0d3a67615))
+* **all:** better handle and display periodic notes in the Periodic Notes base view ([1e2a8be](https://github.com/dsebastien/obsidian-journal-bases/commit/1e2a8bedc02c373a1c886701a4954e23bdffbfe8))
+* **all:** better order periodic notes ([6d36f75](https://github.com/dsebastien/obsidian-journal-bases/commit/6d36f7532fbc1e8674ef599a31e5265f19071dad))
+* **all:** better recognized existing periodic notes ([bf72566](https://github.com/dsebastien/obsidian-journal-bases/commit/bf725661ace29c61fa9f17ff984aef7aefada7bf))
+* **all:** block input while creating and show a loading indicator ([5f616c4](https://github.com/dsebastien/obsidian-journal-bases/commit/5f616c463dae0d0733b3f1f3dd6da49e252ae8a4))
+* **all:** configured plugin base ([c944686](https://github.com/dsebastien/obsidian-journal-bases/commit/c944686e93faa80cabed99b7c9bdd0d9b0888c88))
+* **all:** enable editing notes directly within the base in addition to the ability to open those in a new tab ([dec18a1](https://github.com/dsebastien/obsidian-journal-bases/commit/dec18a155b0f7ed99d63c7dd8a44d72296cffcf0))
+* **all:** fixed columns collapse/expand and made the corresponding UI nicer ([08c402b](https://github.com/dsebastien/obsidian-journal-bases/commit/08c402b36976d52ff300e6f796602fc2f9259bba))
+* **all:** highlight the current period for each type (whether it exists or not) ([7aaa5cd](https://github.com/dsebastien/obsidian-journal-bases/commit/7aaa5cd659cf1787f5bea0ff31ab7ccf311b224c))
+* **all:** improved conversion handling from moment.js to date-fns ([6d7ac04](https://github.com/dsebastien/obsidian-journal-bases/commit/6d7ac041f868421e111bbf5f41ad97e5fde06e02))
+* **all:** improved rendering ([1c2758a](https://github.com/dsebastien/obsidian-journal-bases/commit/1c2758ac52790c7db4cc997e6a11b5719b767e4c))
+* **all:** improved week handling (ISO 8601 week-numbering) ([65a66ec](https://github.com/dsebastien/obsidian-journal-bases/commit/65a66ec40d237ff911fe37811dc29588f13c1d7e))
+* **all:** initial version (wip) ([926d764](https://github.com/dsebastien/obsidian-journal-bases/commit/926d764054a27dfcd9536050b90d69147858f6bf))
+* **all:** open notes in new tab ([16741c1](https://github.com/dsebastien/obsidian-journal-bases/commit/16741c19f51fee1bf01eac519acf9b55c83dd62e))
+* **all:** show one period ahead by default ([9867841](https://github.com/dsebastien/obsidian-journal-bases/commit/986784163abd6c4db982e6f39b143b07cf0b3dbf))
+* **all:** show the currently active periodic note type and disable the corresponding button ([f31aaa3](https://github.com/dsebastien/obsidian-journal-bases/commit/f31aaa30faf5faa4e3ce6883d100345d8fcb98f2))
+* **all:** simplified periodic reviews Base and settings ([d1a9689](https://github.com/dsebastien/obsidian-journal-bases/commit/d1a96895650b2993d0108d44820a0240bf08e5b8))
+* **all:** watch the periodic-notes plugin state. Sync when enabled. Make settings editable when disabled ([4201089](https://github.com/dsebastien/obsidian-journal-bases/commit/420108958ee47d3ac46d3c3bb4ecc18d77ef0060))
 
 ### Bug Fixes
 
-* **all:** fix image url ([1a0086b](https://github.com/your-username/obsidian-my-plugin/commit/1a0086b1982b8da1f6e3c3135f27dcd9bb2ff787))
-## [2.0.1](https://github.com/your-username/obsidian-my-plugin/compare/2.0.0...2.0.1) (2025-12-12)
-
-### Bug Fixes
-
-* **all:** fied the release workflow to name the tags correctly ([95aa6ff](https://github.com/your-username/obsidian-my-plugin/commit/95aa6ffd40e718d055e24e1f052ed374e171376b))
-## [2.0.0](https://github.com/your-username/obsidian-my-plugin/compare/1.6.0...2.0.0) (2025-12-11)
-## [1.6.0](https://github.com/your-username/obsidian-my-plugin/compare/1.5.0...1.6.0) (2024-10-27)
-## [1.5.0](https://github.com/your-username/obsidian-my-plugin/compare/1.4.0...1.5.0) (2024-05-14)
-## [1.4.0](https://github.com/your-username/obsidian-my-plugin/compare/1.3.0...1.4.0) (2024-05-14)
-## [1.3.0](https://github.com/your-username/obsidian-my-plugin/compare/1.2.0...1.3.0) (2024-05-14)
-## [1.2.0](https://github.com/your-username/obsidian-my-plugin/compare/1.1.0...1.2.0) (2024-05-14)
-## [1.1.0](https://github.com/your-username/obsidian-my-plugin/compare/1.0.0...1.1.0) (2024-05-13)
-## 1.0.0 (2024-04-26)
+* **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
