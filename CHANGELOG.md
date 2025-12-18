@@ -1,3 +1,8 @@
+## [0.5.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.4.0...0.5.0) (2025-12-18)
+
+### Features
+
+* **all:** improve Life Tracker plugin support in all views (pass daily notes) ([148334a](https://github.com/dsebastien/obsidian-journal-bases/commit/148334a0b747c5bcd22799e0af1af7f6fd1c5dbf))
 ## [0.4.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.3.0...0.4.0) (2025-12-18)
 
 ### Features
