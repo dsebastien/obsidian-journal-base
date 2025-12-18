@@ -112,6 +112,8 @@ export class SelectionContext {
                 break
 
             case 'quarterly':
+                // Also update year from the date (implicit parent)
+                this._selectedYear = getYear(date)
                 this._selectedQuarter = getQuarter(date)
                 this._quarterExists = exists
                 // Clear child contexts
@@ -123,6 +125,9 @@ export class SelectionContext {
                 break
 
             case 'monthly':
+                // Also update parent values from the date
+                this._selectedYear = getYear(date)
+                this._selectedQuarter = getQuarter(date)
                 this._selectedMonth = getMonth(date)
                 this._monthExists = exists
                 // Clear child contexts
@@ -132,6 +137,10 @@ export class SelectionContext {
                 break
 
             case 'weekly':
+                // Also update parent values from the date
+                this._selectedYear = getYear(date)
+                this._selectedQuarter = getQuarter(date)
+                this._selectedMonth = getMonth(date)
                 this._selectedWeek = getWeek(date)
                 this._selectedWeekYear = getISOWeekYear(date)
                 this._weekExists = exists
