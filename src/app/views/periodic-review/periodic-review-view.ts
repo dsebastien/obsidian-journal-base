@@ -320,37 +320,9 @@ export class PeriodicReviewView extends BasesView {
         const exists = entry !== null
 
         this.context.updateForPeriod(state.periodType, date, exists)
-        this.cascadeUpward(state.periodType, date, exists)
         this.updateSelectorUI(state)
         this.renderColumnContent(state, entry)
         this.cascadeDownward(state.periodType)
-    }
-
-    private cascadeUpward(periodType: PeriodType, date: Date, exists: boolean): void {
-        if (!exists) return
-
-        const parentTypes = getParentPeriodTypes(periodType).filter((pt) => this.columns.has(pt))
-
-        for (const parentType of parentTypes) {
-            const parentState = this.columns.get(parentType)
-            if (!parentState) continue
-
-            const parentDate = getStartOfPeriod(date, parentType)
-            const config = this.plugin.settings[parentType]
-
-            const parentEntry = parentState.entries.find((e) => {
-                const entryDate = extractDateFromNote(e.file, config)
-                return (
-                    entryDate &&
-                    getStartOfPeriod(entryDate, parentType).getTime() === parentDate.getTime()
-                )
-            })
-
-            parentState.selectedDate = parentDate
-            this.context.updateParentContext(parentType, parentDate, parentEntry !== null)
-            this.updateSelectorUI(parentState)
-            this.renderColumnContent(parentState, parentEntry ?? null)
-        }
     }
 
     private cascadeDownward(periodType: PeriodType): void {

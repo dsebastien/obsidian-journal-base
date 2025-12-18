@@ -9,7 +9,6 @@ import {
     addYears,
     isBefore,
     isEqual,
-    isWithinInterval,
     startOfDay,
     startOfWeek,
     startOfMonth,
@@ -378,20 +377,6 @@ export function getEndOfPeriod(date: Date, periodType: PeriodType): Date {
         case 'yearly':
             return endOfYear(date)
     }
-}
-
-/**
- * Check if a date's period START falls within a parent period
- * For weekly filtering, checks if the week START is within the parent period
- */
-export function isPeriodStartWithinParent(
-    date: Date,
-    childPeriodType: PeriodType,
-    parentStart: Date,
-    parentEnd: Date
-): boolean {
-    const periodStart = getStartOfPeriod(date, childPeriodType)
-    return isWithinInterval(periodStart, { start: parentStart, end: parentEnd })
 }
 
 /**
