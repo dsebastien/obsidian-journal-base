@@ -2,6 +2,21 @@ import type { PeriodType } from '../../types'
 import { getYear, getMonth, getQuarter, getWeek, getISOWeekYear } from '../../../utils/date-utils'
 
 /**
+ * Snapshot of the selection context state for save/restore operations.
+ */
+export interface SelectionContextSnapshot {
+    selectedYear: number
+    selectedQuarter: number | null
+    selectedMonth: number | null
+    selectedWeek: number | null
+    selectedWeekYear: number | null
+    yearExists: boolean
+    quarterExists: boolean
+    monthExists: boolean
+    weekExists: boolean
+}
+
+/**
  * Manages the selection context for the periodic review view.
  * Tracks which periods are selected and whether they have existing notes.
  */
@@ -154,5 +169,50 @@ export class SelectionContext {
             case 'daily':
                 break
         }
+    }
+
+    /**
+     * Create a snapshot of the current selection state.
+     * Use this before data updates to preserve user selections.
+     */
+    saveSnapshot(): SelectionContextSnapshot {
+        return {
+            selectedYear: this._selectedYear,
+            selectedQuarter: this._selectedQuarter,
+            selectedMonth: this._selectedMonth,
+            selectedWeek: this._selectedWeek,
+            selectedWeekYear: this._selectedWeekYear,
+            yearExists: this._yearExists,
+            quarterExists: this._quarterExists,
+            monthExists: this._monthExists,
+            weekExists: this._weekExists
+        }
+    }
+
+    /**
+     * Restore selection state from a snapshot.
+     * Used after data updates to maintain user selections.
+     */
+    restoreSnapshot(snapshot: SelectionContextSnapshot): void {
+        this._selectedYear = snapshot.selectedYear
+        this._selectedQuarter = snapshot.selectedQuarter
+        this._selectedMonth = snapshot.selectedMonth
+        this._selectedWeek = snapshot.selectedWeek
+        this._selectedWeekYear = snapshot.selectedWeekYear
+        this._yearExists = snapshot.yearExists
+        this._quarterExists = snapshot.quarterExists
+        this._monthExists = snapshot.monthExists
+        this._weekExists = snapshot.weekExists
+    }
+
+    /**
+     * Check if any selection has been made beyond the default year.
+     */
+    hasSelection(): boolean {
+        return (
+            this._selectedQuarter !== null ||
+            this._selectedMonth !== null ||
+            this._selectedWeek !== null
+        )
     }
 }

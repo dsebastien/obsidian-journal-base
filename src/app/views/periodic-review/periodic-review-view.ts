@@ -25,7 +25,7 @@ import {
     getChildPeriodTypes,
     getParentPeriodTypes
 } from './periodic-review.constants'
-import { SelectionContext } from './selection-context'
+import { SelectionContext, type SelectionContextSnapshot } from './selection-context'
 import { generatePeriodsForContext } from './period-generator'
 import { filterEntriesByContext } from './entry-filter'
 
@@ -46,6 +46,7 @@ export class PeriodicReviewView extends BasesView {
     private columns: Map<PeriodType, ColumnState> = new Map()
     private context: SelectionContext = new SelectionContext()
     private enabledTypes: PeriodType[] = []
+    private isFirstLoad: boolean = true
     private unsubscribeFromSettings: (() => void) | null = null
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
@@ -62,6 +63,10 @@ export class PeriodicReviewView extends BasesView {
     }
 
     override onDataUpdated(): void {
+        // Save current selection state before rebuilding
+        const savedSnapshot = this.context.saveSnapshot()
+        const hadSelection = !this.isFirstLoad
+
         this.cleanupColumns()
         this.columnsEl.empty()
 
@@ -97,7 +102,14 @@ export class PeriodicReviewView extends BasesView {
             this.createColumn(periodType, config, sortedEntries, columnWidth)
         }
 
-        this.autoSelectMostRecent()
+        if (hadSelection) {
+            // Restore previous selection after data update
+            this.restoreSelection(savedSnapshot)
+        } else {
+            // First load - auto-select most recent
+            this.autoSelectMostRecent()
+            this.isFirstLoad = false
+        }
     }
 
     private getVisiblePeriodTypes(enabledTypes: PeriodType[]): PeriodType[] {
@@ -515,6 +527,80 @@ export class PeriodicReviewView extends BasesView {
 
             this.cascadeDownwardWithSelection(periodType)
             break
+        }
+    }
+
+    /**
+     * Restore selection from a saved snapshot after data update.
+     * This ensures user selections are preserved when new data is received.
+     */
+    private restoreSelection(snapshot: SelectionContextSnapshot): void {
+        // Restore the context state
+        this.context.restoreSnapshot(snapshot)
+
+        // Process columns from parent to child to restore selections
+        for (const periodType of [...PERIOD_TYPE_ORDER].reverse()) {
+            const state = this.columns.get(periodType)
+            if (!state) continue
+
+            const config = this.plugin.settings[periodType]
+
+            // Reconstruct the selected date from the snapshot
+            const selectedDate = this.getDateFromSnapshot(periodType, snapshot)
+            if (!selectedDate) continue
+
+            // Find the entry for this date
+            const { dateEntryMap } = this.getAvailableDatesForColumn(state, config)
+            const entry = dateEntryMap.get(selectedDate.getTime())
+
+            state.selectedDate = selectedDate
+            // Update existence based on whether entry was found (it might be newly created)
+            this.context.setExists(periodType, entry !== undefined)
+            this.updateSelectorUI(state)
+            this.renderColumnContent(state, entry ?? null)
+        }
+
+        // Refresh child columns with proper context
+        for (const periodType of [...PERIOD_TYPE_ORDER].reverse()) {
+            const state = this.columns.get(periodType)
+            if (!state || !state.selectedDate) continue
+
+            this.cascadeDownwardWithSelection(periodType)
+            break
+        }
+    }
+
+    /**
+     * Reconstruct a Date object from a snapshot for a given period type.
+     */
+    private getDateFromSnapshot(
+        periodType: PeriodType,
+        snapshot: SelectionContextSnapshot
+    ): Date | null {
+        switch (periodType) {
+            case 'yearly':
+                return new Date(snapshot.selectedYear, 0, 1)
+            case 'quarterly':
+                if (snapshot.selectedQuarter === null) return null
+                return new Date(snapshot.selectedYear, (snapshot.selectedQuarter - 1) * 3, 1)
+            case 'monthly':
+                if (snapshot.selectedMonth === null) return null
+                return new Date(snapshot.selectedYear, snapshot.selectedMonth, 1)
+            case 'weekly': {
+                if (snapshot.selectedWeek === null || snapshot.selectedWeekYear === null)
+                    return null
+                // Reconstruct week date from ISO week number
+                const jan4 = new Date(snapshot.selectedWeekYear, 0, 4)
+                const jan4Day = jan4.getDay() || 7
+                const mondayOfWeek1 = new Date(jan4)
+                mondayOfWeek1.setDate(jan4.getDate() - jan4Day + 1)
+                const weekDate = new Date(mondayOfWeek1)
+                weekDate.setDate(mondayOfWeek1.getDate() + (snapshot.selectedWeek - 1) * 7)
+                return weekDate
+            }
+            case 'daily':
+                // Daily doesn't have a separate selection in context
+                return null
         }
     }
 
