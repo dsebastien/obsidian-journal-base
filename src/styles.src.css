@@ -147,6 +147,17 @@
     border-width: 2px;
 }
 
+/* Current period dot indicator in card title */
+.pn-card--current .pn-card__title {
+    @apply flex items-center gap-1.5;
+}
+
+.pn-card--current .pn-card__title::before {
+    content: '●';
+    @apply text-[0.5rem] leading-none;
+    color: var(--interactive-accent);
+}
+
 .pn-card--current.pn-card--missing {
     @apply opacity-100;
 }
