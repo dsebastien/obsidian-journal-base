@@ -1,7 +1,7 @@
 {
     "id": "journal-bases",
     "name": "Journal Bases",
-    "description": "Custom Obsidian Base views for periodic notes (daily/weekly/monthly/quarterly/yearly)",
+    "description": "Custom Base views for journaling and periodic reviews",
     "version": "0.2.0",
     "minAppVersion": "1.4.0",
     "isDesktopOnly": false,

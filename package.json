@@ -1,7 +1,7 @@
 {
     "name": "obsidian-journal-bases",
     "version": "0.2.0",
-    "description": "Custom Obsidian Base views for periodic notes (daily/weekly/monthly/quarterly/yearly)",
+    "description": "Custom Base views for journaling and periodic reviews",
     "author": {
         "name": "Sébastien Dubois",
         "email": "sebastien.dubois@gmail.com",
