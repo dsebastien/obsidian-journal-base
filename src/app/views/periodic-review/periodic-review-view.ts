@@ -45,6 +45,7 @@ export class PeriodicReviewView extends BasesView {
     private noteCreationService: NoteCreationService
     private columns: Map<PeriodType, ColumnState> = new Map()
     private context: SelectionContext = new SelectionContext()
+    private unsubscribeFromSettings: (() => void) | null = null
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -52,6 +53,11 @@ export class PeriodicReviewView extends BasesView {
         this.noteCreationService = new NoteCreationService(this.app)
         this.containerEl = scrollEl.createDiv({ cls: 'periodic-review-view' })
         this.columnsEl = this.containerEl.createDiv({ cls: 'pr-columns' })
+
+        // Subscribe to plugin settings changes to re-render when configuration changes
+        this.unsubscribeFromSettings = this.plugin.onSettingsChange(() => {
+            this.onDataUpdated()
+        })
     }
 
     override onDataUpdated(): void {
@@ -543,6 +549,7 @@ export class PeriodicReviewView extends BasesView {
     }
 
     override onunload(): void {
+        this.unsubscribeFromSettings?.()
         this.cleanupColumns()
     }
 }

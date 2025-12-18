@@ -15,7 +15,7 @@ import { PeriodicNotesView } from './views/periodic-notes/periodic-notes-view'
 import { getPeriodicNotesViewOptions } from './views/periodic-notes/periodic-notes-options'
 import { PERIODIC_REVIEW_VIEW_TYPE } from './views/periodic-review/periodic-review.constants'
 import { PeriodicReviewView } from './views/periodic-review/periodic-review-view'
-import { getPeriodicReviewViewOptions } from './views/periodic-review/periodic-review-options'
+import { createPeriodicReviewViewOptions } from './views/periodic-review/periodic-review-options'
 import { PluginIntegrationService } from './services/plugin-integration.service'
 
 export class JournalBasesPlugin extends Plugin {
@@ -39,6 +39,11 @@ export class JournalBasesPlugin extends Plugin {
      * Settings tab reference for refreshing
      */
     private settingTab!: JournalBasesSettingTab
+
+    /**
+     * Callbacks to notify when settings change
+     */
+    private settingsChangeCallbacks: Set<() => void> = new Set()
 
     /**
      * Register a file provider as active (called when view becomes visible)
@@ -195,12 +200,13 @@ export class JournalBasesPlugin extends Plugin {
         }
 
         // Register Periodic Review View
+        // Options are dynamically filtered based on enabled period types in plugin settings
         const periodicReviewRegistered = this.registerBasesView(PERIODIC_REVIEW_VIEW_TYPE, {
             name: 'Periodic Review',
             icon: 'columns',
             factory: (controller, containerEl) =>
                 new PeriodicReviewView(controller, containerEl, this),
-            options: getPeriodicReviewViewOptions
+            options: createPeriodicReviewViewOptions(() => this.settings)
         })
 
         if (periodicReviewRegistered) {
@@ -244,9 +250,30 @@ export class JournalBasesPlugin extends Plugin {
     /**
      * Save the plugin settings
      */
-    async saveSettings() {
+    async saveSettings(): Promise<void> {
         log('Saving settings', 'debug', this.settings)
         await this.saveData(this.settings)
         log('Settings saved', 'debug', this.settings)
+        this.notifySettingsChanged()
+    }
+
+    /**
+     * Subscribe to settings changes.
+     * @returns Unsubscribe function
+     */
+    onSettingsChange(callback: () => void): () => void {
+        this.settingsChangeCallbacks.add(callback)
+        return () => {
+            this.settingsChangeCallbacks.delete(callback)
+        }
+    }
+
+    /**
+     * Notify all subscribers that settings have changed
+     */
+    private notifySettingsChanged(): void {
+        for (const callback of this.settingsChangeCallbacks) {
+            callback()
+        }
     }
 }
