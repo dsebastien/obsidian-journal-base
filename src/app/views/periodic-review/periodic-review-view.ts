@@ -326,11 +326,6 @@ export class PeriodicReviewView extends BasesView {
         const config = this.plugin.settings[state.periodType]
         const createContainer = contentEl.createDiv({ cls: 'pr-create-note' })
 
-        createContainer.createDiv({
-            cls: 'pr-create-note__message',
-            text: `This ${state.periodType} note doesn't exist yet.`
-        })
-
         new CreateNoteButton(
             createContainer,
             state.selectedDate!,
@@ -352,7 +347,8 @@ export class PeriodicReviewView extends BasesView {
                     return true
                 }
                 return false
-            }
+            },
+            'large'
         )
     }
 

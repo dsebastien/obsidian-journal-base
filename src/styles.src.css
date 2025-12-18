@@ -198,6 +198,38 @@
     }
 }
 
+/* Large Create Button (for periodic review view) */
+.pn-create-large {
+    @apply flex items-center justify-center w-full h-full;
+}
+
+.pn-create-large__btn {
+    @apply flex items-center gap-3 px-6 py-3 rounded-lg cursor-pointer;
+    @apply transition-all duration-150 text-base font-medium;
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.pn-create-large__btn:hover {
+    @apply opacity-90;
+}
+
+.pn-create-large__btn--loading {
+    @apply cursor-not-allowed opacity-70;
+}
+
+.pn-create-large__btn--loading:hover {
+    @apply opacity-70;
+}
+
+.pn-create-large__icon {
+    @apply flex items-center justify-center;
+}
+
+.pn-create-large__text {
+    @apply font-medium;
+}
+
 /* Missing Card (placeholder for missing notes) */
 .pn-missing-card {
     @apply rounded border px-4 py-3 flex items-center justify-between;
@@ -387,12 +419,7 @@
 
 /* Create note placeholder in review view */
 .pr-create-note {
-    @apply flex flex-col items-center justify-center h-full gap-3 p-4;
-}
-
-.pr-create-note__message {
-    @apply text-sm text-center;
-    color: var(--text-muted);
+    @apply flex items-center justify-center h-full p-4;
 }
 
 /* Content wrapper for markdown rendering */
