@@ -260,13 +260,17 @@
 /* Folded header - vertical layout */
 .pr-column--folded .pr-column__header {
     @apply absolute inset-0 flex-col items-center pt-3 px-0;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
 }
 
 .pr-column__title {
     @apply font-medium text-sm;
     color: var(--text-normal);
+}
+
+/* Folded title - rotated 90° left (counter-clockwise) */
+.pr-column--folded .pr-column__title {
+    writing-mode: vertical-rl;
+    @apply mt-2 whitespace-nowrap;
 }
 
 .pr-column__fold-btn {
@@ -278,7 +282,7 @@
 }
 
 .pr-column--folded .pr-column__fold-btn {
-    @apply mb-2;
+    @apply mb-0;
 }
 
 .pr-column__selector {
