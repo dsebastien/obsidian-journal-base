@@ -1,6 +1,6 @@
 import type { TFile, BasesEntry } from 'obsidian'
 import type { PluginSettings, PeriodType, PeriodicNoteConfig } from '../app/types'
-import { parseDateFromFormat, formatDate } from './date-utils'
+import { parseDateFromFormat } from './date-utils'
 
 /**
  * Extract the filename portion of a format string.
@@ -48,60 +48,6 @@ export function extractDateFromNote(file: TFile, config: PeriodicNoteConfig): Da
 }
 
 /**
- * Group Base entries by period type
- */
-export function groupEntriesByPeriod(
-    entries: BasesEntry[],
-    settings: PluginSettings
-): Map<PeriodType, BasesEntry[]> {
-    const groups = new Map<PeriodType, BasesEntry[]>()
-
-    for (const entry of entries) {
-        const periodType = detectPeriodType(entry.file, settings)
-        if (periodType) {
-            const existing = groups.get(periodType)
-            if (existing) {
-                existing.push(entry)
-            } else {
-                groups.set(periodType, [entry])
-            }
-        }
-    }
-
-    return groups
-}
-
-/**
- * Get the expected file path for a periodic note
- */
-export function getExpectedFilePath(date: Date, config: PeriodicNoteConfig): string {
-    const filename = formatDate(date, config.format)
-    return `${config.folder}/${filename}.md`
-}
-
-/**
- * Get the expected filename (without extension) for a periodic note
- */
-export function getExpectedFilename(date: Date, config: PeriodicNoteConfig): string {
-    return formatDate(date, config.format)
-}
-
-/**
- * Check if a file matches the expected path pattern for a period type
- */
-export function isValidPeriodicNote(file: TFile, config: PeriodicNoteConfig): boolean {
-    // Check if in correct folder
-    if (!file.path.startsWith(config.folder)) {
-        return false
-    }
-
-    // Check if filename matches format (can be parsed back)
-    const filenameFormat = getFilenameFormat(config.format)
-    const date = parseDateFromFormat(file.basename, filenameFormat)
-    return date !== null
-}
-
-/**
  * Filter entries to only include those matching a specific period type
  */
 export function filterEntriesByPeriodType(
@@ -139,50 +85,4 @@ export function sortEntriesByDate(
 export function getEnabledPeriodTypes(settings: PluginSettings): PeriodType[] {
     const periodTypes: PeriodType[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']
     return periodTypes.filter((pt) => settings[pt].enabled)
-}
-
-/**
- * Check if any period type is enabled
- */
-export function hasAnyEnabledPeriodType(settings: PluginSettings): boolean {
-    return getEnabledPeriodTypes(settings).length > 0
-}
-
-/**
- * Extract dates from entries and filter out invalid ones
- */
-export function extractValidDates(
-    entries: BasesEntry[],
-    config: PeriodicNoteConfig
-): { entry: BasesEntry; date: Date }[] {
-    const results: { entry: BasesEntry; date: Date }[] = []
-
-    for (const entry of entries) {
-        const date = extractDateFromNote(entry.file, config)
-        if (date) {
-            results.push({ entry, date })
-        }
-    }
-
-    return results
-}
-
-/**
- * Find an entry matching a specific date
- */
-export function findEntryByDate(
-    entries: BasesEntry[],
-    targetDate: Date,
-    config: PeriodicNoteConfig
-): BasesEntry | null {
-    const targetTime = targetDate.getTime()
-
-    for (const entry of entries) {
-        const date = extractDateFromNote(entry.file, config)
-        if (date && date.getTime() === targetTime) {
-            return entry
-        }
-    }
-
-    return null
 }

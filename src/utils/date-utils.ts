@@ -175,24 +175,6 @@ export function getNextPeriod(date: Date, periodType: PeriodType): Date {
 }
 
 /**
- * Get the previous period before the given date
- */
-export function getPreviousPeriod(date: Date, periodType: PeriodType): Date {
-    switch (periodType) {
-        case 'daily':
-            return addDays(date, -1)
-        case 'weekly':
-            return addWeeks(date, -1)
-        case 'monthly':
-            return addMonths(date, -1)
-        case 'quarterly':
-            return addQuarters(date, -1)
-        case 'yearly':
-            return addYears(date, -1)
-    }
-}
-
-/**
  * Get the start of a period for a given date
  */
 export function getStartOfPeriod(date: Date, periodType: PeriodType): Date {
@@ -272,21 +254,6 @@ export function findMissingDates(
 }
 
 /**
- * Get future periods from today
- */
-export function getFuturePeriods(periodType: PeriodType, count: number): Date[] {
-    const dates: Date[] = []
-    let current = getStartOfPeriod(new Date(), periodType)
-
-    for (let i = 0; i < count; i++) {
-        current = getNextPeriod(current, periodType)
-        dates.push(current)
-    }
-
-    return dates
-}
-
-/**
  * Compare two dates for the same period
  */
 export function isSamePeriod(date1: Date, date2: Date, periodType: PeriodType): boolean {
@@ -303,35 +270,10 @@ export function isCurrentPeriod(date: Date, periodType: PeriodType): boolean {
 }
 
 /**
- * Get a human-readable label for a period
- */
-export function getPeriodLabel(date: Date, periodType: PeriodType): string {
-    switch (periodType) {
-        case 'daily':
-            return format(date, 'EEEE, MMMM d, yyyy')
-        case 'weekly':
-            return `Week ${dateFnsGetISOWeek(date)}, ${dateFnsGetISOWeekYear(date)}`
-        case 'monthly':
-            return format(date, 'MMMM yyyy')
-        case 'quarterly':
-            return `Q${dateFnsGetQuarter(date)} ${dateFnsGetYear(date)}`
-        case 'yearly':
-            return format(date, 'yyyy')
-    }
-}
-
-/**
  * Sort dates in descending order (newest first)
  */
 export function sortDatesDescending(dates: Date[]): Date[] {
     return [...dates].sort((a, b) => b.getTime() - a.getTime())
-}
-
-/**
- * Sort dates in ascending order (oldest first)
- */
-export function sortDatesAscending(dates: Date[]): Date[] {
-    return [...dates].sort((a, b) => a.getTime() - b.getTime())
 }
 
 /**
