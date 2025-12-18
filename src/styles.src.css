@@ -317,6 +317,12 @@
     @apply opacity-60 italic;
 }
 
+.pr-period-item--future {
+    @apply italic opacity-70;
+    border-left: 2px solid var(--text-accent);
+    padding-left: 0.5rem;
+}
+
 /* Section styling */
 .pr-section {
     @apply mb-4 pb-4 border-b;

@@ -13,10 +13,14 @@ import {
 } from '../../../utils/periodic-note-utils'
 import {
     getStartOfPeriod,
+    getEndOfPeriod,
     getPeriodLabel,
-    sortDatesDescending,
     getYear,
-    getWeek
+    getWeek,
+    getMonth,
+    getQuarter,
+    findMissingDates,
+    isPeriodStartWithinParent
 } from '../../../utils/date-utils'
 
 // Period type order for columns
@@ -47,9 +51,11 @@ export class PeriodicReviewView extends BasesView {
     private noteCreationService: NoteCreationService
     private columns: Map<PeriodType, ColumnState> = new Map()
 
-    // Context for filtering - selected year controls what's shown in other columns
+    // Context for filtering - selected periods control what's shown in other columns
     private selectedYear: number = new Date().getFullYear()
-    private selectedWeek: number = getWeek(new Date())
+    private selectedQuarter: number | null = null // 1-4 or null for "all"
+    private selectedMonth: number | null = null // 0-11 or null for "all"
+    private selectedWeek: number | null = null // Week number or null for "all"
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -154,39 +160,58 @@ export class PeriodicReviewView extends BasesView {
         const selectorEl = state.column.getSelectorEl()
         selectorEl.empty()
 
+        // Get view options
+        const showMissing = (this.config.get('showMissing') as boolean) ?? true
+        const futurePeriods = (this.config.get('futurePeriods') as number) ?? 1
+
         // Get filtered entries based on current context
         const filteredEntries = this.filterEntriesByContext(state.entries, state.periodType, config)
 
         // Extract dates from filtered entries
         const dateEntryMap = new Map<number, BasesEntry>()
-        const dates: Date[] = []
+        const existingDates: Date[] = []
 
         for (const entry of filteredEntries) {
             const date = extractDateFromNote(entry.file, config)
             if (date) {
                 const normalized = getStartOfPeriod(date, state.periodType)
                 dateEntryMap.set(normalized.getTime(), entry)
-                dates.push(normalized)
+                existingDates.push(normalized)
             }
         }
 
-        // Sort dates descending
-        const sortedDates = sortDatesDescending(dates)
+        // Find missing dates and future periods if enabled
+        let missingDates: Date[] = []
+        if (showMissing) {
+            missingDates = findMissingDates(existingDates, state.periodType, futurePeriods)
+            // Filter missing dates by context as well
+            missingDates = this.filterMissingDatesByContext(missingDates, state.periodType)
+        }
 
-        if (sortedDates.length === 0) {
+        // Combine existing and missing dates, sort descending
+        const allDates = this.combineAndSortDates(existingDates, missingDates, state.periodType)
+
+        if (allDates.length === 0) {
             const emptyEl = selectorEl.createDiv({ cls: 'pr-period-item pr-period-item--missing' })
-            emptyEl.textContent = 'No notes available'
+            emptyEl.textContent = 'No periods available'
             return
         }
 
+        // Current time for future date detection
+        const now = new Date().getTime()
+
         // Render selector items
-        for (const date of sortedDates) {
+        for (const date of allDates) {
             const entry = dateEntryMap.get(date.getTime())
             const label = getPeriodLabel(date, state.periodType)
+            const isMissing = !entry
+            const isFuture = date.getTime() > now
 
-            const itemEl = selectorEl.createDiv({
-                cls: `pr-period-item ${entry ? '' : 'pr-period-item--missing'}`
-            })
+            const classes = ['pr-period-item']
+            if (isMissing) classes.push('pr-period-item--missing')
+            if (isFuture) classes.push('pr-period-item--future')
+
+            const itemEl = selectorEl.createDiv({ cls: classes.join(' ') })
             itemEl.textContent = label
 
             // Check if this is the selected date
@@ -201,12 +226,97 @@ export class PeriodicReviewView extends BasesView {
         }
     }
 
+    /**
+     * Filter missing dates by the current context (year, quarter, month, week).
+     */
+    private filterMissingDatesByContext(dates: Date[], periodType: PeriodType): Date[] {
+        return dates.filter((date) => {
+            const year = getYear(date)
+
+            switch (periodType) {
+                case 'yearly':
+                    return true
+
+                case 'quarterly':
+                    return year === this.selectedYear
+
+                case 'monthly':
+                    if (year !== this.selectedYear) return false
+                    if (this.selectedQuarter !== null) {
+                        return getQuarter(date) === this.selectedQuarter
+                    }
+                    return true
+
+                case 'weekly': {
+                    if (year !== this.selectedYear) return false
+
+                    if (this.selectedMonth !== null) {
+                        const monthStart = new Date(this.selectedYear, this.selectedMonth, 1)
+                        const monthEnd = getEndOfPeriod(monthStart, 'monthly')
+                        return isPeriodStartWithinParent(date, 'weekly', monthStart, monthEnd)
+                    }
+
+                    if (this.selectedQuarter !== null) {
+                        const quarterMonth = (this.selectedQuarter - 1) * 3
+                        const quarterStart = new Date(this.selectedYear, quarterMonth, 1)
+                        const quarterEnd = getEndOfPeriod(quarterStart, 'quarterly')
+                        return isPeriodStartWithinParent(date, 'weekly', quarterStart, quarterEnd)
+                    }
+
+                    return true
+                }
+
+                case 'daily':
+                    if (year !== this.selectedYear) return false
+
+                    if (this.selectedWeek !== null) {
+                        return getWeek(date) === this.selectedWeek
+                    }
+
+                    if (this.selectedMonth !== null) {
+                        return getMonth(date) === this.selectedMonth
+                    }
+
+                    if (this.selectedQuarter !== null) {
+                        return getQuarter(date) === this.selectedQuarter
+                    }
+
+                    return true
+            }
+        })
+    }
+
+    /**
+     * Combine existing and missing dates, removing duplicates and sorting descending.
+     */
+    private combineAndSortDates(
+        existingDates: Date[],
+        missingDates: Date[],
+        periodType: PeriodType
+    ): Date[] {
+        const combined = new Map<number, Date>()
+
+        for (const date of existingDates) {
+            combined.set(date.getTime(), date)
+        }
+
+        for (const date of missingDates) {
+            const normalized = getStartOfPeriod(date, periodType)
+            if (!combined.has(normalized.getTime())) {
+                combined.set(normalized.getTime(), normalized)
+            }
+        }
+
+        // Sort descending (newest first)
+        return Array.from(combined.values()).sort((a, b) => b.getTime() - a.getTime())
+    }
+
     private filterEntriesByContext(
         entries: BasesEntry[],
         periodType: PeriodType,
         config: PeriodicNoteConfig
     ): BasesEntry[] {
-        // Filter entries based on the current context (selected year, month, etc.)
+        // Filter entries based on the current context (selected year, quarter, month, week)
         return entries.filter((entry) => {
             const date = extractDateFromNote(entry.file, config)
             if (!date) return false
@@ -215,20 +325,66 @@ export class PeriodicReviewView extends BasesView {
 
             switch (periodType) {
                 case 'yearly':
-                    // Show all years
+                    // Years are not filtered by context
                     return true
+
                 case 'quarterly':
-                    // Show quarters for selected year
+                    // Quarters filtered by year only
                     return year === this.selectedYear
+
                 case 'monthly':
-                    // Show months for selected year
-                    return year === this.selectedYear
-                case 'weekly':
-                    // Show weeks for selected year
-                    return year === this.selectedYear
-                case 'daily':
-                    // Show days for selected week and year
-                    return year === this.selectedYear && getWeek(date) === this.selectedWeek
+                    // Months filtered by year and optionally quarter
+                    if (year !== this.selectedYear) return false
+                    if (this.selectedQuarter !== null) {
+                        const quarter = getQuarter(date)
+                        return quarter === this.selectedQuarter
+                    }
+                    return true
+
+                case 'weekly': {
+                    // Weeks filtered by year and optionally quarter/month
+                    // Key: filter by week START within parent period
+                    if (year !== this.selectedYear) return false
+
+                    if (this.selectedMonth !== null) {
+                        // Week START must be within selected month
+                        const monthStart = new Date(this.selectedYear, this.selectedMonth, 1)
+                        const monthEnd = getEndOfPeriod(monthStart, 'monthly')
+                        return isPeriodStartWithinParent(date, 'weekly', monthStart, monthEnd)
+                    }
+
+                    if (this.selectedQuarter !== null) {
+                        // Week START must be within selected quarter
+                        const quarterMonth = (this.selectedQuarter - 1) * 3
+                        const quarterStart = new Date(this.selectedYear, quarterMonth, 1)
+                        const quarterEnd = getEndOfPeriod(quarterStart, 'quarterly')
+                        return isPeriodStartWithinParent(date, 'weekly', quarterStart, quarterEnd)
+                    }
+
+                    return true
+                }
+
+                case 'daily': {
+                    // Days filtered by year, optionally quarter/month, and optionally week
+                    if (year !== this.selectedYear) return false
+
+                    // If week is selected, filter by week
+                    if (this.selectedWeek !== null) {
+                        return getWeek(date) === this.selectedWeek
+                    }
+
+                    // If month is selected, filter by month
+                    if (this.selectedMonth !== null) {
+                        return getMonth(date) === this.selectedMonth
+                    }
+
+                    // If quarter is selected, filter by quarter
+                    if (this.selectedQuarter !== null) {
+                        return getQuarter(date) === this.selectedQuarter
+                    }
+
+                    return true
+                }
             }
         })
     }
@@ -236,23 +392,65 @@ export class PeriodicReviewView extends BasesView {
     private selectPeriod(state: ColumnState, date: Date, entry: BasesEntry | null): void {
         state.selectedDate = date
 
-        // Update context based on period type
-        const year = getYear(date)
-        if (state.periodType === 'yearly') {
-            this.selectedYear = year
-            // Refresh other columns to filter by new year
-            this.refreshAllSelectors()
-        } else if (state.periodType === 'weekly') {
-            this.selectedWeek = getWeek(date)
-            // Refresh daily column to filter by new week
-            this.refreshColumnSelector('daily')
+        // Determine which columns need cascading based on period type hierarchy
+        const affectedColumns: PeriodType[] = []
+
+        switch (state.periodType) {
+            case 'yearly':
+                this.selectedYear = getYear(date)
+                // Clear all shorter period contexts
+                this.selectedQuarter = null
+                this.selectedMonth = null
+                this.selectedWeek = null
+                affectedColumns.push('quarterly', 'monthly', 'weekly', 'daily')
+                break
+
+            case 'quarterly':
+                this.selectedQuarter = getQuarter(date)
+                // Clear shorter period contexts
+                this.selectedMonth = null
+                this.selectedWeek = null
+                affectedColumns.push('monthly', 'weekly', 'daily')
+                break
+
+            case 'monthly':
+                this.selectedMonth = getMonth(date)
+                // Clear shorter period contexts
+                this.selectedWeek = null
+                affectedColumns.push('weekly', 'daily')
+                break
+
+            case 'weekly':
+                this.selectedWeek = getWeek(date)
+                affectedColumns.push('daily')
+                break
+
+            case 'daily':
+                // No cascading needed for daily
+                break
         }
 
-        // Update selector UI
+        // Update selector UI for current column
         this.updateSelectorUI(state)
 
-        // Render content
+        // Render content for current column
         this.renderColumnContent(state, entry)
+
+        // Cascade: refresh affected columns and auto-select most recent
+        for (const periodType of affectedColumns) {
+            const affectedState = this.columns.get(periodType)
+            if (affectedState) {
+                // Clear the selection for this column
+                affectedState.selectedDate = null
+
+                // Refresh the selector with new filtered data
+                const config = this.plugin.settings[periodType]
+                this.renderPeriodSelector(affectedState, config)
+
+                // Auto-select most recent in this column
+                this.autoSelectSingleColumn(affectedState, config)
+            }
+        }
     }
 
     private updateSelectorUI(state: ColumnState): void {
@@ -270,23 +468,6 @@ export class PeriodicReviewView extends BasesView {
                     item.addClass('pr-period-item--selected')
                 }
             })
-        }
-    }
-
-    private refreshAllSelectors(): void {
-        for (const [periodType, state] of this.columns) {
-            if (periodType !== 'yearly') {
-                const config = this.plugin.settings[periodType]
-                this.renderPeriodSelector(state, config)
-            }
-        }
-    }
-
-    private refreshColumnSelector(periodType: PeriodType): void {
-        const state = this.columns.get(periodType)
-        if (state) {
-            const config = this.plugin.settings[periodType]
-            this.renderPeriodSelector(state, config)
         }
     }
 
@@ -609,22 +790,93 @@ export class PeriodicReviewView extends BasesView {
     }
 
     private autoSelectMostRecent(): void {
-        // Auto-select the most recent entry in each column
-        for (const [periodType, state] of this.columns) {
+        // Auto-select entries in each column, preferring current period then falling back to closest
+        // Process in reverse order (yearly first) so cascading works properly
+        const columnTypes = Array.from(this.columns.keys()).reverse()
+
+        for (const periodType of columnTypes) {
+            const state = this.columns.get(periodType)
+            if (!state) continue
+
             const config = this.plugin.settings[periodType]
             const filteredEntries = this.filterEntriesByContext(state.entries, periodType, config)
 
             if (filteredEntries.length > 0) {
-                const sortedEntries = sortEntriesByDate(filteredEntries, config, false)
-                const mostRecent = sortedEntries[0]
-                if (mostRecent) {
-                    const date = extractDateFromNote(mostRecent.file, config)
-                    if (date) {
-                        this.selectPeriod(state, getStartOfPeriod(date, periodType), mostRecent)
+                // Try to find entry for current period first
+                const currentPeriodDate = getStartOfPeriod(new Date(), periodType)
+                const currentPeriodEntry = filteredEntries.find((entry) => {
+                    const date = extractDateFromNote(entry.file, config)
+                    if (!date) return false
+                    return (
+                        getStartOfPeriod(date, periodType).getTime() === currentPeriodDate.getTime()
+                    )
+                })
+
+                if (currentPeriodEntry) {
+                    // Current period exists, select it
+                    this.selectPeriod(state, currentPeriodDate, currentPeriodEntry)
+                } else {
+                    // Fall back to most recent
+                    const sortedEntries = sortEntriesByDate(filteredEntries, config, false)
+                    const mostRecent = sortedEntries[0]
+                    if (mostRecent) {
+                        const date = extractDateFromNote(mostRecent.file, config)
+                        if (date) {
+                            this.selectPeriod(state, getStartOfPeriod(date, periodType), mostRecent)
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Auto-select an entry in a single column without triggering cascading.
+     * Prefers the current period, falls back to most recent.
+     * Used when cascading from a parent period selection.
+     */
+    private autoSelectSingleColumn(state: ColumnState, config: PeriodicNoteConfig): void {
+        const filteredEntries = this.filterEntriesByContext(state.entries, state.periodType, config)
+
+        if (filteredEntries.length > 0) {
+            // Try to find entry for current period first
+            const currentPeriodDate = getStartOfPeriod(new Date(), state.periodType)
+            const currentPeriodEntry = filteredEntries.find((entry) => {
+                const date = extractDateFromNote(entry.file, config)
+                if (!date) return false
+                return (
+                    getStartOfPeriod(date, state.periodType).getTime() ===
+                    currentPeriodDate.getTime()
+                )
+            })
+
+            if (currentPeriodEntry) {
+                // Current period exists, select it
+                state.selectedDate = currentPeriodDate
+                this.updateSelectorUI(state)
+                this.renderColumnContent(state, currentPeriodEntry)
+                return
+            }
+
+            // Fall back to most recent
+            const sortedEntries = sortEntriesByDate(filteredEntries, config, false)
+            const mostRecent = sortedEntries[0]
+            if (mostRecent) {
+                const date = extractDateFromNote(mostRecent.file, config)
+                if (date) {
+                    const normalizedDate = getStartOfPeriod(date, state.periodType)
+                    state.selectedDate = normalizedDate
+                    this.updateSelectorUI(state)
+                    this.renderColumnContent(state, mostRecent)
+                    return
+                }
+            }
+        }
+
+        // No entries available - clear content
+        state.selectedDate = null
+        this.updateSelectorUI(state)
+        state.column.getContentEl().empty()
     }
 
     private renderEmptyState(message: string): void {

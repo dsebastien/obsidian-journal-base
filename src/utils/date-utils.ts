@@ -9,11 +9,17 @@ import {
     addYears,
     isBefore,
     isEqual,
+    isWithinInterval,
     startOfDay,
     startOfWeek,
     startOfMonth,
     startOfQuarter,
     startOfYear,
+    endOfDay,
+    endOfWeek,
+    endOfMonth,
+    endOfQuarter,
+    endOfYear,
     getQuarter as dateFnsGetQuarter,
     getWeek as dateFnsGetWeek,
     getYear as dateFnsGetYear,
@@ -401,4 +407,36 @@ export function formatFilenameWithSuffix(
     const filename = formatDateAsFilename(date, formatStr)
     const suffix = getPeriodSuffix(date, periodType)
     return suffix ? `${filename} ${suffix}` : filename
+}
+
+/**
+ * Get the end of a period for a given date
+ */
+export function getEndOfPeriod(date: Date, periodType: PeriodType): Date {
+    switch (periodType) {
+        case 'daily':
+            return endOfDay(date)
+        case 'weekly':
+            return endOfWeek(date, { weekStartsOn: 1 }) // Monday start
+        case 'monthly':
+            return endOfMonth(date)
+        case 'quarterly':
+            return endOfQuarter(date)
+        case 'yearly':
+            return endOfYear(date)
+    }
+}
+
+/**
+ * Check if a date's period START falls within a parent period
+ * For weekly filtering, checks if the week START is within the parent period
+ */
+export function isPeriodStartWithinParent(
+    date: Date,
+    childPeriodType: PeriodType,
+    parentStart: Date,
+    parentEnd: Date
+): boolean {
+    const periodStart = getStartOfPeriod(date, childPeriodType)
+    return isWithinInterval(periodStart, { start: parentStart, end: parentEnd })
 }
