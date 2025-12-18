@@ -1,3 +1,9 @@
+## [0.2.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.1.0...0.2.0) (2025-12-18)
+
+### Features
+
+* **all:** display future future yearly notes ([9fa7f0e](https://github.com/dsebastien/obsidian-journal-bases/commit/9fa7f0e73a39bb4ee16af5e9cee243b1d0b0af3a))
+* **all:** enabled creating the next non-existent yearly note ([a184e63](https://github.com/dsebastien/obsidian-journal-bases/commit/a184e630b5566e70f6a9dc73fb88612476f053da))
 ## [0.1.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.0.2...0.1.0) (2025-12-18)
 
 ### Features
