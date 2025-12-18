@@ -5,7 +5,8 @@ import {
     formatDateAsFilename,
     formatFilenameWithSuffix,
     getPeriodSuffix,
-    parseDateFromFormat
+    parseDateFromFormat,
+    doesPeriodOverlapParent
 } from './date-utils'
 
 describe('date-utils', () => {
@@ -347,6 +348,140 @@ describe('date-utils', () => {
             expect(formatFilenameWithSuffix(date, 'YYYY-MM-DD', 'daily')).toBe(
                 '2024-12-17 (Tuesday)'
             )
+        })
+    })
+
+    describe('doesPeriodOverlapParent', () => {
+        describe('weekly periods overlapping months', () => {
+            test('week fully within month overlaps', () => {
+                // Week of Jan 6-12, 2025 (fully within January)
+                const weekDate = new Date(2025, 0, 6) // Monday Jan 6
+                const monthStart = new Date(2025, 0, 1)
+                const monthEnd = new Date(2025, 0, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', monthStart, monthEnd)).toBe(true)
+            })
+
+            test('week starting in previous month overlaps with current month', () => {
+                // Week of Dec 30, 2024 - Jan 5, 2025 (2025-W01)
+                // Should overlap with January 2025
+                const weekDate = new Date(2024, 11, 30) // Monday Dec 30
+                const janStart = new Date(2025, 0, 1)
+                const janEnd = new Date(2025, 0, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', janStart, janEnd)).toBe(true)
+            })
+
+            test('week ending in next month overlaps with current month', () => {
+                // Week of Dec 30, 2024 - Jan 5, 2025 (2025-W01)
+                // Should also overlap with December 2024
+                const weekDate = new Date(2024, 11, 30) // Monday Dec 30
+                const decStart = new Date(2024, 11, 1)
+                const decEnd = new Date(2024, 11, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', decStart, decEnd)).toBe(true)
+            })
+
+            test('week before month does not overlap', () => {
+                // Week of Dec 23-29, 2024
+                const weekDate = new Date(2024, 11, 23) // Monday Dec 23
+                const janStart = new Date(2025, 0, 1)
+                const janEnd = new Date(2025, 0, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', janStart, janEnd)).toBe(false)
+            })
+
+            test('week after month does not overlap', () => {
+                // Week of Feb 3-9, 2025
+                const weekDate = new Date(2025, 1, 3) // Monday Feb 3
+                const janStart = new Date(2025, 0, 1)
+                const janEnd = new Date(2025, 0, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', janStart, janEnd)).toBe(false)
+            })
+        })
+
+        describe('leap year handling', () => {
+            test('week spanning Feb-Mar in leap year 2024 overlaps with February', () => {
+                // 2024 is a leap year (Feb has 29 days)
+                // Week of Feb 26 - Mar 3, 2024
+                const weekDate = new Date(2024, 1, 26) // Monday Feb 26
+                const febStart = new Date(2024, 1, 1)
+                const febEnd = new Date(2024, 1, 29) // Feb 29 in leap year
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', febStart, febEnd)).toBe(true)
+            })
+
+            test('week spanning Feb-Mar in leap year 2024 overlaps with March', () => {
+                // Week of Feb 26 - Mar 3, 2024
+                const weekDate = new Date(2024, 1, 26) // Monday Feb 26
+                const marStart = new Date(2024, 2, 1)
+                const marEnd = new Date(2024, 2, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', marStart, marEnd)).toBe(true)
+            })
+
+            test('week spanning Feb-Mar in non-leap year 2025 overlaps with February', () => {
+                // 2025 is not a leap year (Feb has 28 days)
+                // Week of Feb 24 - Mar 2, 2025
+                const weekDate = new Date(2025, 1, 24) // Monday Feb 24
+                const febStart = new Date(2025, 1, 1)
+                const febEnd = new Date(2025, 1, 28) // Feb 28 in non-leap year
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', febStart, febEnd)).toBe(true)
+            })
+
+            test('week spanning Feb-Mar in non-leap year 2025 overlaps with March', () => {
+                // Week of Feb 24 - Mar 2, 2025
+                const weekDate = new Date(2025, 1, 24) // Monday Feb 24
+                const marStart = new Date(2025, 2, 1)
+                const marEnd = new Date(2025, 2, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', marStart, marEnd)).toBe(true)
+            })
+
+            test('week fully in February leap year does not overlap with March', () => {
+                // Week of Feb 19-25, 2024 (fully within Feb in leap year)
+                const weekDate = new Date(2024, 1, 19) // Monday Feb 19
+                const marStart = new Date(2024, 2, 1)
+                const marEnd = new Date(2024, 2, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', marStart, marEnd)).toBe(false)
+            })
+        })
+
+        describe('year boundary handling', () => {
+            test('first week of 2025 (starting Dec 30, 2024) overlaps with 2025', () => {
+                // 2025-W01 starts on Monday Dec 30, 2024
+                const weekDate = new Date(2024, 11, 30)
+                const yearStart = new Date(2025, 0, 1)
+                const yearEnd = new Date(2025, 11, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', yearStart, yearEnd)).toBe(true)
+            })
+
+            test('first week of 2025 (starting Dec 30, 2024) overlaps with 2024', () => {
+                // 2025-W01 starts on Monday Dec 30, 2024
+                const weekDate = new Date(2024, 11, 30)
+                const yearStart = new Date(2024, 0, 1)
+                const yearEnd = new Date(2024, 11, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', yearStart, yearEnd)).toBe(true)
+            })
+
+            test('last week of 2024 does not overlap with 2025', () => {
+                // Week of Dec 23-29, 2024 (last full week of 2024)
+                const weekDate = new Date(2024, 11, 23)
+                const yearStart = new Date(2025, 0, 1)
+                const yearEnd = new Date(2025, 11, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', yearStart, yearEnd)).toBe(false)
+            })
+        })
+
+        describe('quarterly boundaries', () => {
+            test('week spanning Q1-Q2 boundary overlaps with Q1', () => {
+                // Week of Mar 31 - Apr 6, 2025
+                const weekDate = new Date(2025, 2, 31) // Monday Mar 31
+                const q1Start = new Date(2025, 0, 1)
+                const q1End = new Date(2025, 2, 31)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', q1Start, q1End)).toBe(true)
+            })
+
+            test('week spanning Q1-Q2 boundary overlaps with Q2', () => {
+                // Week of Mar 31 - Apr 6, 2025
+                const weekDate = new Date(2025, 2, 31) // Monday Mar 31
+                const q2Start = new Date(2025, 3, 1)
+                const q2End = new Date(2025, 5, 30)
+                expect(doesPeriodOverlapParent(weekDate, 'weekly', q2Start, q2End)).toBe(true)
+            })
         })
     })
 })

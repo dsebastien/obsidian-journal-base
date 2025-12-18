@@ -9,7 +9,7 @@ import {
     getWeek,
     getISOWeekYear,
     getEndOfPeriod,
-    isPeriodStartWithinParent
+    doesPeriodOverlapParent
 } from '../../../utils/date-utils'
 
 /**
@@ -79,10 +79,11 @@ function isEntryInContext(
 /**
  * Check if a week falls within the current context.
  * Only applies filters for enabled parent period types.
+ * Uses overlap logic so weeks spanning boundaries appear in both periods.
  */
 function isWeekInContext(
     date: Date,
-    year: number,
+    _year: number,
     context: SelectionContext,
     enabledTypes: PeriodType[]
 ): boolean {
@@ -92,22 +93,26 @@ function isWeekInContext(
 
     // Find the most specific enabled parent with a selection
     if (monthlyEnabled && context.selectedMonth !== null) {
-        // Week START must be within selected month
+        // Week must OVERLAP with selected month (not just start within it)
+        // e.g., 2025-W01 (Dec 30 - Jan 5) should appear in both Dec 2024 and Jan 2025
         const monthStart = new Date(context.selectedYear, context.selectedMonth, 1)
         const monthEnd = getEndOfPeriod(monthStart, 'monthly')
-        return isPeriodStartWithinParent(date, 'weekly', monthStart, monthEnd)
+        return doesPeriodOverlapParent(date, 'weekly', monthStart, monthEnd)
     }
 
     if (quarterlyEnabled && context.selectedQuarter !== null) {
-        // Week START must be within selected quarter
+        // Week must OVERLAP with selected quarter
         const quarterMonth = (context.selectedQuarter - 1) * 3
         const quarterStart = new Date(context.selectedYear, quarterMonth, 1)
         const quarterEnd = getEndOfPeriod(quarterStart, 'quarterly')
-        return isPeriodStartWithinParent(date, 'weekly', quarterStart, quarterEnd)
+        return doesPeriodOverlapParent(date, 'weekly', quarterStart, quarterEnd)
     }
 
     if (yearlyEnabled) {
-        return year === context.selectedYear
+        // For yearly, also use overlap to handle year-boundary weeks
+        const yearStart = new Date(context.selectedYear, 0, 1)
+        const yearEnd = new Date(context.selectedYear, 11, 31)
+        return doesPeriodOverlapParent(date, 'weekly', yearStart, yearEnd)
     }
 
     return true

@@ -393,3 +393,25 @@ export function isPeriodStartWithinParent(
     const periodStart = getStartOfPeriod(date, childPeriodType)
     return isWithinInterval(periodStart, { start: parentStart, end: parentEnd })
 }
+
+/**
+ * Check if a date's period OVERLAPS with a parent period.
+ * A period overlaps if any part of it falls within the parent period.
+ * This is useful for weeks that span month/year boundaries.
+ *
+ * Example: Week 2025-W01 (Dec 30, 2024 - Jan 5, 2025) overlaps with both
+ * December 2024 and January 2025.
+ */
+export function doesPeriodOverlapParent(
+    date: Date,
+    childPeriodType: PeriodType,
+    parentStart: Date,
+    parentEnd: Date
+): boolean {
+    const periodStart = getStartOfPeriod(date, childPeriodType)
+    const periodEnd = getEndOfPeriod(date, childPeriodType)
+    // Overlap occurs when: periodStart <= parentEnd AND periodEnd >= parentStart
+    return (
+        periodStart.getTime() <= parentEnd.getTime() && periodEnd.getTime() >= parentStart.getTime()
+    )
+}

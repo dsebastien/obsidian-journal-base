@@ -6,7 +6,7 @@ import {
     getEndOfPeriod,
     getNextPeriod,
     generateDateRange,
-    isPeriodStartWithinParent
+    doesPeriodOverlapParent
 } from '../../../utils/date-utils'
 
 /**
@@ -127,7 +127,9 @@ function generateWeeklyPeriods(context: SelectionContext, enabledTypes: PeriodTy
     let current = getStartOfPeriod(startDate, 'weekly')
 
     while (current.getTime() <= endDate.getTime()) {
-        if (isPeriodStartWithinParent(current, 'weekly', startDate, endDate)) {
+        // Use overlap check so weeks spanning month/year boundaries appear in both periods
+        // e.g., 2025-W01 (Dec 30 - Jan 5) appears in both December 2024 and January 2025
+        if (doesPeriodOverlapParent(current, 'weekly', startDate, endDate)) {
             dates.push(current)
         }
         current = getNextPeriod(current, 'weekly')
