@@ -11,11 +11,13 @@ Navigate and manage your journal and periodic reviews with purpose-built Base vi
 
 ### Note Cards
 
-- **Expandable cards**: Click to expand/collapse note content
+- **Expandable cards**: Click to expand/collapse note content (Periodic Notes view)
+- **Always-visible cards**: Full note content always displayed (Periodic Review view)
 - **Three editing modes**: Reading view, Live Preview, and Source mode
 - **Inline editing**: Edit notes directly within the view without opening a separate tab
 - **Auto-save**: Changes saved automatically with 1-second debounce
-- **Current period highlight**: Visual indicator for today's note
+- **Current period highlight**: Visual indicator for today's/current period's note
+- **Seamless updates**: Content updates smoothly without flickering when files change externally
 
 ### Period Navigation
 
@@ -34,7 +36,7 @@ Navigate and manage your journal and periodic reviews with purpose-built Base vi
 
 - **Periodic Notes plugin sync**: Automatically syncs settings when Periodic Notes plugin is enabled
 - **Templater support**: Full integration for template-based note creation
-- **Life Tracker integration**: Provides files for Life Tracker commands
+- **Life Tracker integration**: Provides daily notes for Life Tracker commands (works in both views)
 
 ## Screenshots
 
@@ -51,7 +53,7 @@ Configure period type, future periods count, and display options per view.
 ### Periodic Review View
 
 ![Periodic Review View](documentation/screenshots/periodic-reviews-view.png)
-Review notes across multiple period types in a multi-column layout. Click a period to drill down into its children.
+Review and edit notes across multiple period types in a multi-column layout. Each column shows a note card with full inline editing support. Click a period to drill down into its children.
 
 ### Minimized Columns
 
