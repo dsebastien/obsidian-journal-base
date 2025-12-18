@@ -1,7 +1,7 @@
-import { BasesView, BasesEntry, Notice } from 'obsidian'
+import { BasesView, BasesEntry, Notice, type TFile } from 'obsidian'
 import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
-import type { PeriodType, PeriodicNoteConfig } from '../../types'
+import type { PeriodType, PeriodicNoteConfig, LifeTrackerPluginFileProvider } from '../../types'
 import { FoldableColumn, CreateNoteButton, NoteCard, type CardMode } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
 import {
@@ -46,7 +46,7 @@ interface ColumnState {
     noteCard: NoteCard | null
 }
 
-export class PeriodicReviewView extends BasesView {
+export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFileProvider {
     override type = PERIODIC_REVIEW_VIEW_TYPE
 
     private plugin: JournalBasesPlugin
@@ -67,10 +67,43 @@ export class PeriodicReviewView extends BasesView {
         this.containerEl = scrollEl.createDiv({ cls: 'periodic-review-view' })
         this.columnsEl = this.containerEl.createDiv({ cls: 'pr-columns' })
 
+        // Register as active file provider for commands (Life Tracker compatibility)
+        this.plugin.setActiveFileProvider(this)
+
         // Subscribe to plugin settings changes to re-render when configuration changes
         this.unsubscribeFromSettings = this.plugin.onSettingsChange(() => {
             this.onDataUpdated()
         })
+    }
+
+    /**
+     * Compatibility with the Life Tracker plugin.
+     * Get files from this view for commands.
+     * Only returns daily notes (Life Tracker only works with daily notes).
+     * If the daily NoteCard is being edited, that file is returned.
+     * Otherwise returns the currently selected daily note if any.
+     */
+    getFiles(): TFile[] {
+        // Only return the daily column's file
+        const dailyState = this.columns.get('daily')
+        if (!dailyState?.noteCard) {
+            return []
+        }
+
+        // Check if the daily NoteCard is currently focused (actively being edited)
+        if (dailyState.noteCard.hasActiveEditor()) {
+            return [dailyState.noteCard.getFile()]
+        }
+
+        // Return the daily note
+        return [dailyState.noteCard.getFile()]
+    }
+
+    /**
+     * Compatibility with the Life Tracker plugin.
+     */
+    getFilterMode(): 'never' {
+        return 'never'
     }
 
     override onDataUpdated(): void {

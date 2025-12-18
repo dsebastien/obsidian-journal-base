@@ -43,12 +43,18 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     }
 
     /**
-     * Compatibility with the Life Tracker plugin
+     * Compatibility with the Life Tracker plugin.
      * Get files from this view for commands.
-     * If cards are being edited, those are returned
-     * Otherwise returns all the current Base view files sorted newest to oldest.
+     * Only returns daily notes (Life Tracker only works with daily notes).
+     * If daily cards are being edited, those are returned.
+     * Otherwise returns all daily notes sorted newest to oldest.
      */
     getFiles(): TFile[] {
+        // Only return files if we're in daily mode
+        if (this.currentMode !== 'daily') {
+            return []
+        }
+
         // Check if any card is currently focused (actively being edited)
         const activeNotes: TFile[] = []
         for (const card of this.noteCards.values()) {
