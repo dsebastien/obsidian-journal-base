@@ -21,7 +21,8 @@ import {
     endOfQuarter,
     endOfYear,
     getQuarter as dateFnsGetQuarter,
-    getWeek as dateFnsGetWeek,
+    getISOWeek as dateFnsGetISOWeek,
+    getISOWeekYear as dateFnsGetISOWeekYear,
     getYear as dateFnsGetYear,
     getMonth as dateFnsGetMonth
 } from 'date-fns'
@@ -309,7 +310,7 @@ export function getPeriodLabel(date: Date, periodType: PeriodType): string {
         case 'daily':
             return format(date, 'EEEE, MMMM d, yyyy')
         case 'weekly':
-            return `Week ${dateFnsGetWeek(date)}, ${dateFnsGetYear(date)}`
+            return `Week ${dateFnsGetISOWeek(date)}, ${dateFnsGetISOWeekYear(date)}`
         case 'monthly':
             return format(date, 'MMMM yyyy')
         case 'quarterly':
@@ -341,10 +342,20 @@ export function getYear(date: Date): number {
 }
 
 /**
- * Get the ISO week number from a date
+ * Get the ISO week number from a date (1-53)
+ * Uses ISO 8601 week definition (week starts Monday, first week contains Jan 4)
  */
 export function getWeek(date: Date): number {
-    return dateFnsGetWeek(date)
+    return dateFnsGetISOWeek(date)
+}
+
+/**
+ * Get the ISO week-numbering year from a date
+ * This can differ from the calendar year at year boundaries.
+ * For example, 2025-12-31 is in ISO week 1 of 2026.
+ */
+export function getISOWeekYear(date: Date): number {
+    return dateFnsGetISOWeekYear(date)
 }
 
 /**
@@ -385,7 +396,7 @@ export function getPeriodSuffix(date: Date, periodType: PeriodType): string {
         case 'daily':
             return `(${format(date, 'EEEE')})`
         case 'weekly':
-            return `(Week ${dateFnsGetWeek(date)})`
+            return `(Week ${dateFnsGetISOWeek(date)})`
         case 'monthly':
             return `(${format(date, 'MMMM')})`
         case 'quarterly':

@@ -17,6 +17,7 @@ import {
     formatFilenameWithSuffix,
     getYear,
     getWeek,
+    getISOWeekYear,
     getMonth,
     getQuarter,
     findMissingDates,
@@ -55,7 +56,8 @@ export class PeriodicReviewView extends BasesView {
     private selectedYear: number = new Date().getFullYear()
     private selectedQuarter: number | null = null // 1-4 or null for "all"
     private selectedMonth: number | null = null // 0-11 or null for "all"
-    private selectedWeek: number | null = null // Week number or null for "all"
+    private selectedWeek: number | null = null // ISO week number or null for "all"
+    private selectedWeekYear: number | null = null // ISO week year (can differ from calendar year at boundaries)
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -267,11 +269,17 @@ export class PeriodicReviewView extends BasesView {
                 }
 
                 case 'daily':
-                    if (year !== this.selectedYear) return false
-
-                    if (this.selectedWeek !== null) {
-                        return getWeek(date) === this.selectedWeek
+                    // If week is selected, filter by ISO week year and week number
+                    // This handles year boundaries correctly
+                    if (this.selectedWeek !== null && this.selectedWeekYear !== null) {
+                        return (
+                            getWeek(date) === this.selectedWeek &&
+                            getISOWeekYear(date) === this.selectedWeekYear
+                        )
                     }
+
+                    // For non-week filtering, use calendar year
+                    if (year !== this.selectedYear) return false
 
                     if (this.selectedMonth !== null) {
                         return getMonth(date) === this.selectedMonth
@@ -366,12 +374,18 @@ export class PeriodicReviewView extends BasesView {
 
                 case 'daily': {
                     // Days filtered by year, optionally quarter/month, and optionally week
-                    if (year !== this.selectedYear) return false
 
-                    // If week is selected, filter by week
-                    if (this.selectedWeek !== null) {
-                        return getWeek(date) === this.selectedWeek
+                    // If week is selected, filter by ISO week year and week number
+                    // This handles year boundaries correctly (e.g., 2025-12-31 in week 1 of 2026)
+                    if (this.selectedWeek !== null && this.selectedWeekYear !== null) {
+                        return (
+                            getWeek(date) === this.selectedWeek &&
+                            getISOWeekYear(date) === this.selectedWeekYear
+                        )
                     }
+
+                    // For non-week filtering, use calendar year
+                    if (year !== this.selectedYear) return false
 
                     // If month is selected, filter by month
                     if (this.selectedMonth !== null) {
@@ -402,6 +416,7 @@ export class PeriodicReviewView extends BasesView {
                 this.selectedQuarter = null
                 this.selectedMonth = null
                 this.selectedWeek = null
+                this.selectedWeekYear = null
                 affectedColumns.push('quarterly', 'monthly', 'weekly', 'daily')
                 break
 
@@ -410,6 +425,7 @@ export class PeriodicReviewView extends BasesView {
                 // Clear shorter period contexts
                 this.selectedMonth = null
                 this.selectedWeek = null
+                this.selectedWeekYear = null
                 affectedColumns.push('monthly', 'weekly', 'daily')
                 break
 
@@ -417,11 +433,13 @@ export class PeriodicReviewView extends BasesView {
                 this.selectedMonth = getMonth(date)
                 // Clear shorter period contexts
                 this.selectedWeek = null
+                this.selectedWeekYear = null
                 affectedColumns.push('weekly', 'daily')
                 break
 
             case 'weekly':
                 this.selectedWeek = getWeek(date)
+                this.selectedWeekYear = getISOWeekYear(date)
                 affectedColumns.push('daily')
                 break
 
