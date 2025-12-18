@@ -1,3 +1,15 @@
+## [0.3.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.2.0...0.3.0) (2025-12-18)
+
+### Features
+
+* **all:** always display week numbers with two digits ([08b0e42](https://github.com/dsebastien/obsidian-journal-bases/commit/08b0e42a416290b2ce289eaa589c887724563254))
+* **all:** better handled weeks that overlap two years ([bb592e3](https://github.com/dsebastien/obsidian-journal-bases/commit/bb592e30a997e9228504f777f7a36e59e99ef863))
+* **all:** highlight the current periods ([27fcd14](https://github.com/dsebastien/obsidian-journal-bases/commit/27fcd148fe3c225be55b7a5d4b32a92c604dc660))
+* **all:** highlight the current periods in the periodic notes view as well ([c726632](https://github.com/dsebastien/obsidian-journal-bases/commit/c726632754344c133dd2e51ee11eb11ae2f74afe))
+
+### Bug Fixes
+
+* **all:** avoid changing the year when selecting a day from a different year (overlaps) ([ab4fa77](https://github.com/dsebastien/obsidian-journal-bases/commit/ab4fa77996e171e91fbe33ac660b1604ff6ab427))
 ## [0.2.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.1.0...0.2.0) (2025-12-18)
 
 ### Features
