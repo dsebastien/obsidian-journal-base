@@ -1,3 +1,8 @@
+## [1.0.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.5.0...1.0.0) (2025-12-18)
+
+### Features
+
+* **all:** ensured that notes are directly created where they belong (according to config) ([490fd70](https://github.com/dsebastien/obsidian-journal-bases/commit/490fd7096b9893901196cbb2963ec12b23e4a714))
 ## [0.5.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.4.0...0.5.0) (2025-12-18)
 
 ### Features
