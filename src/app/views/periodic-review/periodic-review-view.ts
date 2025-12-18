@@ -20,8 +20,9 @@ import {
     getISOWeekYear,
     getMonth,
     getQuarter,
-    findMissingDates,
-    isPeriodStartWithinParent
+    isPeriodStartWithinParent,
+    generateDateRange,
+    getNextPeriod
 } from '../../../utils/date-utils'
 
 // Period type order for columns
@@ -58,6 +59,13 @@ export class PeriodicReviewView extends BasesView {
     private selectedMonth: number | null = null // 0-11 or null for "all"
     private selectedWeek: number | null = null // ISO week number or null for "all"
     private selectedWeekYear: number | null = null // ISO week year (can differ from calendar year at boundaries)
+
+    // Track whether selected periods have existing notes
+    // When a selected period doesn't exist, child columns show a message instead of periods
+    private selectedYearExists: boolean = false
+    private selectedQuarterExists: boolean = false
+    private selectedMonthExists: boolean = false
+    private selectedWeekExists: boolean = false
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -162,36 +170,17 @@ export class PeriodicReviewView extends BasesView {
         const selectorEl = state.column.getSelectorEl()
         selectorEl.empty()
 
-        // Get view options
-        const showMissing = (this.config.get('showMissing') as boolean) ?? true
-        const futurePeriods = (this.config.get('futurePeriods') as number) ?? 1
-
-        // Get filtered entries based on current context
-        const filteredEntries = this.filterEntriesByContext(state.entries, state.periodType, config)
-
-        // Extract dates from filtered entries
-        const dateEntryMap = new Map<number, BasesEntry>()
-        const existingDates: Date[] = []
-
-        for (const entry of filteredEntries) {
-            const date = extractDateFromNote(entry.file, config)
-            if (date) {
-                const normalized = getStartOfPeriod(date, state.periodType)
-                dateEntryMap.set(normalized.getTime(), entry)
-                existingDates.push(normalized)
-            }
+        // Check if the parent period exists - if not, show a message instead of periods
+        const parentMissingMessage = this.getParentMissingMessage(state.periodType)
+        if (parentMissingMessage) {
+            this.renderParentMissingMessage(selectorEl, parentMissingMessage)
+            // Clear content area since there's nothing to show
+            state.column.getContentEl().empty()
+            return
         }
 
-        // Find missing dates and future periods if enabled
-        let missingDates: Date[] = []
-        if (showMissing) {
-            missingDates = findMissingDates(existingDates, state.periodType, futurePeriods)
-            // Filter missing dates by context as well
-            missingDates = this.filterMissingDatesByContext(missingDates, state.periodType)
-        }
-
-        // Combine existing and missing dates, sort descending
-        const allDates = this.combineAndSortDates(existingDates, missingDates, state.periodType)
+        // Get all available dates for this column
+        const { dates: allDates, dateEntryMap } = this.getAvailableDatesForColumn(state, config)
 
         if (allDates.length === 0) {
             const emptyEl = selectorEl.createDiv({ cls: 'pr-period-item pr-period-item--missing' })
@@ -229,94 +218,219 @@ export class PeriodicReviewView extends BasesView {
     }
 
     /**
-     * Filter missing dates by the current context (year, quarter, month, week).
+     * Check if the parent period exists. Returns a message if parent is missing, null if parent exists.
+     * The message tells the user what to do (select an existing period or create the missing one).
      */
-    private filterMissingDatesByContext(dates: Date[], periodType: PeriodType): Date[] {
-        return dates.filter((date) => {
-            const year = getYear(date)
+    private getParentMissingMessage(periodType: PeriodType): string | null {
+        switch (periodType) {
+            case 'yearly':
+                // Yearly has no parent, always show
+                return null
 
-            switch (periodType) {
-                case 'yearly':
-                    return true
-
-                case 'quarterly':
-                    return year === this.selectedYear
-
-                case 'monthly':
-                    if (year !== this.selectedYear) return false
-                    if (this.selectedQuarter !== null) {
-                        return getQuarter(date) === this.selectedQuarter
-                    }
-                    return true
-
-                case 'weekly': {
-                    if (year !== this.selectedYear) return false
-
-                    if (this.selectedMonth !== null) {
-                        const monthStart = new Date(this.selectedYear, this.selectedMonth, 1)
-                        const monthEnd = getEndOfPeriod(monthStart, 'monthly')
-                        return isPeriodStartWithinParent(date, 'weekly', monthStart, monthEnd)
-                    }
-
-                    if (this.selectedQuarter !== null) {
-                        const quarterMonth = (this.selectedQuarter - 1) * 3
-                        const quarterStart = new Date(this.selectedYear, quarterMonth, 1)
-                        const quarterEnd = getEndOfPeriod(quarterStart, 'quarterly')
-                        return isPeriodStartWithinParent(date, 'weekly', quarterStart, quarterEnd)
-                    }
-
-                    return true
+            case 'quarterly':
+                // Parent is yearly
+                if (!this.selectedYearExists && this.columns.has('yearly')) {
+                    return 'Select an existing year or create the selected one first'
                 }
+                return null
 
-                case 'daily':
-                    // If week is selected, filter by ISO week year and week number
-                    // This handles year boundaries correctly
-                    if (this.selectedWeek !== null && this.selectedWeekYear !== null) {
-                        return (
-                            getWeek(date) === this.selectedWeek &&
-                            getISOWeekYear(date) === this.selectedWeekYear
-                        )
+            case 'monthly':
+                // Parent is quarterly (if visible), otherwise yearly
+                if (this.columns.has('quarterly')) {
+                    if (!this.selectedQuarterExists) {
+                        return 'Select an existing quarter or create the selected one first'
                     }
-
-                    // For non-week filtering, use calendar year
-                    if (year !== this.selectedYear) return false
-
-                    if (this.selectedMonth !== null) {
-                        return getMonth(date) === this.selectedMonth
+                } else if (this.columns.has('yearly')) {
+                    if (!this.selectedYearExists) {
+                        return 'Select an existing year or create the selected one first'
                     }
+                }
+                return null
 
-                    if (this.selectedQuarter !== null) {
-                        return getQuarter(date) === this.selectedQuarter
+            case 'weekly':
+                // Parent is monthly (if visible), otherwise quarterly, otherwise yearly
+                if (this.columns.has('monthly')) {
+                    if (!this.selectedMonthExists) {
+                        return 'Select an existing month or create the selected one first'
                     }
+                } else if (this.columns.has('quarterly')) {
+                    if (!this.selectedQuarterExists) {
+                        return 'Select an existing quarter or create the selected one first'
+                    }
+                } else if (this.columns.has('yearly')) {
+                    if (!this.selectedYearExists) {
+                        return 'Select an existing year or create the selected one first'
+                    }
+                }
+                return null
 
-                    return true
-            }
+            case 'daily':
+                // Parent is weekly (if visible), otherwise monthly, otherwise quarterly, otherwise yearly
+                if (this.columns.has('weekly')) {
+                    if (!this.selectedWeekExists) {
+                        return 'Select an existing week or create the selected one first'
+                    }
+                } else if (this.columns.has('monthly')) {
+                    if (!this.selectedMonthExists) {
+                        return 'Select an existing month or create the selected one first'
+                    }
+                } else if (this.columns.has('quarterly')) {
+                    if (!this.selectedQuarterExists) {
+                        return 'Select an existing quarter or create the selected one first'
+                    }
+                } else if (this.columns.has('yearly')) {
+                    if (!this.selectedYearExists) {
+                        return 'Select an existing year or create the selected one first'
+                    }
+                }
+                return null
+        }
+    }
+
+    /**
+     * Render a message when the parent period doesn't exist.
+     */
+    private renderParentMissingMessage(containerEl: HTMLElement, message: string): void {
+        const messageEl = containerEl.createDiv({ cls: 'pr-parent-missing' })
+        messageEl.createDiv({
+            cls: 'pr-parent-missing__text',
+            text: message
         })
     }
 
     /**
-     * Combine existing and missing dates, removing duplicates and sorting descending.
+     * Generate all periods within the current context (without future extension).
+     * For example, if year 2025 is selected, generates Q1-Q4 of 2025.
      */
-    private combineAndSortDates(
-        existingDates: Date[],
-        missingDates: Date[],
-        periodType: PeriodType
-    ): Date[] {
-        const combined = new Map<number, Date>()
+    private generatePeriodsForContext(periodType: PeriodType): Date[] {
+        switch (periodType) {
+            case 'yearly': {
+                // Generate years from 5 years ago to current year
+                const currentYear = getYear(new Date())
+                const dates: Date[] = []
+                for (let y = currentYear - 5; y <= currentYear; y++) {
+                    dates.push(new Date(y, 0, 1))
+                }
+                return dates
+            }
 
-        for (const date of existingDates) {
-            combined.set(date.getTime(), date)
+            case 'quarterly': {
+                // All 4 quarters of the selected year
+                const dates: Date[] = []
+                for (let q = 1; q <= 4; q++) {
+                    const month = (q - 1) * 3
+                    dates.push(new Date(this.selectedYear, month, 1))
+                }
+                return dates
+            }
+
+            case 'monthly': {
+                const dates: Date[] = []
+                if (this.selectedQuarter !== null) {
+                    // 3 months of the selected quarter
+                    const startMonth = (this.selectedQuarter - 1) * 3
+                    for (let m = startMonth; m < startMonth + 3; m++) {
+                        dates.push(new Date(this.selectedYear, m, 1))
+                    }
+                } else {
+                    // All 12 months of the selected year
+                    for (let m = 0; m < 12; m++) {
+                        dates.push(new Date(this.selectedYear, m, 1))
+                    }
+                }
+                return dates
+            }
+
+            case 'weekly': {
+                let startDate: Date
+                let endDate: Date
+
+                if (this.selectedMonth !== null) {
+                    startDate = new Date(this.selectedYear, this.selectedMonth, 1)
+                    endDate = getEndOfPeriod(startDate, 'monthly')
+                } else if (this.selectedQuarter !== null) {
+                    const quarterMonth = (this.selectedQuarter - 1) * 3
+                    startDate = new Date(this.selectedYear, quarterMonth, 1)
+                    endDate = getEndOfPeriod(startDate, 'quarterly')
+                } else {
+                    startDate = new Date(this.selectedYear, 0, 1)
+                    endDate = new Date(this.selectedYear, 11, 31)
+                }
+
+                const dates: Date[] = []
+                let current = getStartOfPeriod(startDate, 'weekly')
+
+                while (current.getTime() <= endDate.getTime()) {
+                    if (isPeriodStartWithinParent(current, 'weekly', startDate, endDate)) {
+                        dates.push(current)
+                    }
+                    current = getNextPeriod(current, 'weekly')
+                }
+                return dates
+            }
+
+            case 'daily': {
+                let startDate: Date
+                let endDate: Date
+
+                if (this.selectedWeek !== null && this.selectedWeekYear !== null) {
+                    // Days within the selected week (7 days)
+                    const jan4 = new Date(this.selectedWeekYear, 0, 4)
+                    const jan4Day = jan4.getDay() || 7
+                    const mondayOfWeek1 = new Date(jan4)
+                    mondayOfWeek1.setDate(jan4.getDate() - jan4Day + 1)
+                    startDate = new Date(mondayOfWeek1)
+                    startDate.setDate(mondayOfWeek1.getDate() + (this.selectedWeek - 1) * 7)
+                    endDate = new Date(startDate)
+                    endDate.setDate(startDate.getDate() + 6)
+                } else if (this.selectedMonth !== null) {
+                    startDate = new Date(this.selectedYear, this.selectedMonth, 1)
+                    endDate = getEndOfPeriod(startDate, 'monthly')
+                } else if (this.selectedQuarter !== null) {
+                    const quarterMonth = (this.selectedQuarter - 1) * 3
+                    startDate = new Date(this.selectedYear, quarterMonth, 1)
+                    endDate = getEndOfPeriod(startDate, 'quarterly')
+                } else {
+                    // Limit to first month to avoid 365 items
+                    startDate = new Date(this.selectedYear, 0, 1)
+                    endDate = getEndOfPeriod(startDate, 'monthly')
+                }
+
+                return generateDateRange(startDate, endDate, 'daily')
+            }
         }
+    }
 
-        for (const date of missingDates) {
-            const normalized = getStartOfPeriod(date, periodType)
-            if (!combined.has(normalized.getTime())) {
-                combined.set(normalized.getTime(), normalized)
+    /**
+     * Get all available dates for a column within the current context.
+     * Shows all periods in the context (existing + missing).
+     * Returns dates sorted descending (newest first).
+     */
+    private getAvailableDatesForColumn(
+        state: ColumnState,
+        config: PeriodicNoteConfig
+    ): { dates: Date[]; dateEntryMap: Map<number, BasesEntry> } {
+        // Get filtered entries based on current context
+        const filteredEntries = this.filterEntriesByContext(state.entries, state.periodType, config)
+
+        // Extract dates from filtered entries
+        const dateEntryMap = new Map<number, BasesEntry>()
+
+        for (const entry of filteredEntries) {
+            const date = extractDateFromNote(entry.file, config)
+            if (date) {
+                const normalized = getStartOfPeriod(date, state.periodType)
+                dateEntryMap.set(normalized.getTime(), entry)
             }
         }
 
+        // Generate all periods within the current context
+        const contextPeriods = this.generatePeriodsForContext(state.periodType)
+
         // Sort descending (newest first)
-        return Array.from(combined.values()).sort((a, b) => b.getTime() - a.getTime())
+        contextPeriods.sort((a, b) => b.getTime() - a.getTime())
+
+        return { dates: contextPeriods, dateEntryMap }
     }
 
     private filterEntriesByContext(
@@ -405,48 +519,14 @@ export class PeriodicReviewView extends BasesView {
 
     private selectPeriod(state: ColumnState, date: Date, entry: BasesEntry | null): void {
         state.selectedDate = date
+        const exists = entry !== null
 
-        // Determine which columns need cascading based on period type hierarchy
-        const affectedColumns: PeriodType[] = []
+        // Update context and existence for this period type
+        this.updateContextAndExistence(state.periodType, date, exists)
 
-        switch (state.periodType) {
-            case 'yearly':
-                this.selectedYear = getYear(date)
-                // Clear all shorter period contexts
-                this.selectedQuarter = null
-                this.selectedMonth = null
-                this.selectedWeek = null
-                this.selectedWeekYear = null
-                affectedColumns.push('quarterly', 'monthly', 'weekly', 'daily')
-                break
-
-            case 'quarterly':
-                this.selectedQuarter = getQuarter(date)
-                // Clear shorter period contexts
-                this.selectedMonth = null
-                this.selectedWeek = null
-                this.selectedWeekYear = null
-                affectedColumns.push('monthly', 'weekly', 'daily')
-                break
-
-            case 'monthly':
-                this.selectedMonth = getMonth(date)
-                // Clear shorter period contexts
-                this.selectedWeek = null
-                this.selectedWeekYear = null
-                affectedColumns.push('weekly', 'daily')
-                break
-
-            case 'weekly':
-                this.selectedWeek = getWeek(date)
-                this.selectedWeekYear = getISOWeekYear(date)
-                affectedColumns.push('daily')
-                break
-
-            case 'daily':
-                // No cascading needed for daily
-                break
-        }
+        // Cascade upward: update parent column selections to match
+        // This ensures selecting a child (e.g., a day) updates parent selections (week, month, etc.)
+        this.cascadeUpward(state.periodType, date, exists)
 
         // Update selector UI for current column
         this.updateSelectorUI(state)
@@ -454,20 +534,190 @@ export class PeriodicReviewView extends BasesView {
         // Render content for current column
         this.renderColumnContent(state, entry)
 
-        // Cascade: refresh affected columns and auto-select most recent
-        for (const periodType of affectedColumns) {
-            const affectedState = this.columns.get(periodType)
-            if (affectedState) {
-                // Clear the selection for this column
-                affectedState.selectedDate = null
+        // Cascade downward: refresh child columns (but don't auto-select)
+        // If the selected period doesn't exist, child columns will show a message
+        this.cascadeDownward(state.periodType)
+    }
 
-                // Refresh the selector with new filtered data
-                const config = this.plugin.settings[periodType]
-                this.renderPeriodSelector(affectedState, config)
+    /**
+     * Update context variables and existence flag for a period type.
+     */
+    private updateContextAndExistence(periodType: PeriodType, date: Date, exists: boolean): void {
+        switch (periodType) {
+            case 'yearly':
+                this.selectedYear = getYear(date)
+                this.selectedYearExists = exists
+                // Clear child contexts when parent changes
+                this.selectedQuarter = null
+                this.selectedQuarterExists = false
+                this.selectedMonth = null
+                this.selectedMonthExists = false
+                this.selectedWeek = null
+                this.selectedWeekYear = null
+                this.selectedWeekExists = false
+                break
 
-                // Auto-select most recent in this column
-                this.autoSelectSingleColumn(affectedState, config)
+            case 'quarterly':
+                this.selectedQuarter = getQuarter(date)
+                this.selectedQuarterExists = exists
+                // Clear child contexts
+                this.selectedMonth = null
+                this.selectedMonthExists = false
+                this.selectedWeek = null
+                this.selectedWeekYear = null
+                this.selectedWeekExists = false
+                break
+
+            case 'monthly':
+                this.selectedMonth = getMonth(date)
+                this.selectedMonthExists = exists
+                // Clear child contexts
+                this.selectedWeek = null
+                this.selectedWeekYear = null
+                this.selectedWeekExists = false
+                break
+
+            case 'weekly':
+                this.selectedWeek = getWeek(date)
+                this.selectedWeekYear = getISOWeekYear(date)
+                this.selectedWeekExists = exists
+                break
+
+            case 'daily':
+                // Daily has no child contexts to clear
+                break
+        }
+    }
+
+    /**
+     * Cascade selection upward to parent columns.
+     * When selecting a child (e.g., a day), update parent selections to match.
+     */
+    private cascadeUpward(periodType: PeriodType, date: Date, exists: boolean): void {
+        // Only cascade upward if the selected period EXISTS
+        // Non-existing periods don't affect parent selections
+        if (!exists) return
+
+        // Define the parent chain based on which columns are visible
+        const parentChain: PeriodType[] = []
+
+        switch (periodType) {
+            case 'daily':
+                if (this.columns.has('weekly')) parentChain.push('weekly')
+                if (this.columns.has('monthly')) parentChain.push('monthly')
+                if (this.columns.has('quarterly')) parentChain.push('quarterly')
+                if (this.columns.has('yearly')) parentChain.push('yearly')
+                break
+            case 'weekly':
+                if (this.columns.has('monthly')) parentChain.push('monthly')
+                if (this.columns.has('quarterly')) parentChain.push('quarterly')
+                if (this.columns.has('yearly')) parentChain.push('yearly')
+                break
+            case 'monthly':
+                if (this.columns.has('quarterly')) parentChain.push('quarterly')
+                if (this.columns.has('yearly')) parentChain.push('yearly')
+                break
+            case 'quarterly':
+                if (this.columns.has('yearly')) parentChain.push('yearly')
+                break
+            case 'yearly':
+                // No parents
+                break
+        }
+
+        // Update each parent
+        for (const parentType of parentChain) {
+            const parentState = this.columns.get(parentType)
+            if (!parentState) continue
+
+            // Compute the parent period date from the child date
+            const parentDate = getStartOfPeriod(date, parentType)
+            const config = this.plugin.settings[parentType]
+
+            // Find if this parent date has an existing entry
+            const parentEntry = parentState.entries.find((e) => {
+                const entryDate = extractDateFromNote(e.file, config)
+                return (
+                    entryDate &&
+                    getStartOfPeriod(entryDate, parentType).getTime() === parentDate.getTime()
+                )
+            })
+
+            // Update parent state
+            parentState.selectedDate = parentDate
+            const parentExists = parentEntry !== null
+
+            // Update context for this parent type (without clearing child contexts)
+            switch (parentType) {
+                case 'yearly':
+                    this.selectedYear = getYear(parentDate)
+                    this.selectedYearExists = parentExists
+                    break
+                case 'quarterly':
+                    this.selectedQuarter = getQuarter(parentDate)
+                    this.selectedQuarterExists = parentExists
+                    break
+                case 'monthly':
+                    this.selectedMonth = getMonth(parentDate)
+                    this.selectedMonthExists = parentExists
+                    break
+                case 'weekly':
+                    this.selectedWeek = getWeek(parentDate)
+                    this.selectedWeekYear = getISOWeekYear(parentDate)
+                    this.selectedWeekExists = parentExists
+                    break
             }
+
+            // Update UI for parent
+            this.updateSelectorUI(parentState)
+            this.renderColumnContent(parentState, parentEntry ?? null)
+        }
+    }
+
+    /**
+     * Cascade selection downward to child columns.
+     * Refreshes child columns without auto-selecting anything.
+     */
+    private cascadeDownward(periodType: PeriodType): void {
+        // Define the child chain
+        const childChain: PeriodType[] = []
+
+        switch (periodType) {
+            case 'yearly':
+                childChain.push('quarterly', 'monthly', 'weekly', 'daily')
+                break
+            case 'quarterly':
+                childChain.push('monthly', 'weekly', 'daily')
+                break
+            case 'monthly':
+                childChain.push('weekly', 'daily')
+                break
+            case 'weekly':
+                childChain.push('daily')
+                break
+            case 'daily':
+                // No children
+                break
+        }
+
+        // Refresh each child column
+        for (const childType of childChain) {
+            const childState = this.columns.get(childType)
+            if (!childState) continue
+
+            // Clear child selection (no auto-select)
+            childState.selectedDate = null
+
+            // Clear existence flag for this child
+            this.setExistenceFlag(childType, false)
+
+            // Refresh the selector with new filtered data
+            // If parent doesn't exist, this will show the "parent missing" message
+            const config = this.plugin.settings[childType]
+            this.renderPeriodSelector(childState, config)
+
+            // Clear content area
+            childState.column.getContentEl().empty()
         }
     }
 
@@ -531,17 +781,19 @@ export class PeriodicReviewView extends BasesView {
                     state.periodType
                 )
                 if (file) {
-                    // Re-render with new file
-                    const entries = filterEntriesByPeriodType(
-                        this.data.data,
-                        state.periodType,
-                        this.plugin.settings
-                    )
-                    state.entries = entries
+                    // Create a minimal entry for the new file
+                    // Note: this.data.data won't have the new file yet (Obsidian Base hasn't detected it)
+                    // So we create a synthetic entry to immediately show the new note
+                    const newEntry = { file } as BasesEntry
+
+                    // Add to state entries so it appears in the selector
+                    state.entries = [...state.entries, newEntry]
+
+                    // Re-render selector to show the new entry as existing (not missing)
                     this.renderPeriodSelector(state, config)
-                    // Find and select the new entry
-                    const newEntry = entries.find((e) => e.file.path === file.path)
-                    if (newEntry && state.selectedDate) {
+
+                    // Select and display the new entry
+                    if (state.selectedDate) {
                         this.selectPeriod(state, state.selectedDate, newEntry)
                     }
                     return true
@@ -812,94 +1064,133 @@ export class PeriodicReviewView extends BasesView {
         }
     }
 
+    /**
+     * Initial load: auto-select the most recent existing entry in ALL visible columns.
+     * This is the exception to the "no auto-select on cascade" rule.
+     * Works from parent to child so context is properly set up.
+     */
     private autoSelectMostRecent(): void {
-        // Auto-select entries in each column, preferring current period then falling back to closest
-        // Process in reverse order (yearly first) so cascading works properly
-        const columnTypes = Array.from(this.columns.keys()).reverse()
+        // Process columns from parent to child
+        const columnTypesFromParent: PeriodType[] = [
+            'yearly',
+            'quarterly',
+            'monthly',
+            'weekly',
+            'daily'
+        ]
 
-        for (const periodType of columnTypes) {
+        for (const periodType of columnTypesFromParent) {
             const state = this.columns.get(periodType)
             if (!state) continue
 
             const config = this.plugin.settings[periodType]
-            const filteredEntries = this.filterEntriesByContext(state.entries, periodType, config)
+            const { dateEntryMap } = this.getAvailableDatesForColumn(state, config)
 
-            if (filteredEntries.length > 0) {
-                // Try to find entry for current period first
-                const currentPeriodDate = getStartOfPeriod(new Date(), periodType)
-                const currentPeriodEntry = filteredEntries.find((entry) => {
-                    const date = extractDateFromNote(entry.file, config)
-                    if (!date) return false
-                    return (
-                        getStartOfPeriod(date, periodType).getTime() === currentPeriodDate.getTime()
-                    )
-                })
+            // Only select if there are existing entries
+            if (dateEntryMap.size === 0) continue
 
-                if (currentPeriodEntry) {
-                    // Current period exists, select it
-                    this.selectPeriod(state, currentPeriodDate, currentPeriodEntry)
-                } else {
-                    // Fall back to most recent
-                    const sortedEntries = sortEntriesByDate(filteredEntries, config, false)
-                    const mostRecent = sortedEntries[0]
-                    if (mostRecent) {
-                        const date = extractDateFromNote(mostRecent.file, config)
-                        if (date) {
-                            this.selectPeriod(state, getStartOfPeriod(date, periodType), mostRecent)
-                        }
-                    }
-                }
+            // Get existing dates sorted descending
+            const existingDates = Array.from(dateEntryMap.keys())
+                .map((time) => new Date(time))
+                .sort((a, b) => b.getTime() - a.getTime())
+
+            // Try to find current period in existing entries
+            const currentPeriodDate = getStartOfPeriod(new Date(), periodType)
+            const currentPeriodEntry = dateEntryMap.get(currentPeriodDate.getTime())
+
+            let selectedDate: Date
+            let entry: BasesEntry
+            if (currentPeriodEntry) {
+                // Current period exists, select it
+                selectedDate = currentPeriodDate
+                entry = currentPeriodEntry
+            } else {
+                // Fall back to most recent existing entry
+                selectedDate = existingDates[0]!
+                entry = dateEntryMap.get(selectedDate.getTime())!
+            }
+
+            // For initial load, directly set state without triggering full cascade
+            // This allows us to select in all columns independently
+            state.selectedDate = selectedDate
+            this.updateContextAndExistence(periodType, selectedDate, true)
+            this.updateSelectorUI(state)
+            this.renderColumnContent(state, entry)
+        }
+
+        // After all columns are selected, refresh child columns to ensure proper filtering
+        // Start from the first visible column and cascade down
+        for (const periodType of columnTypesFromParent) {
+            const state = this.columns.get(periodType)
+            if (!state || !state.selectedDate) continue
+
+            // Re-render child columns with proper context
+            this.cascadeDownwardWithSelection(periodType)
+            break // Only need to do this once from the parent-most column
+        }
+    }
+
+    /**
+     * Cascade downward while preserving existing selections.
+     * Used during initial load to refresh child columns after all selections are made.
+     */
+    private cascadeDownwardWithSelection(periodType: PeriodType): void {
+        const childChain: PeriodType[] = []
+
+        switch (periodType) {
+            case 'yearly':
+                childChain.push('quarterly', 'monthly', 'weekly', 'daily')
+                break
+            case 'quarterly':
+                childChain.push('monthly', 'weekly', 'daily')
+                break
+            case 'monthly':
+                childChain.push('weekly', 'daily')
+                break
+            case 'weekly':
+                childChain.push('daily')
+                break
+            case 'daily':
+                break
+        }
+
+        for (const childType of childChain) {
+            const childState = this.columns.get(childType)
+            if (!childState) continue
+
+            const config = this.plugin.settings[childType]
+
+            // Re-render the selector to reflect proper filtering
+            this.renderPeriodSelector(childState, config)
+
+            // If there was a selection, update the UI to show it
+            if (childState.selectedDate) {
+                this.updateSelectorUI(childState)
             }
         }
     }
 
     /**
-     * Auto-select an entry in a single column without triggering cascading.
-     * Prefers the current period, falls back to most recent.
-     * Used when cascading from a parent period selection.
+     * Set the existence flag for a period type.
      */
-    private autoSelectSingleColumn(state: ColumnState, config: PeriodicNoteConfig): void {
-        const filteredEntries = this.filterEntriesByContext(state.entries, state.periodType, config)
-
-        if (filteredEntries.length > 0) {
-            // Try to find entry for current period first
-            const currentPeriodDate = getStartOfPeriod(new Date(), state.periodType)
-            const currentPeriodEntry = filteredEntries.find((entry) => {
-                const date = extractDateFromNote(entry.file, config)
-                if (!date) return false
-                return (
-                    getStartOfPeriod(date, state.periodType).getTime() ===
-                    currentPeriodDate.getTime()
-                )
-            })
-
-            if (currentPeriodEntry) {
-                // Current period exists, select it
-                state.selectedDate = currentPeriodDate
-                this.updateSelectorUI(state)
-                this.renderColumnContent(state, currentPeriodEntry)
-                return
-            }
-
-            // Fall back to most recent
-            const sortedEntries = sortEntriesByDate(filteredEntries, config, false)
-            const mostRecent = sortedEntries[0]
-            if (mostRecent) {
-                const date = extractDateFromNote(mostRecent.file, config)
-                if (date) {
-                    const normalizedDate = getStartOfPeriod(date, state.periodType)
-                    state.selectedDate = normalizedDate
-                    this.updateSelectorUI(state)
-                    this.renderColumnContent(state, mostRecent)
-                    return
-                }
-            }
+    private setExistenceFlag(periodType: PeriodType, exists: boolean): void {
+        switch (periodType) {
+            case 'yearly':
+                this.selectedYearExists = exists
+                break
+            case 'quarterly':
+                this.selectedQuarterExists = exists
+                break
+            case 'monthly':
+                this.selectedMonthExists = exists
+                break
+            case 'weekly':
+                this.selectedWeekExists = exists
+                break
+            case 'daily':
+                // Daily has no child columns, so no need to track existence
+                break
         }
-
-        // No entries available - clear content
-        state.selectedDate = null
-        this.updateSelectorUI(state)
-        state.column.getContentEl().empty()
     }
 
     private renderEmptyState(message: string): void {

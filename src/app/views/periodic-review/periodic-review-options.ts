@@ -40,21 +40,6 @@ export function getPeriodicReviewViewOptions(): ViewOption[] {
             max: 600,
             step: 50,
             default: 400
-        } as SliderOption,
-        {
-            type: 'slider',
-            key: 'futurePeriods',
-            displayName: 'Future periods to show',
-            min: 0,
-            max: 12,
-            step: 1,
-            default: 1
-        } as SliderOption,
-        {
-            type: 'toggle',
-            key: 'showMissing',
-            displayName: 'Show missing periods',
-            default: true
-        } as ToggleOption
+        } as SliderOption
     ]
 }

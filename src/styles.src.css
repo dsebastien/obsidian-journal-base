@@ -323,6 +323,16 @@
     padding-left: 0.5rem;
 }
 
+/* Message when parent period doesn't exist */
+.pr-parent-missing {
+    @apply flex items-center justify-center p-4 text-center;
+    color: var(--text-muted);
+}
+
+.pr-parent-missing__text {
+    @apply text-sm italic max-w-xs leading-relaxed;
+}
+
 /* Section styling */
 .pr-section {
     @apply mb-4 pb-4 border-b;
