@@ -105,6 +105,14 @@ If Periodic Notes has no meaningful config, sync is skipped and local settings r
 
 ## Note Creation
 
+### Create Button Behavior
+
+The "Create" button in Periodic Notes and Periodic Review views:
+
+- Creates notes in the folder configured for that specific period type (daily/weekly/monthly/quarterly/yearly)
+- Each period type uses its own `folder` setting from plugin configuration
+- If the note already exists at the target path, returns the existing file without overwriting
+
 ### File Path Construction
 
 `{folder}/{formatted_date}.md`
@@ -122,7 +130,7 @@ Missing folders are created recursively before file creation.
 
 ### Duplicate Prevention
 
-If file already exists at target path, return existing file (no overwrite).
+If file already exists at target path, return existing file (no overwrite). A notice is shown to inform the user.
 
 ---
 
