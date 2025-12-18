@@ -10,7 +10,11 @@ import {
     filterEntriesByPeriodType,
     sortEntriesByDate
 } from '../../../utils/periodic-note-utils'
-import { getStartOfPeriod, formatFilenameWithSuffix } from '../../../utils/date-utils'
+import {
+    getStartOfPeriod,
+    formatFilenameWithSuffix,
+    isCurrentPeriod
+} from '../../../utils/date-utils'
 import {
     parseMarkdownSections,
     sectionExists,
@@ -246,6 +250,9 @@ export class PeriodicReviewView extends BasesView {
             const classes = ['pr-period-item']
             if (isMissing) classes.push('pr-period-item--missing')
             if (isFuture) classes.push('pr-period-item--future')
+            if (isCurrentPeriod(date, state.periodType)) {
+                classes.push('pr-period-item--current')
+            }
             if (state.selectedDate && date.getTime() === state.selectedDate.getTime()) {
                 classes.push('pr-period-item--selected')
             }

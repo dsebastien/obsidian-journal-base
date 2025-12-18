@@ -382,6 +382,31 @@
     padding-left: 0.5rem;
 }
 
+/* Current period indicator - uses border + dot icon */
+.pr-period-item--current {
+    @apply relative font-medium;
+    border-left: 3px solid var(--interactive-accent);
+    padding-left: calc(0.75rem - 1px);
+}
+
+.pr-period-item--current::before {
+    content: '●';
+    @apply absolute text-[0.5rem] leading-none;
+    left: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--interactive-accent);
+}
+
+/* When current is also selected, keep the dot visible but adjust color */
+.pr-period-item--current.pr-period-item--selected {
+    border-left-color: var(--text-on-accent);
+}
+
+.pr-period-item--current.pr-period-item--selected::before {
+    color: var(--text-on-accent);
+}
+
 /* Message when parent period doesn't exist */
 .pr-parent-missing {
     @apply flex items-center justify-center p-4 text-center;
