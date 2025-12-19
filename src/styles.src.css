@@ -352,7 +352,8 @@
 }
 
 .pr-column__selector {
-    @apply flex-shrink-0 overflow-y-auto max-h-[180px] border-b;
+    @apply flex-shrink-0 overflow-y-auto border-b;
+    height: 140px; /* Fixed height: 5 entries × 28px per entry */
     border-color: var(--background-modifier-border);
 }
 
@@ -360,8 +361,7 @@
 .pr-virtual-selector {
     @apply relative;
     overflow: auto;
-    max-height: 180px;
-    min-height: 80px;
+    height: 140px; /* Fixed height: 5 entries × 28px per entry */
 }
 
 .pr-virtual-spacer {
