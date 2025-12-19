@@ -6,7 +6,6 @@ export interface VirtualPeriodItem {
     label: string
     entry: BasesEntry | null
     isMissing: boolean
-    isFuture: boolean
     isCurrent: boolean
 }
 
@@ -102,17 +101,21 @@ export class VirtualPeriodSelector extends Component {
     /**
      * Update selection without re-rendering items.
      * Much faster than setItems for selection changes.
+     * Also ensures other state classes (--missing, etc.) are synchronized.
      */
     setSelection(date: Date | null): void {
         this.selectedDate = date
 
-        // Update selection class on rendered items
+        // Update classes on rendered items to ensure consistency
         for (const [index, el] of this.itemPool) {
             const item = this.items[index]
             if (!item) continue
 
             const isSelected = date && item.date.getTime() === date.getTime()
             el.classList.toggle('pr-period-item--selected', !!isSelected)
+            // Also synchronize other state classes to ensure consistency
+            el.classList.toggle('pr-period-item--missing', !!item.isMissing)
+            el.classList.toggle('pr-period-item--current', !!item.isCurrent)
         }
     }
 
@@ -227,7 +230,6 @@ export class VirtualPeriodSelector extends Component {
         // Apply classes
         const classes = ['pr-period-item']
         if (item.isMissing) classes.push('pr-period-item--missing')
-        if (item.isFuture) classes.push('pr-period-item--future')
         if (item.isCurrent) classes.push('pr-period-item--current')
         if (this.selectedDate && item.date.getTime() === this.selectedDate.getTime()) {
             classes.push('pr-period-item--selected')
@@ -263,7 +265,6 @@ export class VirtualPeriodSelector extends Component {
         if (el) {
             // Update classes
             el.classList.toggle('pr-period-item--missing', !!item.isMissing)
-            el.classList.toggle('pr-period-item--future', !!item.isFuture)
             el.classList.toggle('pr-period-item--current', !!item.isCurrent)
         }
     }

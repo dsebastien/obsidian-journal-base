@@ -405,13 +405,14 @@
 }
 
 .pr-period-item--missing {
-    @apply opacity-60 italic;
+    @apply italic;
+    opacity: 0.6;
 }
 
-.pr-period-item--future {
-    @apply italic opacity-70;
-    border-left: 2px solid var(--text-accent);
-    padding-left: 0.5rem;
+/* Missing + selected: keep italic but increase opacity for better visibility */
+.pr-period-item--missing.pr-period-item--selected {
+    @apply italic;
+    opacity: 0.85;
 }
 
 /* Current period indicator - uses border + dot icon */

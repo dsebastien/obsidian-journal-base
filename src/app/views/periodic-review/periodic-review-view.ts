@@ -419,7 +419,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         // Sort newest to oldest
         contextPeriods.sort((a, b) => b.getTime() - a.getTime())
 
-        const now = Date.now()
         const items: VirtualPeriodItem[] = []
 
         for (const date of contextPeriods) {
@@ -431,7 +430,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 label,
                 entry,
                 isMissing: !entry,
-                isFuture: date.getTime() > now,
                 isCurrent: isCurrentPeriod(date, state.periodType)
             })
         }
