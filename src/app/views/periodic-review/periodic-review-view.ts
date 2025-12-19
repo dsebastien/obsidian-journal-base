@@ -1,15 +1,10 @@
-import { BasesView, BasesEntry, Notice, type TFile } from 'obsidian'
-import type { QueryController } from 'obsidian'
+import { BasesView, BasesEntry, Notice, type TFile, debounce } from 'obsidian'
+import type { QueryController, Debouncer } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import type { PeriodType, PeriodicNoteConfig, LifeTrackerPluginFileProvider } from '../../types'
 import { FoldableColumn, CreateNoteButton, NoteCard, type CardMode } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
-import {
-    extractDateFromNote,
-    getEnabledPeriodTypes,
-    filterEntriesByPeriodType,
-    sortEntriesByDate
-} from '../../../utils/periodic-note-utils'
+import { extractDateFromNote, getEnabledPeriodTypes } from '../../../utils/periodic-note-utils'
 import {
     getStartOfPeriod,
     formatFilenameWithSuffix,
@@ -25,6 +20,8 @@ import {
 import { SelectionContext, type SelectionContextSnapshot } from './selection-context'
 import { generatePeriodsForContext } from './period-generator'
 import { filterEntriesByContext } from './entry-filter'
+import { PeriodCache } from './period-cache'
+import { VirtualPeriodSelector, type VirtualPeriodItem } from './virtual-period-selector'
 
 // Plus icon for create button in column header
 const PLUS_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
@@ -44,6 +41,8 @@ interface ColumnState {
     selectedDate: Date | null
     entries: BasesEntry[]
     noteCard: NoteCard | null
+    virtualSelector: VirtualPeriodSelector | null
+    needsRefresh: boolean
 }
 
 export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFileProvider {
@@ -60,12 +59,26 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private unsubscribeFromSettings: (() => void) | null = null
     private savedNoteCardStates: Map<string, NoteCardState> = new Map()
 
+    // Performance optimization: caching and debouncing
+    private cache: PeriodCache = new PeriodCache()
+    private dataVersion: number = 0
+    private debouncedDataUpdate: Debouncer<[], void>
+
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
         this.plugin = plugin
         this.noteCreationService = new NoteCreationService(this.app)
         this.containerEl = scrollEl.createDiv({ cls: 'periodic-review-view' })
         this.columnsEl = this.containerEl.createDiv({ cls: 'pr-columns' })
+
+        // Initialize debounced data update (50ms debounce for rapid file changes)
+        this.debouncedDataUpdate = debounce(
+            () => {
+                this.doDataUpdate()
+            },
+            50,
+            true
+        )
 
         // Register as active file provider for commands (Life Tracker compatibility)
         this.plugin.setActiveFileProvider(this)
@@ -74,6 +87,49 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         this.unsubscribeFromSettings = this.plugin.onSettingsChange(() => {
             this.onDataUpdated()
         })
+
+        // Setup scroll listener for lazy column refresh
+        this.setupViewportObserver()
+    }
+
+    /**
+     * Setup scroll listener to refresh columns that need updating when they come into view.
+     */
+    private setupViewportObserver(): void {
+        this.registerDomEvent(this.columnsEl, 'scroll', () => {
+            this.checkDeferredRefreshes()
+        })
+    }
+
+    /**
+     * Check if any columns marked for refresh are now in viewport.
+     */
+    private checkDeferredRefreshes(): void {
+        for (const state of this.columns.values()) {
+            if (state.needsRefresh && this.isColumnInViewport(state)) {
+                this.refreshColumn(state)
+            }
+        }
+    }
+
+    /**
+     * Check if a column is visible in the viewport.
+     */
+    private isColumnInViewport(state: ColumnState): boolean {
+        const el = state.column.getElement()
+        const rect = el.getBoundingClientRect()
+        const containerRect = this.containerEl.getBoundingClientRect()
+
+        return rect.left < containerRect.right && rect.right > containerRect.left
+    }
+
+    /**
+     * Refresh a column that was marked for deferred update.
+     */
+    private refreshColumn(state: ColumnState): void {
+        const config = this.plugin.settings[state.periodType]
+        this.updateVirtualSelector(state, config)
+        state.needsRefresh = false
     }
 
     /**
@@ -106,7 +162,22 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         return 'never'
     }
 
+    /**
+     * Called when Base data updates. Uses debouncing to batch rapid updates.
+     */
     override onDataUpdated(): void {
+        // Increment data version for cache invalidation
+        this.dataVersion++
+        this.cache.incrementDataVersion()
+
+        // Use debounced update to batch rapid file changes
+        this.debouncedDataUpdate()
+    }
+
+    /**
+     * Actual data update logic (called after debounce).
+     */
+    private doDataUpdate(): void {
         // Check if we can do an incremental update (structure unchanged, just data changed)
         const newEnabledTypes = getEnabledPeriodTypes(this.plugin.settings)
         const newVisibleTypes = this.getVisiblePeriodTypes(newEnabledTypes)
@@ -152,13 +223,14 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             const config = this.plugin.settings[periodType]
             if (!config.enabled) continue
 
-            const entries = filterEntriesByPeriodType(
+            // Use cache for entries
+            const entries = this.cache.getEntriesByType(
                 this.data.data,
                 periodType,
-                this.plugin.settings
+                this.plugin.settings,
+                this.dataVersion
             )
-            const sortedEntries = sortEntriesByDate(entries, config, false)
-            this.createColumn(periodType, config, sortedEntries, columnWidth)
+            this.createColumn(periodType, config, entries, columnWidth)
         }
 
         if (hadSelection) {
@@ -197,6 +269,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     /**
      * Perform an incremental update without rebuilding the entire view.
      * This preserves NoteCard instances and just refreshes their content.
+     * Uses caching and virtual selector for optimal performance.
      */
     private incrementalUpdate(): void {
         // Update entries for each column
@@ -204,15 +277,16 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             const config = this.plugin.settings[periodType]
             if (!config.enabled) continue
 
-            const entries = filterEntriesByPeriodType(
+            // Use cache for entries (major performance improvement)
+            state.entries = this.cache.getEntriesByType(
                 this.data.data,
                 periodType,
-                this.plugin.settings
+                this.plugin.settings,
+                this.dataVersion
             )
-            state.entries = sortEntriesByDate(entries, config, false)
 
-            // Update the period selector (in case entries changed)
-            this.renderPeriodSelector(state, config)
+            // Update the virtual selector with new items
+            this.updateVirtualSelector(state, config)
 
             // If there's a selected period, refresh the NoteCard
             if (state.selectedDate && state.noteCard) {
@@ -249,12 +323,24 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         const column = new FoldableColumn(this.columnsEl, PERIOD_TYPE_LABELS[periodType])
         column.setWidth(width)
 
+        // Create virtual selector for this column
+        const selectorEl = column.getSelectorEl()
+        const virtualSelector = new VirtualPeriodSelector(selectorEl, (date, entry) => {
+            const columnState = this.columns.get(periodType)
+            if (columnState) {
+                this.selectPeriod(columnState, date, entry)
+            }
+        })
+        this.addChild(virtualSelector)
+
         const state: ColumnState = {
             periodType,
             column,
             selectedDate: null,
             entries,
-            noteCard: null
+            noteCard: null,
+            virtualSelector,
+            needsRefresh: false
         }
         this.columns.set(periodType, state)
 
@@ -263,7 +349,108 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             this.renderCreateNextYearButton(state, config)
         }
 
-        this.renderPeriodSelector(state, config)
+        // Initialize the virtual selector with items
+        this.updateVirtualSelector(state, config)
+    }
+
+    /**
+     * Update the virtual selector with current items.
+     * Uses caching for optimal performance.
+     */
+    private updateVirtualSelector(state: ColumnState, config: PeriodicNoteConfig): void {
+        if (!state.virtualSelector) return
+
+        const selectorEl = state.column.getSelectorEl()
+
+        // Always clear any parent missing message divs first
+        const parentMissingEl = selectorEl.querySelector('.pr-parent-missing')
+        if (parentMissingEl) {
+            parentMissingEl.remove()
+        }
+
+        const parentMissingMessage = this.getParentMissingMessage(state.periodType)
+        if (parentMissingMessage) {
+            state.virtualSelector.clear()
+            this.renderParentMissingMessage(selectorEl, parentMissingMessage)
+            state.column.getContentEl().empty()
+            return
+        }
+
+        const items = this.buildVirtualItems(state, config)
+
+        if (items.length === 0) {
+            state.virtualSelector.showEmptyState('No periods available')
+            return
+        }
+
+        state.virtualSelector.setItems(items)
+
+        if (state.selectedDate) {
+            state.virtualSelector.setSelection(state.selectedDate)
+            state.virtualSelector.scrollToSelection()
+        }
+    }
+
+    /**
+     * Build the items array for the virtual selector.
+     * Uses caching for filtered entries and generated periods.
+     */
+    private buildVirtualItems(state: ColumnState, config: PeriodicNoteConfig): VirtualPeriodItem[] {
+        // Use cache for filtered entries
+        const filteredEntries = filterEntriesByContext(
+            state.entries,
+            state.periodType,
+            config,
+            this.context,
+            this.enabledTypes,
+            this.cache
+        )
+
+        const dateEntryMap = new Map<number, BasesEntry>()
+        for (const entry of filteredEntries) {
+            const date = this.cache.extractDate(entry.file, config)
+            if (date) {
+                const normalized = getStartOfPeriod(date, state.periodType)
+                dateEntryMap.set(normalized.getTime(), entry)
+            }
+        }
+
+        // Use cache for periods
+        const contextPeriods = this.cache.getPeriodsForContext(
+            state.periodType,
+            this.context,
+            this.enabledTypes
+        )
+
+        // Include any dates from existing entries not in generated periods
+        const contextPeriodSet = new Set(contextPeriods.map((d) => d.getTime()))
+        for (const entryTime of dateEntryMap.keys()) {
+            if (!contextPeriodSet.has(entryTime)) {
+                contextPeriods.push(new Date(entryTime))
+            }
+        }
+
+        // Sort newest to oldest
+        contextPeriods.sort((a, b) => b.getTime() - a.getTime())
+
+        const now = Date.now()
+        const items: VirtualPeriodItem[] = []
+
+        for (const date of contextPeriods) {
+            const entry = dateEntryMap.get(date.getTime()) ?? null
+            const label = formatFilenameWithSuffix(date, config.format, state.periodType)
+
+            items.push({
+                date,
+                label,
+                entry,
+                isMissing: !entry,
+                isFuture: date.getTime() > now,
+                isCurrent: isCurrentPeriod(date, state.periodType)
+            })
+        }
+
+        return items
     }
 
     private renderCreateNextYearButton(state: ColumnState, config: PeriodicNoteConfig): void {
@@ -320,57 +507,13 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 const newEntry = { file } as BasesEntry
                 state.entries = [...state.entries, newEntry]
                 this.renderCreateNextYearButton(state, config)
-                this.renderPeriodSelector(state, config)
+                this.updateVirtualSelector(state, config)
                 new Notice(`Created ${nextYear} note`)
             } else {
                 createBtn.disabled = false
                 createBtn.removeClass('pr-column__create-btn--loading')
             }
         })
-    }
-
-    private renderPeriodSelector(state: ColumnState, config: PeriodicNoteConfig): void {
-        const selectorEl = state.column.getSelectorEl()
-        selectorEl.empty()
-
-        const parentMissingMessage = this.getParentMissingMessage(state.periodType)
-        if (parentMissingMessage) {
-            this.renderParentMissingMessage(selectorEl, parentMissingMessage)
-            state.column.getContentEl().empty()
-            return
-        }
-
-        const { dates, dateEntryMap } = this.getAvailableDatesForColumn(state, config)
-
-        if (dates.length === 0) {
-            selectorEl.createDiv({
-                cls: 'pr-period-item pr-period-item--missing',
-                text: 'No periods available'
-            })
-            return
-        }
-
-        const now = Date.now()
-
-        for (const date of dates) {
-            const entry = dateEntryMap.get(date.getTime())
-            const label = formatFilenameWithSuffix(date, config.format, state.periodType)
-            const isMissing = !entry
-            const isFuture = date.getTime() > now
-
-            const classes = ['pr-period-item']
-            if (isMissing) classes.push('pr-period-item--missing')
-            if (isFuture) classes.push('pr-period-item--future')
-            if (isCurrentPeriod(date, state.periodType)) {
-                classes.push('pr-period-item--current')
-            }
-            if (state.selectedDate && date.getTime() === state.selectedDate.getTime()) {
-                classes.push('pr-period-item--selected')
-            }
-
-            const itemEl = selectorEl.createDiv({ cls: classes.join(' '), text: label })
-            itemEl.addEventListener('click', () => this.selectPeriod(state, date, entry ?? null))
-        }
     }
 
     private getParentMissingMessage(periodType: PeriodType): string | null {
@@ -437,12 +580,24 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         state.selectedDate = date
         const exists = entry !== null
 
+        // Invalidate context-dependent caches when selection changes
+        this.cache.invalidateContextCaches()
+
         this.context.updateForPeriod(state.periodType, date, exists)
-        this.updateSelectorUI(state)
+
+        // Update virtual selector's selection (much faster than DOM manipulation)
+        if (state.virtualSelector) {
+            state.virtualSelector.setSelection(date)
+        }
+
         this.renderColumnContent(state, entry)
         this.cascadeDownward(state.periodType)
     }
 
+    /**
+     * Cascade updates downward to child columns.
+     * Updates all child columns to reflect the new parent selection.
+     */
     private cascadeDownward(periodType: PeriodType): void {
         const childTypes = getChildPeriodTypes(periodType).filter((ct) => this.columns.has(ct))
 
@@ -450,33 +605,25 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             const childState = this.columns.get(childType)
             if (!childState) continue
 
+            // Clear selection state
             childState.selectedDate = null
             this.context.setExists(childType, false)
 
+            // Clear virtual selector selection before updating items
+            if (childState.virtualSelector) {
+                childState.virtualSelector.setSelection(null)
+            }
+
+            // Update the virtual selector with new items for the new context
             const config = this.plugin.settings[childType]
-            this.renderPeriodSelector(childState, config)
+            this.updateVirtualSelector(childState, config)
+
+            // Clear content area
             childState.column.getContentEl().empty()
-        }
-    }
-
-    private updateSelectorUI(state: ColumnState): void {
-        const selectorEl = state.column.getSelectorEl()
-        const items = selectorEl.querySelectorAll('.pr-period-item')
-
-        items.forEach((item) => item.removeClass('pr-period-item--selected'))
-
-        if (state.selectedDate) {
-            const config = this.plugin.settings[state.periodType]
-            const label = formatFilenameWithSuffix(
-                state.selectedDate,
-                config.format,
-                state.periodType
-            )
-            items.forEach((item) => {
-                if (item.textContent === label) {
-                    item.addClass('pr-period-item--selected')
-                }
-            })
+            if (childState.noteCard) {
+                childState.noteCard.unload()
+                childState.noteCard = null
+            }
         }
     }
 
@@ -540,7 +687,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 if (file) {
                     const newEntry = { file } as BasesEntry
                     state.entries = [...state.entries, newEntry]
-                    this.renderPeriodSelector(state, config)
+                    this.updateVirtualSelector(state, config)
                     if (state.selectedDate) {
                         this.selectPeriod(state, state.selectedDate, newEntry)
                     }
@@ -575,7 +722,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
 
             state.selectedDate = selectedDate
             this.context.updateForPeriod(periodType, selectedDate, true)
-            this.updateSelectorUI(state)
+            // Update virtual selector selection
+            if (state.virtualSelector) {
+                state.virtualSelector.setSelection(selectedDate)
+            }
             this.renderColumnContent(state, entry)
         }
 
@@ -615,7 +765,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             state.selectedDate = selectedDate
             // Update existence based on whether entry was found (it might be newly created)
             this.context.setExists(periodType, entry !== undefined)
-            this.updateSelectorUI(state)
+            // Update virtual selector selection
+            if (state.virtualSelector) {
+                state.virtualSelector.setSelection(selectedDate)
+            }
             this.renderColumnContent(state, entry ?? null)
         }
 
@@ -671,10 +824,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             if (!childState) continue
 
             const config = this.plugin.settings[childType]
-            this.renderPeriodSelector(childState, config)
+            this.updateVirtualSelector(childState, config)
 
-            if (childState.selectedDate) {
-                this.updateSelectorUI(childState)
+            if (childState.selectedDate && childState.virtualSelector) {
+                childState.virtualSelector.setSelection(childState.selectedDate)
             }
         }
     }
@@ -715,6 +868,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             // Unload NoteCard if present
             if (state.noteCard) {
                 state.noteCard.unload()
+            }
+            // Unload virtual selector
+            if (state.virtualSelector) {
+                this.removeChild(state.virtualSelector)
             }
             state.column.unload()
         }

@@ -1,6 +1,7 @@
 import type { BasesEntry } from 'obsidian'
 import type { PeriodType, PeriodicNoteConfig } from '../../types'
 import type { SelectionContext } from './selection-context'
+import type { PeriodCache } from './period-cache'
 import { extractDateFromNote } from '../../../utils/periodic-note-utils'
 import {
     getYear,
@@ -15,16 +16,22 @@ import {
 /**
  * Filter entries based on the current selection context.
  * Only filters by enabled parent period types - disabled types are ignored.
+ *
+ * @param cache - Optional PeriodCache for date extraction caching (significantly improves performance)
  */
 export function filterEntriesByContext(
     entries: BasesEntry[],
     periodType: PeriodType,
     config: PeriodicNoteConfig,
     context: SelectionContext,
-    enabledTypes: PeriodType[]
+    enabledTypes: PeriodType[],
+    cache?: PeriodCache
 ): BasesEntry[] {
     return entries.filter((entry) => {
-        const date = extractDateFromNote(entry.file, config)
+        // Use cache for date extraction if available (major performance gain)
+        const date = cache
+            ? cache.extractDate(entry.file, config)
+            : extractDateFromNote(entry.file, config)
         if (!date) return false
 
         return isEntryInContext(date, periodType, context, enabledTypes)

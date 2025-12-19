@@ -356,6 +356,24 @@
     border-color: var(--background-modifier-border);
 }
 
+/* Virtual period selector for optimized rendering */
+.pr-virtual-selector {
+    @apply relative;
+    overflow: auto;
+    max-height: 180px;
+    min-height: 80px;
+}
+
+.pr-virtual-spacer {
+    @apply pointer-events-none;
+    width: 1px;
+    visibility: hidden;
+}
+
+.pr-virtual-items {
+    @apply absolute inset-x-0 top-0;
+}
+
 .pr-column--folded .pr-column__selector {
     @apply hidden;
 }
@@ -368,9 +386,12 @@
     @apply hidden;
 }
 
-/* Period selector items */
+/* Period selector items - fixed height for virtual scrolling */
 .pr-period-item {
-    @apply px-3 py-2 cursor-pointer text-sm;
+    @apply flex items-center px-3 cursor-pointer text-sm;
+    height: 28px;
+    line-height: 28px;
+    box-sizing: border-box;
     color: var(--text-muted);
 }
 
