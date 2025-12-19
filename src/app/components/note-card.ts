@@ -15,6 +15,10 @@ const SOURCE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="
 export interface NoteCardOptions {
     /** Whether the card can be folded/collapsed. Defaults to true. */
     foldable?: boolean
+    /** Force a specific mode. When set, mode cannot be changed by user. */
+    forcedMode?: CardMode
+    /** Hide the mode toggle buttons. Defaults to false. */
+    hideModeToggle?: boolean
 }
 
 export class NoteCard extends Component {
@@ -27,6 +31,8 @@ export class NoteCard extends Component {
     private modeButtons: Map<CardMode, HTMLButtonElement> = new Map()
     private saveDebounced: Debouncer<[string], Promise<void>>
     private foldable: boolean
+    private forcedMode: CardMode | undefined
+    private hideModeToggle: boolean
     private lastRenderedContent: string | null = null
 
     constructor(
@@ -41,6 +47,9 @@ export class NoteCard extends Component {
     ) {
         super()
         this.foldable = options?.foldable ?? true
+        this.forcedMode = options?.forcedMode
+        this.hideModeToggle = options?.hideModeToggle ?? false
+        this.mode = this.forcedMode ?? 'view'
         this.expanded = this.foldable ? initiallyExpanded : true // Always expanded if not foldable
         this.saveDebounced = debounce((content: string) => this.saveContent(content), 1000, true)
         this.containerEl = this.render(parent)
@@ -63,12 +72,14 @@ export class NoteCard extends Component {
         // Button container for action buttons
         const actionsEl = header.createDiv({ cls: 'pn-card__actions' })
 
-        // Mode toggle buttons
-        const modeToggleEl = actionsEl.createDiv({ cls: 'pn-card__mode-toggle' })
-        this.createModeButton(modeToggleEl, 'view', VIEW_ICON, 'Reading view')
-        this.createModeButton(modeToggleEl, 'edit', EDIT_ICON, 'Live preview')
-        this.createModeButton(modeToggleEl, 'source', SOURCE_ICON, 'Source mode')
-        this.updateModeButtons()
+        // Mode toggle buttons (only shown if not hidden)
+        if (!this.hideModeToggle) {
+            const modeToggleEl = actionsEl.createDiv({ cls: 'pn-card__mode-toggle' })
+            this.createModeButton(modeToggleEl, 'view', VIEW_ICON, 'Reading view')
+            this.createModeButton(modeToggleEl, 'edit', EDIT_ICON, 'Live preview')
+            this.createModeButton(modeToggleEl, 'source', SOURCE_ICON, 'Source mode')
+            this.updateModeButtons()
+        }
 
         // Open button (opens in new tab)
         const openBtn = actionsEl.createEl('button', {
@@ -206,6 +217,8 @@ export class NoteCard extends Component {
     }
 
     setMode(mode: CardMode): void {
+        // If mode is forced, ignore mode change requests
+        if (this.forcedMode !== undefined) return
         if (mode === this.mode) return
 
         // Save any pending changes before switching modes

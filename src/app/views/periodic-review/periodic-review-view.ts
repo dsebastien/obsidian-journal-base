@@ -2,7 +2,7 @@ import { BasesView, BasesEntry, Notice, type TFile, debounce } from 'obsidian'
 import type { QueryController, Debouncer } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import type { PeriodType, PeriodicNoteConfig, LifeTrackerPluginFileProvider } from '../../types'
-import { FoldableColumn, CreateNoteButton, NoteCard, type CardMode } from '../../components'
+import { FoldableColumn, CreateNoteButton, NoteCard } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
 import { extractDateFromNote, getEnabledPeriodTypes } from '../../../utils/periodic-note-utils'
 import {
@@ -26,15 +26,6 @@ import { VirtualPeriodSelector, type VirtualPeriodItem } from './virtual-period-
 // Plus icon for create button in column header
 const PLUS_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
 
-/**
- * State for preserving NoteCard state during reconciliation
- */
-interface NoteCardState {
-    expanded: boolean
-    mode: CardMode
-    hasActiveEditor: boolean
-}
-
 interface ColumnState {
     periodType: PeriodType
     column: FoldableColumn
@@ -57,7 +48,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private enabledTypes: PeriodType[] = []
     private isFirstLoad: boolean = true
     private unsubscribeFromSettings: (() => void) | null = null
-    private savedNoteCardStates: Map<string, NoteCardState> = new Map()
 
     // Performance optimization: caching and debouncing
     private cache: PeriodCache = new PeriodCache()
@@ -194,12 +184,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         const savedSnapshot = this.context.saveSnapshot()
         const hadSelection = !this.isFirstLoad
 
-        // Save NoteCard states before cleanup (keyed by file path)
-        const savedNoteCardStates = this.captureNoteCardStates()
-
         this.cleanupColumns()
         this.columnsEl.empty()
-        this.savedNoteCardStates = savedNoteCardStates
 
         this.enabledTypes = newEnabledTypes
         if (this.enabledTypes.length === 0) {
@@ -645,11 +631,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             return
         }
 
-        // Check for saved state for this file (to restore editor mode)
-        const savedState = this.savedNoteCardStates.get(entry.file.path)
-
         // Create NoteCard with the same component used in periodic notes view
-        // In review view, cards are not foldable (always expanded)
+        // In review view: not foldable, always source mode, no mode toggle buttons
         state.noteCard = new NoteCard(
             contentEl,
             this.app,
@@ -660,13 +643,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             (file) => {
                 this.app.workspace.getLeaf('tab').openFile(file)
             },
-            { foldable: false }
+            { foldable: false, forcedMode: 'source', hideModeToggle: true }
         )
-
-        // Restore editor mode if there was a previous state
-        if (savedState && savedState.mode !== 'view') {
-            state.noteCard.setMode(savedState.mode)
-        }
     }
 
     private renderCreateNoteUI(contentEl: HTMLElement, state: ColumnState): void {
@@ -843,24 +821,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             </svg>
         `
         emptyEl.createDiv({ cls: 'pr-empty-state__text', text: message })
-    }
-
-    /**
-     * Capture the state of all NoteCards before cleanup.
-     * Returns a map keyed by file path.
-     */
-    private captureNoteCardStates(): Map<string, NoteCardState> {
-        const states = new Map<string, NoteCardState>()
-        for (const state of this.columns.values()) {
-            if (state.noteCard) {
-                states.set(state.noteCard.getFile().path, {
-                    expanded: state.noteCard.isExpanded(),
-                    mode: state.noteCard.getMode(),
-                    hasActiveEditor: state.noteCard.hasActiveEditor()
-                })
-            }
-        }
-        return states
     }
 
     private cleanupColumns(): void {
