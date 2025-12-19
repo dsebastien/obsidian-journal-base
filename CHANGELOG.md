@@ -1,3 +1,12 @@
+## [1.1.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.0.0...1.1.0) (2025-12-19)
+
+### Features
+
+* **all:** adapt the column width dynamically when the periodic review column width setting is changed ([18f67f8](https://github.com/dsebastien/obsidian-journal-bases/commit/18f67f8143a129b1d68f47e6ab7db36fdaee12e7))
+* **all:** enforce edit mode within the periodic review view (faster) ([d949d22](https://github.com/dsebastien/obsidian-journal-bases/commit/d949d225fda20dcab7d72e1e1332a6e02cf1342e))
+* **all:** first set of performance improvements to the periodic review base view ([dcc5db0](https://github.com/dsebastien/obsidian-journal-bases/commit/dcc5db04398baec694fd2f5a5b50323793a71367))
+* **all:** improved periodic review entries styling to avoid confusion ([d82267c](https://github.com/dsebastien/obsidian-journal-bases/commit/d82267c99d04795ffea36ad2177fe369fa0122b6))
+* **all:** made all file containers in the periodic review view the same height for uniformity ([bd57b80](https://github.com/dsebastien/obsidian-journal-bases/commit/bd57b8049bddaf16a0fe5e9f43739f00f5e23f78))
 ## [1.0.0](https://github.com/dsebastien/obsidian-journal-bases/compare/0.5.0...1.0.0) (2025-12-18)
 
 ### Features
