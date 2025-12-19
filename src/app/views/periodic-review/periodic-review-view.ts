@@ -258,10 +258,16 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
      * Uses caching and virtual selector for optimal performance.
      */
     private incrementalUpdate(): void {
+        // Update column width (in case view option changed)
+        const columnWidth = (this.config.get('columnWidth') as number) ?? 400
+
         // Update entries for each column
         for (const [periodType, state] of this.columns) {
             const config = this.plugin.settings[periodType]
             if (!config.enabled) continue
+
+            // Update column width
+            state.column.setWidth(columnWidth)
 
             // Use cache for entries (major performance improvement)
             state.entries = this.cache.getEntriesByType(
