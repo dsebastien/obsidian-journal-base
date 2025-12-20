@@ -1,3 +1,8 @@
+## [1.3.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.2.0...1.3.0) (2025-12-20)
+
+### Features
+
+* **all:** adapt columns content when a periodic note type is enabled or disabled ([c90c9e9](https://github.com/dsebastien/obsidian-journal-bases/commit/c90c9e9499a5fb15683b43b105b80cbc0360b95b)), closes [#32](https://github.com/dsebastien/obsidian-journal-bases/issues/32)
 ## [1.2.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.1.0...1.2.0) (2025-12-20)
 
 ### Features
