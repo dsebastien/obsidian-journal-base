@@ -46,6 +46,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private columns: Map<PeriodType, ColumnState> = new Map()
     private context: SelectionContext = new SelectionContext()
     private enabledTypes: PeriodType[] = []
+    private visibleTypes: PeriodType[] = []
     private isFirstLoad: boolean = true
     private unsubscribeFromSettings: (() => void) | null = null
 
@@ -188,6 +189,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         this.columnsEl.empty()
 
         this.enabledTypes = newEnabledTypes
+        this.visibleTypes = newVisibleTypes
         if (this.enabledTypes.length === 0) {
             this.renderEmptyState('No period types are enabled. Configure them in plugin settings.')
             return
@@ -389,12 +391,13 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
      */
     private buildVirtualItems(state: ColumnState, config: PeriodicNoteConfig): VirtualPeriodItem[] {
         // Use cache for filtered entries
+        // Use visibleTypes instead of enabledTypes so hidden columns don't affect filtering
         const filteredEntries = filterEntriesByContext(
             state.entries,
             state.periodType,
             config,
             this.context,
-            this.enabledTypes,
+            this.visibleTypes,
             this.cache
         )
 
@@ -408,10 +411,11 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         }
 
         // Use cache for periods
+        // Use visibleTypes instead of enabledTypes so hidden columns don't affect period generation
         const contextPeriods = this.cache.getPeriodsForContext(
             state.periodType,
             this.context,
-            this.enabledTypes
+            this.visibleTypes
         )
 
         // Include any dates from existing entries not in generated periods
@@ -529,12 +533,13 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         state: ColumnState,
         config: PeriodicNoteConfig
     ): { dates: Date[]; dateEntryMap: Map<number, BasesEntry> } {
+        // Use visibleTypes instead of enabledTypes so hidden columns don't affect filtering
         const filteredEntries = filterEntriesByContext(
             state.entries,
             state.periodType,
             config,
             this.context,
-            this.enabledTypes
+            this.visibleTypes
         )
         const dateEntryMap = new Map<number, BasesEntry>()
 
@@ -546,10 +551,11 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             }
         }
 
+        // Use visibleTypes instead of enabledTypes so hidden columns don't affect period generation
         const contextPeriods = generatePeriodsForContext(
             state.periodType,
             this.context,
-            this.enabledTypes
+            this.visibleTypes
         )
 
         // Include any dates from existing entries that aren't in the generated periods

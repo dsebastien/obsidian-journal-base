@@ -76,16 +76,16 @@ export class PeriodCache {
 
     /**
      * Get generated periods for context with caching.
-     * Cache is invalidated when context changes.
+     * Cache is invalidated when context or visible columns change.
      */
     getPeriodsForContext(
         periodType: PeriodType,
         context: SelectionContext,
-        enabledTypes: PeriodType[]
+        visibleTypes: PeriodType[]
     ): Date[] {
-        const contextHash = this.hashContext(context, enabledTypes)
+        const contextHash = this.hashContext(context, visibleTypes)
 
-        // Invalidate cache if context changed
+        // Invalidate cache if context or visible columns changed
         if (contextHash !== this.periodsCacheContextHash) {
             this.periodsCache.clear()
             this.periodsCacheContextHash = contextHash
@@ -96,7 +96,7 @@ export class PeriodCache {
             return [...cached] // Return a copy to prevent mutation
         }
 
-        const periods = generatePeriodsForContext(periodType, context, enabledTypes)
+        const periods = generatePeriodsForContext(periodType, context, visibleTypes)
         this.periodsCache.set(periodType, periods)
         return [...periods] // Return a copy
     }
@@ -133,14 +133,14 @@ export class PeriodCache {
         this.currentDataVersion++
     }
 
-    private hashContext(context: SelectionContext, enabledTypes: PeriodType[]): string {
+    private hashContext(context: SelectionContext, visibleTypes: PeriodType[]): string {
         return JSON.stringify({
             year: context.selectedYear,
             quarter: context.selectedQuarter,
             month: context.selectedMonth,
             week: context.selectedWeek,
             weekYear: context.selectedWeekYear,
-            enabled: [...enabledTypes].sort()
+            visible: [...visibleTypes].sort()
         })
     }
 }

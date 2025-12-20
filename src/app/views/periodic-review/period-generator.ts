@@ -11,25 +11,25 @@ import {
 
 /**
  * Generate periods for a given period type within the current selection context.
- * When a parent period type is disabled, its selection is ignored for filtering UNLESS
- * an enabled child type has been selected (which implicitly determines the parent value).
+ * Uses visibleTypes (columns actually shown) instead of just enabled types.
+ * When a parent column is hidden, child columns expand their range to show more periods.
  */
 export function generatePeriodsForContext(
     periodType: PeriodType,
     context: SelectionContext,
-    enabledTypes: PeriodType[]
+    visibleTypes: PeriodType[]
 ): Date[] {
     switch (periodType) {
         case 'yearly':
             return generateYearlyPeriods()
         case 'quarterly':
-            return generateQuarterlyPeriods(context, enabledTypes)
+            return generateQuarterlyPeriods(context, visibleTypes)
         case 'monthly':
-            return generateMonthlyPeriods(context, enabledTypes)
+            return generateMonthlyPeriods(context, visibleTypes)
         case 'weekly':
-            return generateWeeklyPeriods(context, enabledTypes)
+            return generateWeeklyPeriods(context, visibleTypes)
         case 'daily':
-            return generateDailyPeriods(context, enabledTypes)
+            return generateDailyPeriods(context, visibleTypes)
     }
 }
 
@@ -42,18 +42,18 @@ function generateYearlyPeriods(): Date[] {
     return dates
 }
 
-function generateQuarterlyPeriods(context: SelectionContext, enabledTypes: PeriodType[]): Date[] {
-    const yearlyEnabled = enabledTypes.includes('yearly')
+function generateQuarterlyPeriods(context: SelectionContext, visibleTypes: PeriodType[]): Date[] {
+    const yearlyVisible = visibleTypes.includes('yearly')
     const dates: Date[] = []
 
-    if (yearlyEnabled) {
-        // Yearly is enabled - filter by selected year
+    if (yearlyVisible) {
+        // Yearly column is visible - filter by selected year
         for (let q = 1; q <= 4; q++) {
             const month = (q - 1) * 3
             dates.push(new Date(context.selectedYear, month, 1))
         }
     } else {
-        // Yearly is disabled - show quarters across multiple years
+        // Yearly column is hidden - show quarters across multiple years
         const currentYear = getYear(new Date())
         for (let y = currentYear - 5; y <= currentYear; y++) {
             for (let q = 1; q <= 4; q++) {
@@ -65,25 +65,25 @@ function generateQuarterlyPeriods(context: SelectionContext, enabledTypes: Perio
     return dates
 }
 
-function generateMonthlyPeriods(context: SelectionContext, enabledTypes: PeriodType[]): Date[] {
-    const yearlyEnabled = enabledTypes.includes('yearly')
-    const quarterlyEnabled = enabledTypes.includes('quarterly')
+function generateMonthlyPeriods(context: SelectionContext, visibleTypes: PeriodType[]): Date[] {
+    const yearlyVisible = visibleTypes.includes('yearly')
+    const quarterlyVisible = visibleTypes.includes('quarterly')
     const dates: Date[] = []
 
-    // If quarterly is enabled and a quarter is selected, filter by that quarter
+    // If quarterly column is visible and a quarter is selected, filter by that quarter
     // The quarter selection implicitly determines the year
-    if (quarterlyEnabled && context.selectedQuarter !== null) {
+    if (quarterlyVisible && context.selectedQuarter !== null) {
         const startMonth = (context.selectedQuarter - 1) * 3
         for (let m = startMonth; m < startMonth + 3; m++) {
             dates.push(new Date(context.selectedYear, m, 1))
         }
-    } else if (yearlyEnabled) {
-        // Yearly is enabled but no quarter selected - show all months of selected year
+    } else if (yearlyVisible) {
+        // Yearly column is visible but no quarter selected - show all months of selected year
         for (let m = 0; m < 12; m++) {
             dates.push(new Date(context.selectedYear, m, 1))
         }
     } else {
-        // Neither yearly nor quarterly enabled/selected - show months for last 2 years
+        // Neither yearly nor quarterly column visible - show months for last 2 years
         const currentYear = getYear(new Date())
         for (let y = currentYear - 1; y <= currentYear; y++) {
             for (let m = 0; m < 12; m++) {
@@ -94,30 +94,31 @@ function generateMonthlyPeriods(context: SelectionContext, enabledTypes: PeriodT
     return dates
 }
 
-function generateWeeklyPeriods(context: SelectionContext, enabledTypes: PeriodType[]): Date[] {
-    const yearlyEnabled = enabledTypes.includes('yearly')
-    const quarterlyEnabled = enabledTypes.includes('quarterly')
-    const monthlyEnabled = enabledTypes.includes('monthly')
+function generateWeeklyPeriods(context: SelectionContext, visibleTypes: PeriodType[]): Date[] {
+    const yearlyVisible = visibleTypes.includes('yearly')
+    const quarterlyVisible = visibleTypes.includes('quarterly')
+    const monthlyVisible = visibleTypes.includes('monthly')
 
     let startDate: Date
     let endDate: Date
 
-    // Find the most specific enabled parent with a selection
-    if (monthlyEnabled && context.selectedMonth !== null) {
+    // Find the most specific visible parent with a selection
+    // When parent columns are hidden, weekly expands its range
+    if (monthlyVisible && context.selectedMonth !== null) {
         // Month is selected - show weeks of that month
         startDate = new Date(context.selectedYear, context.selectedMonth, 1)
         endDate = getEndOfPeriod(startDate, 'monthly')
-    } else if (quarterlyEnabled && context.selectedQuarter !== null) {
+    } else if (quarterlyVisible && context.selectedQuarter !== null) {
         // Quarter is selected - show weeks of that quarter
         const quarterMonth = (context.selectedQuarter - 1) * 3
         startDate = new Date(context.selectedYear, quarterMonth, 1)
         endDate = getEndOfPeriod(startDate, 'quarterly')
-    } else if (yearlyEnabled) {
-        // Only year is enabled - show weeks of that year
+    } else if (yearlyVisible) {
+        // Only year column is visible - show weeks of that year
         startDate = new Date(context.selectedYear, 0, 1)
         endDate = new Date(context.selectedYear, 11, 31)
     } else {
-        // No parent enabled - show weeks for last 3 months
+        // No parent column visible - show weeks for last 3 months
         const currentYear = getYear(new Date())
         endDate = new Date()
         startDate = new Date(currentYear, new Date().getMonth() - 2, 1)
@@ -137,17 +138,18 @@ function generateWeeklyPeriods(context: SelectionContext, enabledTypes: PeriodTy
     return dates
 }
 
-function generateDailyPeriods(context: SelectionContext, enabledTypes: PeriodType[]): Date[] {
-    const yearlyEnabled = enabledTypes.includes('yearly')
-    const quarterlyEnabled = enabledTypes.includes('quarterly')
-    const monthlyEnabled = enabledTypes.includes('monthly')
-    const weeklyEnabled = enabledTypes.includes('weekly')
+function generateDailyPeriods(context: SelectionContext, visibleTypes: PeriodType[]): Date[] {
+    const yearlyVisible = visibleTypes.includes('yearly')
+    const quarterlyVisible = visibleTypes.includes('quarterly')
+    const monthlyVisible = visibleTypes.includes('monthly')
+    const weeklyVisible = visibleTypes.includes('weekly')
 
     let startDate: Date
     let endDate: Date
 
-    // Find the most specific enabled parent with a selection
-    if (weeklyEnabled && context.selectedWeek !== null && context.selectedWeekYear !== null) {
+    // Find the most specific visible parent with a selection
+    // When parent columns are hidden, child columns expand their range
+    if (weeklyVisible && context.selectedWeek !== null && context.selectedWeekYear !== null) {
         // Week is selected - show days of that week (7 days)
         // Calculate Monday of the ISO week
         const jan4 = new Date(context.selectedWeekYear, 0, 4)
@@ -158,21 +160,22 @@ function generateDailyPeriods(context: SelectionContext, enabledTypes: PeriodTyp
         startDate.setDate(mondayOfWeek1.getDate() + (context.selectedWeek - 1) * 7)
         endDate = new Date(startDate)
         endDate.setDate(startDate.getDate() + 6)
-    } else if (monthlyEnabled && context.selectedMonth !== null) {
+    } else if (monthlyVisible && context.selectedMonth !== null) {
         // Month is selected - show days of that month
         startDate = new Date(context.selectedYear, context.selectedMonth, 1)
         endDate = getEndOfPeriod(startDate, 'monthly')
-    } else if (quarterlyEnabled && context.selectedQuarter !== null) {
+    } else if (quarterlyVisible && context.selectedQuarter !== null) {
         // Quarter is selected - show days of that quarter
         const quarterMonth = (context.selectedQuarter - 1) * 3
         startDate = new Date(context.selectedYear, quarterMonth, 1)
         endDate = getEndOfPeriod(startDate, 'quarterly')
-    } else if (yearlyEnabled) {
-        // Only year is enabled - limit to first month to avoid 365 items
+    } else if (yearlyVisible) {
+        // Only year is visible - show ALL days of that year
+        // (Virtual scrolling handles the 365 items efficiently)
         startDate = new Date(context.selectedYear, 0, 1)
-        endDate = getEndOfPeriod(startDate, 'monthly')
+        endDate = new Date(context.selectedYear, 11, 31)
     } else {
-        // No parent enabled - show days for last 2 weeks
+        // No parent visible - show days for last 2 weeks
         endDate = new Date()
         startDate = new Date()
         startDate.setDate(startDate.getDate() - 14)

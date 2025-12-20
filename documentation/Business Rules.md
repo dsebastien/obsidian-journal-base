@@ -51,13 +51,22 @@ When data updates:
 
 ## Disabled Period Types Filtering
 
-When a period type is disabled:
+A period type is considered "not visible" when:
 
-**Period Generation**: Child types show expanded ranges. Example: if yearly is disabled, quarterly column shows quarters across multiple years.
+- The period type is disabled in plugin settings, OR
+- The column is hidden in Periodic Review view options (e.g., `showWeekly=false`)
 
-**Context Inheritance**: Selecting an enabled child implicitly determines parent values. Example: selecting Q4 2025 sets year to 2025 even if yearly is disabled.
+When a period type is not visible:
 
-**Cascading Behavior**: Only enabled period types influence filtering. Disabled types are skipped in the hierarchy.
+**Period Generation**: Child types show expanded ranges. Examples:
+
+- If yearly column is hidden, quarterly column shows quarters across multiple years
+- If weekly column is hidden, daily column shows all days in the selected month
+- If only yearly and daily columns are visible, daily column shows all days in the selected year
+
+**Context Inheritance**: Selecting a visible child implicitly determines parent values. Example: selecting Q4 2025 sets year to 2025 even if yearly column is hidden.
+
+**Cascading Behavior**: Only visible period types influence filtering. Hidden columns are skipped in the hierarchy.
 
 ---
 
