@@ -1,3 +1,8 @@
+## [1.2.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.1.0...1.2.0) (2025-12-20)
+
+### Features
+
+* **all:** made the base views fully responsive ([c587dbe](https://github.com/dsebastien/obsidian-journal-bases/commit/c587dbe4ddc833dc740c98ef5364c56e32a62070))
 ## [1.1.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.0.0...1.1.0) (2025-12-19)
 
 ### Features
