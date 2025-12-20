@@ -522,3 +522,182 @@
 .pr-markdown-content h3:first-child {
     @apply mt-0;
 }
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Mobile breakpoint (< 600px) */
+@media (max-width: 599px) {
+    /* Periodic Notes View - Mobile */
+    .periodic-notes-view {
+        @apply p-2 gap-3;
+    }
+
+    .pn-tabs {
+        @apply flex-wrap gap-1.5 mb-3;
+    }
+
+    .pn-tab {
+        @apply px-2 py-1 text-sm;
+    }
+
+    .pn-cards {
+        @apply gap-2;
+    }
+
+    .pn-card__header {
+        @apply px-3 py-2;
+    }
+
+    .pn-card__content {
+        @apply px-3 py-2;
+    }
+
+    .pn-card__actions {
+        @apply gap-1;
+    }
+
+    .pn-card__mode-toggle {
+        @apply gap-0;
+    }
+
+    .pn-empty-state {
+        @apply py-8 gap-3;
+    }
+
+    /* Periodic Review View - Mobile: Stack columns vertically */
+    .periodic-review-view {
+        @apply overflow-x-hidden overflow-y-auto;
+    }
+
+    .pr-columns {
+        @apply flex-col;
+    }
+
+    .pr-column {
+        @apply w-full border-r-0 border-b shrink grow-0;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .pr-column.pr-column--folded {
+        @apply w-full h-auto;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex-basis: auto;
+    }
+
+    /* Folded column on mobile - horizontal layout instead of vertical */
+    .pr-column--folded .pr-column__header {
+        @apply relative flex-row items-center pt-2 px-3;
+        position: relative;
+        inset: auto;
+    }
+
+    .pr-column--folded .pr-column__title {
+        writing-mode: horizontal-tb;
+        @apply mt-0 ml-2;
+    }
+
+    .pr-column--folded .pr-column__selector {
+        @apply hidden;
+    }
+
+    .pr-column--folded .pr-column__content {
+        @apply hidden;
+    }
+
+    .pr-column--folded .pr-column__header-actions {
+        @apply flex ml-auto;
+    }
+
+    .pr-column__header {
+        @apply px-2 py-2;
+    }
+
+    .pr-column__selector {
+        height: 112px; /* 4 entries × 28px on mobile */
+    }
+
+    .pr-virtual-selector {
+        height: 112px;
+    }
+
+    .pr-column__content {
+        @apply p-2;
+        /* Limit content height on mobile to prevent single column taking all space */
+        max-height: 50vh;
+    }
+
+    .pr-period-item {
+        @apply px-2;
+    }
+
+    .pr-empty-state {
+        @apply p-4 gap-3;
+    }
+
+    .pr-empty-state__text {
+        @apply text-xs;
+    }
+
+    .pr-create-note {
+        @apply p-2;
+    }
+
+    .pn-create-large__btn {
+        @apply px-4 py-2 text-sm gap-2;
+    }
+
+    .pr-parent-missing {
+        @apply p-2;
+    }
+
+    .pr-parent-missing__text {
+        @apply text-xs;
+    }
+}
+
+/* Tablet breakpoint (600px - 899px) */
+@media (min-width: 600px) and (max-width: 899px) {
+    /* Periodic Notes View - Tablet */
+    .periodic-notes-view {
+        @apply p-3 gap-3;
+    }
+
+    .pn-tabs {
+        @apply flex-wrap;
+    }
+
+    /* Periodic Review View - Tablet: Narrower columns with scroll */
+    .pr-column {
+        min-width: 280px !important;
+        max-width: 350px !important;
+    }
+
+    .pr-column.pr-column--folded {
+        min-width: 40px !important;
+        max-width: 40px !important;
+        width: 40px !important;
+    }
+
+    .pr-column__content {
+        @apply p-2;
+    }
+
+    .pr-column__selector {
+        height: 112px;
+    }
+
+    .pr-virtual-selector {
+        height: 112px;
+    }
+}
+
+/* Large desktop (> 1200px) - Allow wider columns */
+@media (min-width: 1200px) {
+    .pr-column {
+        max-width: 550px;
+    }
+}
