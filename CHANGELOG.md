@@ -1,3 +1,8 @@
+## [1.4.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.3.0...1.4.0) (2025-12-22)
+
+### Features
+
+* **all:** improved editor save/updates ([e14e658](https://github.com/dsebastien/obsidian-journal-bases/commit/e14e658a95b9b9ff3d19d786c5935a4941b5ccb3))
 ## [1.3.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.2.0...1.3.0) (2025-12-20)
 
 ### Features
