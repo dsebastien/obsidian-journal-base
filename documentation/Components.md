@@ -13,6 +13,8 @@ UI components in `src/app/components/`.
 - Embedded markdown editor via `EmbeddableEditor`
 - Debounced auto-save (1s)
 - State preservation during reconciliation
+- **Cursor and scroll position preservation during external updates**
+- External content updates don't interrupt active editing
 
 ### Props
 
@@ -42,16 +44,16 @@ interface CardState {
 
 ### Key Methods
 
-| Method              | Description                             |
-| ------------------- | --------------------------------------- |
-| `toggle()`          | Toggle expanded state                   |
-| `setMode(mode)`     | Switch view/edit/source mode            |
-| `getMode()`         | Get current mode                        |
-| `isExpanded()`      | Check if expanded                       |
-| `hasActiveEditor()` | Check if editor has focus               |
-| `refreshContent()`  | Reload content (skips if editor active) |
-| `getElement()`      | Get DOM element                         |
-| `getFile()`         | Get associated TFile                    |
+| Method              | Description                              |
+| ------------------- | ---------------------------------------- |
+| `toggle()`          | Toggle expanded state                    |
+| `setMode(mode)`     | Switch view/edit/source mode             |
+| `getMode()`         | Get current mode                         |
+| `isExpanded()`      | Check if expanded                        |
+| `hasActiveEditor()` | Check if editor has focus                |
+| `refreshContent()`  | Reload content (preserves cursor/scroll) |
+| `getElement()`      | Get DOM element                          |
+| `getFile()`         | Get associated TFile                     |
 
 ### CSS Classes
 

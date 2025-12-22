@@ -283,11 +283,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             this.updateVirtualSelector(state, config)
 
             // If there's a selected period, refresh the NoteCard
+            // The refreshContent method preserves cursor position and scroll state
             if (state.selectedDate && state.noteCard) {
-                // Skip refresh if editor is active - the data update was likely caused by this editor
-                if (!state.noteCard.hasActiveEditor()) {
-                    state.noteCard.refreshContent()
-                }
+                state.noteCard.refreshContent()
             }
         }
     }

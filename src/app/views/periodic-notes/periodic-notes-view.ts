@@ -223,13 +223,10 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             this.noteCards.delete(path)
         }
 
-        // Refresh existing cards (if they don't have active editors)
-        for (const [path, card] of this.noteCards) {
-            const state = cardStates.get(path)
-            // Skip refresh if editor is active - the data update was likely caused by this editor
-            if (state && !state.hasActiveEditor) {
-                card.refreshContent()
-            }
+        // Refresh existing cards
+        // The refreshContent method preserves cursor position and scroll state
+        for (const card of this.noteCards.values()) {
+            card.refreshContent()
         }
 
         // Rebuild the DOM order to match new data order

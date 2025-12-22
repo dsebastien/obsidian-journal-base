@@ -36,8 +36,18 @@ When `onDataUpdated()` is called:
 - Existing cards must NOT be destroyed and recreated
 - Expanded/collapsed state must be preserved
 - Editor mode (view/edit/source) must be preserved
-- Cards with active/focused editors must NOT be refreshed
+- Cards with active/focused editors: content updated with cursor/scroll preservation
 - Cards removed only when file is no longer in dataset
+
+### Editor State Preservation
+
+During external content updates (Base refresh, external file modification):
+
+- Cursor position preserved using context-aware repositioning
+- Scroll position preserved
+- Selection ranges preserved (multi-cursor support)
+- Undo history preserved (using CodeMirror transaction, not setValue)
+- onChange callback NOT fired for external updates (prevents save loops)
 
 ### Selection State on Data Updates (Periodic Review)
 

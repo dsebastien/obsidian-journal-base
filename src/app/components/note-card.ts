@@ -282,17 +282,13 @@ export class NoteCard extends Component {
 
     /**
      * Refresh the card content without destroying the card.
-     * If the card has an active editor, the refresh is skipped to preserve user edits.
+     * Preserves editor state (cursor position, selection, scroll) during updates.
      * Only re-renders if content has actually changed to avoid visual flashing.
-     * @param force - If true, refresh even if editor is active (use with caution)
+     *
+     * @param force - If true, update even focused editors (preserving cursor)
      * @returns true if content was refreshed, false if skipped
      */
     async refreshContent(force: boolean = false): Promise<boolean> {
-        // Skip refresh if editor is active and not forced
-        if (this.hasActiveEditor() && !force) {
-            return false
-        }
-
         // Only refresh if expanded and content is loaded
         if (!this.expanded || !this.contentLoaded) {
             return false
@@ -321,17 +317,20 @@ export class NoteCard extends Component {
             }
 
             // If in edit/source mode with an editor, update the content
-            // but only if the file content differs from editor content
+            // using the state-preserving method
             if (this.editor) {
                 const editorContent = this.editor.getValue()
 
                 // Only update if content differs (external change)
                 if (fileContent !== editorContent) {
-                    // For safety, don't auto-update if editor has focus
-                    if (!this.editor.hasFocus()) {
-                        this.editor.setValue(fileContent)
-                        return true
+                    // If editor has focus and not forced, skip to avoid disrupting user
+                    if (this.editor.hasFocus() && !force) {
+                        return false
                     }
+
+                    // Use state-preserving update to maintain cursor and scroll
+                    const updated = this.editor.setValuePreservingState(fileContent)
+                    return updated
                 }
             }
         } catch (error) {

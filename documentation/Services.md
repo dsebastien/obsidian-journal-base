@@ -166,14 +166,40 @@ constructor(
 
 #### Key Methods
 
-| Method            | Description                          |
-| ----------------- | ------------------------------------ |
-| `getValue()`      | Get editor content                   |
-| `setValue()`      | Set editor content                   |
-| `focus()`         | Focus the editor                     |
-| `hasFocus()`      | Check if editor has focus            |
-| `setMode()`       | Switch source/preview mode           |
-| `getEditorView()` | Get underlying CodeMirror EditorView |
+| Method                      | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| `getValue()`                | Get editor content                             |
+| `setValue()`                | Set editor content (resets cursor)             |
+| `setValuePreservingState()` | Set content while preserving cursor/scroll     |
+| `focus()`                   | Focus the editor                               |
+| `hasFocus()`                | Check if editor has focus                      |
+| `setMode()`                 | Switch source/preview mode                     |
+| `getEditorView()`           | Get underlying CodeMirror EditorView           |
+| `getState()`                | Capture cursor, selection, and scroll position |
+| `restoreState()`            | Restore previously captured state              |
+
+#### EditorState Type
+
+```typescript
+interface EditorState {
+    cursorPos: number // Character offset from doc start
+    selections: SelectionRange[] // All selection ranges (multi-cursor)
+    scrollTop: number // Scroll position in pixels
+    docLength: number // Document length for validation
+}
+```
+
+#### Smart Content Update
+
+`setValuePreservingState()` uses context-aware cursor repositioning:
+
+1. Captures cursor position and surrounding text context
+2. Applies content changes
+3. Finds matching context in new content
+4. Repositions cursor to equivalent location
+5. Restores scroll position
+
+This prevents the common issue of cursor jumping to the start/end during external updates.
 
 #### Implementation Notes
 

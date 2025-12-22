@@ -1,8 +1,23 @@
 import { App, Component, TFile, Scope } from 'obsidian'
 import { EditorView } from '@codemirror/view'
-import { EditorSelection } from '@codemirror/state'
+import { EditorSelection, type SelectionRange } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
 import { log } from '../../utils/log'
+
+/**
+ * Represents the complete state of an editor for preservation during updates.
+ * Includes cursor position, selection ranges, and scroll position.
+ */
+export interface EditorState {
+    /** Main cursor position (character offset from document start) */
+    cursorPos: number
+    /** All selection ranges (supports multiple cursors) */
+    selections: readonly SelectionRange[]
+    /** Scroll position (top offset in pixels) */
+    scrollTop: number
+    /** Document length at time of capture (for validation) */
+    docLength: number
+}
 
 /**
  * Type definitions for internal Obsidian APIs used for embedded editors.
@@ -151,6 +166,8 @@ export class EmbeddableEditor extends Component {
     private onEnter?: () => boolean | void
     private onEscape?: () => void
     private isDestroyed = false
+    /** Flag to prevent onChange from firing during external content updates */
+    private isUpdatingExternally = false
 
     constructor(
         private app: App,
@@ -240,7 +257,8 @@ export class EmbeddableEditor extends Component {
         const originalOnUpdate = this.editor.onUpdate.bind(this.editor)
         this.editor.onUpdate = (update: unknown, changed: boolean) => {
             originalOnUpdate(update, changed)
-            if (changed && this.onChange) {
+            // Only fire onChange for user-initiated changes, not external updates
+            if (changed && this.onChange && !this.isUpdatingExternally) {
                 this.onChange(this.getValue())
             }
         }
@@ -314,6 +332,151 @@ export class EmbeddableEditor extends Component {
      */
     getMode(): EditorMode {
         return this.mode
+    }
+
+    /**
+     * Capture the current editor state (cursor, selection, scroll).
+     * Use this before making changes to restore state afterward.
+     */
+    getState(): EditorState {
+        const editorView = this.editor.cm
+        const state = editorView.state
+        return {
+            cursorPos: state.selection.main.head,
+            selections: state.selection.ranges,
+            scrollTop: editorView.scrollDOM.scrollTop,
+            docLength: state.doc.length
+        }
+    }
+
+    /**
+     * Restore editor state (cursor, selection, scroll).
+     * Clamps positions to valid ranges for the current document.
+     */
+    restoreState(savedState: EditorState): void {
+        const editorView = this.editor.cm
+        const doc = editorView.state.doc
+        const maxPos = doc.length
+
+        // Clamp positions to valid range
+        const clamp = (pos: number): number => Math.max(0, Math.min(pos, maxPos))
+
+        // Restore selection with clamped positions
+        const newRanges = savedState.selections.map((range) =>
+            EditorSelection.range(clamp(range.anchor), clamp(range.head))
+        )
+
+        if (newRanges.length > 0) {
+            editorView.dispatch({
+                selection: EditorSelection.create(newRanges, 0)
+            })
+        }
+
+        // Restore scroll position
+        editorView.scrollDOM.scrollTop = savedState.scrollTop
+    }
+
+    /**
+     * Update content while preserving cursor position relative to surrounding text.
+     * Uses a smart algorithm to find the best cursor position after the update.
+     *
+     * @param newContent - The new content to set
+     * @returns true if content was updated, false if content was identical
+     */
+    setValuePreservingState(newContent: string): boolean {
+        const currentContent = this.getValue()
+        if (currentContent === newContent) {
+            return false // No change needed
+        }
+
+        const editorView = this.editor.cm
+        const savedState = this.getState()
+
+        // Set flag to prevent onChange from firing
+        this.isUpdatingExternally = true
+
+        try {
+            // Calculate the new cursor position based on content changes
+            const newCursorPos = this.calculateNewCursorPosition(
+                currentContent,
+                newContent,
+                savedState.cursorPos
+            )
+
+            // Replace entire document content
+            editorView.dispatch({
+                changes: {
+                    from: 0,
+                    to: currentContent.length,
+                    insert: newContent
+                },
+                selection: EditorSelection.cursor(Math.min(newCursorPos, newContent.length))
+            })
+
+            // Restore scroll position
+            editorView.scrollDOM.scrollTop = savedState.scrollTop
+
+            return true
+        } finally {
+            this.isUpdatingExternally = false
+        }
+    }
+
+    /**
+     * Calculate the best cursor position after content changes.
+     * Tries to maintain cursor position relative to surrounding context.
+     */
+    private calculateNewCursorPosition(
+        oldContent: string,
+        newContent: string,
+        oldCursorPos: number
+    ): number {
+        // If cursor was at the end, keep it at the end
+        if (oldCursorPos >= oldContent.length) {
+            return newContent.length
+        }
+
+        // If cursor was at the beginning, keep it at the beginning
+        if (oldCursorPos === 0) {
+            return 0
+        }
+
+        // Try to find the cursor position based on context
+        // Get text before and after cursor in old content
+        const contextSize = 20
+        const textBefore = oldContent.slice(Math.max(0, oldCursorPos - contextSize), oldCursorPos)
+        const textAfter = oldContent.slice(oldCursorPos, oldCursorPos + contextSize)
+
+        // Try to find the same context in new content
+        if (textBefore.length > 0) {
+            // Search for the context before cursor
+            const searchStart = Math.max(0, oldCursorPos - contextSize - 50)
+            const searchEnd = Math.min(newContent.length, oldCursorPos + contextSize + 50)
+            const searchArea = newContent.slice(searchStart, searchEnd)
+            const contextIndex = searchArea.lastIndexOf(textBefore)
+
+            if (contextIndex !== -1) {
+                const newPos = searchStart + contextIndex + textBefore.length
+                // Verify the text after also matches (if possible)
+                if (
+                    textAfter.length === 0 ||
+                    newContent.slice(newPos, newPos + textAfter.length) === textAfter
+                ) {
+                    return newPos
+                }
+            }
+        }
+
+        // Fallback: use the same absolute position, clamped
+        return Math.min(oldCursorPos, newContent.length)
+    }
+
+    /**
+     * Check if an external update is currently in progress.
+     * Useful for components to know if they should ignore change events.
+     */
+    isExternalUpdateInProgress(): boolean {
+        return this.isUpdatingExternally
     }
 
     override onunload(): void {
