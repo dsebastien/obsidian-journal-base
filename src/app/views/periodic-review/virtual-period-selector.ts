@@ -1,12 +1,17 @@
 import { Component } from 'obsidian'
 import type { BasesEntry } from 'obsidian'
 
+// SVG icons for done status (lucide-style)
+const CHECK_CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+const CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
+
 export interface VirtualPeriodItem {
     date: Date
     label: string
     entry: BasesEntry | null
     isMissing: boolean
     isCurrent: boolean
+    isDone: boolean
 }
 
 /**
@@ -34,7 +39,8 @@ export class VirtualPeriodSelector extends Component {
 
     constructor(
         private containerEl: HTMLElement,
-        private onSelect: (date: Date, entry: BasesEntry | null) => void
+        private onSelect: (date: Date, entry: BasesEntry | null) => void,
+        private onToggleDone?: (date: Date) => void
     ) {
         super()
         this.setupDOM()
@@ -101,7 +107,7 @@ export class VirtualPeriodSelector extends Component {
     /**
      * Update selection without re-rendering items.
      * Much faster than setItems for selection changes.
-     * Also ensures other state classes (--missing, etc.) are synchronized.
+     * Also ensures other state classes (--missing, --done, etc.) are synchronized.
      */
     setSelection(date: Date | null): void {
         this.selectedDate = date
@@ -116,6 +122,13 @@ export class VirtualPeriodSelector extends Component {
             // Also synchronize other state classes to ensure consistency
             el.classList.toggle('pr-period-item--missing', !!item.isMissing)
             el.classList.toggle('pr-period-item--current', !!item.isCurrent)
+            el.classList.toggle('pr-period-item--done', !!item.isDone)
+
+            // Update done icon
+            const doneIcon = el.querySelector('.pr-period-item__done-icon')
+            if (doneIcon) {
+                doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+            }
         }
     }
 
@@ -231,16 +244,28 @@ export class VirtualPeriodSelector extends Component {
         const classes = ['pr-period-item']
         if (item.isMissing) classes.push('pr-period-item--missing')
         if (item.isCurrent) classes.push('pr-period-item--current')
+        if (item.isDone) classes.push('pr-period-item--done')
         if (this.selectedDate && item.date.getTime() === this.selectedDate.getTime()) {
             classes.push('pr-period-item--selected')
         }
         el.className = classes.join(' ')
 
-        // Set text
-        el.textContent = item.label
+        // Label text
+        const labelEl = el.createSpan({ cls: 'pr-period-item__label', text: item.label })
 
-        // Click handler
-        el.addEventListener('click', () => {
+        // Done icon (clickable, on the right side)
+        const doneIcon = el.createSpan({ cls: 'pr-period-item__done-icon clickable-icon' })
+        doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+        doneIcon.setAttribute('aria-label', item.isDone ? 'Mark as not done' : 'Mark as done')
+
+        // Click on done icon toggles done status
+        doneIcon.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.onToggleDone?.(item.date)
+        })
+
+        // Click on label/item selects the period
+        labelEl.addEventListener('click', () => {
             this.onSelect(item.date, item.entry)
         })
 
@@ -248,7 +273,7 @@ export class VirtualPeriodSelector extends Component {
     }
 
     /**
-     * Update a single item's appearance (e.g., when entry is created).
+     * Update a single item's appearance (e.g., when entry is created or done status changes).
      */
     updateItem(date: Date, updates: Partial<Omit<VirtualPeriodItem, 'date'>>): void {
         const index = this.items.findIndex((item) => item.date.getTime() === date.getTime())
@@ -266,6 +291,43 @@ export class VirtualPeriodSelector extends Component {
             // Update classes
             el.classList.toggle('pr-period-item--missing', !!item.isMissing)
             el.classList.toggle('pr-period-item--current', !!item.isCurrent)
+            el.classList.toggle('pr-period-item--done', !!item.isDone)
+
+            // Update done icon
+            const doneIcon = el.querySelector('.pr-period-item__done-icon')
+            if (doneIcon) {
+                doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+                doneIcon.setAttribute(
+                    'aria-label',
+                    item.isDone ? 'Mark as not done' : 'Mark as done'
+                )
+            }
+        }
+    }
+
+    /**
+     * Refresh done states for all items based on a callback.
+     * Used when done reviews are updated externally.
+     */
+    refreshDoneStates(getDoneState: (date: Date) => boolean): void {
+        for (const item of this.items) {
+            item.isDone = getDoneState(item.date)
+        }
+
+        // Update rendered elements
+        for (const [index, el] of this.itemPool) {
+            const item = this.items[index]
+            if (!item) continue
+
+            el.classList.toggle('pr-period-item--done', !!item.isDone)
+            const doneIcon = el.querySelector('.pr-period-item__done-icon')
+            if (doneIcon) {
+                doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+                doneIcon.setAttribute(
+                    'aria-label',
+                    item.isDone ? 'Mark as not done' : 'Mark as done'
+                )
+            }
         }
     }
 

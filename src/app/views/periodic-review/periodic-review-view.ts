@@ -49,6 +49,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private visibleTypes: PeriodType[] = []
     private isFirstLoad: boolean = true
     private unsubscribeFromSettings: (() => void) | null = null
+    private unsubscribeFromDoneReviews: (() => void) | null = null
 
     // Performance optimization: caching and debouncing
     private cache: PeriodCache = new PeriodCache()
@@ -79,8 +80,27 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             this.onDataUpdated()
         })
 
+        // Subscribe to done reviews changes to refresh checkmarks
+        this.unsubscribeFromDoneReviews = this.plugin.onDoneReviewsChange(() => {
+            this.refreshDoneStates()
+        })
+
         // Setup scroll listener for lazy column refresh
         this.setupViewportObserver()
+    }
+
+    /**
+     * Refresh done states for all virtual selectors.
+     * Called when done reviews are updated.
+     */
+    private refreshDoneStates(): void {
+        for (const [periodType, state] of this.columns) {
+            if (state.virtualSelector) {
+                state.virtualSelector.refreshDoneStates((date) =>
+                    this.plugin.isDone(date, periodType)
+                )
+            }
+        }
     }
 
     /**
@@ -317,12 +337,19 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
 
         // Create virtual selector for this column
         const selectorEl = column.getSelectorEl()
-        const virtualSelector = new VirtualPeriodSelector(selectorEl, (date, entry) => {
-            const columnState = this.columns.get(periodType)
-            if (columnState) {
-                this.selectPeriod(columnState, date, entry)
+        const virtualSelector = new VirtualPeriodSelector(
+            selectorEl,
+            (date, entry) => {
+                const columnState = this.columns.get(periodType)
+                if (columnState) {
+                    this.selectPeriod(columnState, date, entry)
+                }
+            },
+            async (date) => {
+                // Toggle done status for this period (cascades to children)
+                await this.plugin.toggleDone(date, periodType)
             }
-        })
+        )
         this.addChild(virtualSelector)
 
         const state: ColumnState = {
@@ -438,7 +465,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 label,
                 entry,
                 isMissing: !entry,
-                isCurrent: isCurrentPeriod(date, state.periodType)
+                isCurrent: isCurrentPeriod(date, state.periodType),
+                isDone: this.plugin.isDone(date, state.periodType)
             })
         }
 
@@ -848,6 +876,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
 
     override onunload(): void {
         this.unsubscribeFromSettings?.()
+        this.unsubscribeFromDoneReviews?.()
         this.cleanupColumns()
     }
 }

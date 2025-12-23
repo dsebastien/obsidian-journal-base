@@ -12,6 +12,10 @@ const VIEW_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14
 const EDIT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`
 const SOURCE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
 
+// SVG icons for done status
+const CHECK_CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+const CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
+
 export interface NoteCardOptions {
     /** Whether the card can be folded/collapsed. Defaults to true. */
     foldable?: boolean
@@ -19,6 +23,10 @@ export interface NoteCardOptions {
     forcedMode?: CardMode
     /** Hide the mode toggle buttons. Defaults to false. */
     hideModeToggle?: boolean
+    /** Whether this period is marked as done. */
+    isDone?: boolean
+    /** Callback when done status is toggled. */
+    onToggleDone?: () => void
 }
 
 export class NoteCard extends Component {
@@ -34,6 +42,9 @@ export class NoteCard extends Component {
     private forcedMode: CardMode | undefined
     private hideModeToggle: boolean
     private lastRenderedContent: string | null = null
+    private isDone: boolean
+    private onToggleDone?: () => void
+    private doneButton: HTMLButtonElement | null = null
 
     constructor(
         parent: HTMLElement,
@@ -49,6 +60,8 @@ export class NoteCard extends Component {
         this.foldable = options?.foldable ?? true
         this.forcedMode = options?.forcedMode
         this.hideModeToggle = options?.hideModeToggle ?? false
+        this.isDone = options?.isDone ?? false
+        this.onToggleDone = options?.onToggleDone
         this.mode = this.forcedMode ?? 'view'
         this.expanded = this.foldable ? initiallyExpanded : true // Always expanded if not foldable
         this.saveDebounced = debounce((content: string) => this.saveContent(content), 1000, true)
@@ -57,9 +70,11 @@ export class NoteCard extends Component {
 
     private render(parent: HTMLElement): HTMLElement {
         const isCurrent = this.noteDate ? isCurrentPeriod(this.noteDate, this.periodType) : false
-        const container = parent.createDiv({
-            cls: `pn-card ${this.expanded ? 'pn-card--expanded' : ''} ${isCurrent ? 'pn-card--current' : ''}`
-        })
+        const classes = ['pn-card']
+        if (this.expanded) classes.push('pn-card--expanded')
+        if (isCurrent) classes.push('pn-card--current')
+        if (this.isDone) classes.push('pn-card--done')
+        const container = parent.createDiv({ cls: classes.join(' ') })
 
         // Header
         const header = container.createDiv({ cls: 'pn-card__header' })
@@ -79,6 +94,19 @@ export class NoteCard extends Component {
             this.createModeButton(modeToggleEl, 'edit', EDIT_ICON, 'Live preview')
             this.createModeButton(modeToggleEl, 'source', SOURCE_ICON, 'Source mode')
             this.updateModeButtons()
+        }
+
+        // Done toggle button (if onToggleDone is provided)
+        if (this.onToggleDone) {
+            this.doneButton = actionsEl.createEl('button', {
+                cls: `pn-card__done-btn clickable-icon ${this.isDone ? 'pn-card__done-btn--active' : ''}`,
+                attr: { 'aria-label': this.isDone ? 'Mark as not done' : 'Mark as done' }
+            })
+            this.doneButton.innerHTML = this.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+            this.registerDomEvent(this.doneButton, 'click', (e) => {
+                e.stopPropagation()
+                this.onToggleDone?.()
+            })
         }
 
         // Open button (opens in new tab)
@@ -360,6 +388,28 @@ export class NoteCard extends Component {
         if (state.mode !== this.mode) {
             this.setMode(state.mode)
         }
+    }
+
+    /**
+     * Update the done state of this card.
+     * Called when done reviews change externally.
+     */
+    setDoneState(isDone: boolean): void {
+        this.isDone = isDone
+        this.containerEl.classList.toggle('pn-card--done', isDone)
+
+        if (this.doneButton) {
+            this.doneButton.innerHTML = isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+            this.doneButton.classList.toggle('pn-card__done-btn--active', isDone)
+            this.doneButton.setAttribute('aria-label', isDone ? 'Mark as not done' : 'Mark as done')
+        }
+    }
+
+    /**
+     * Get the current done state.
+     */
+    getDoneState(): boolean {
+        return this.isDone
     }
 
     override onunload(): void {

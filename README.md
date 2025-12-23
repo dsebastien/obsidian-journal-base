@@ -94,7 +94,8 @@ This makes it effortless to review your daily notes, extract the key insights, a
 2. **Navigate to the period** you want to review (e.g., select last week)
 3. **Read through the child notes** in the left column (e.g., daily notes for that week)
 4. **Extract key learnings** into the parent note (e.g., your weekly summary)
-5. **Repeat** at each level of the hierarchy
+5. **Mark the review as done for that period** (optional)
+6. **Repeat** at each level of the hierarchy
 
 ### Use Cases
 
@@ -111,7 +112,11 @@ _Review and edit notes across multiple period types in a multi-column layout. Ea
 
 ### Additional Screenshots
 
-**Minimized Columns**
+**Mark Reviews as DONE**
+![Mark reviews as DONE](documentation/screenshots/periodic-reviews-track-done-reviews.png)
+_Mark reviews as done to know where you left things off_
+
+**Minimize Columns**
 ![Minimized Columns](documentation/screenshots/periodic-reviews-minimized-columns.png)
 _Collapse columns to focus on specific period types. Click the fold button to expand/collapse._
 
@@ -138,7 +143,6 @@ Both views share these capabilities:
 
 ### Note Cards
 
-- **Three editing modes**: Reading view, Live Preview, and Source mode
 - **Inline editing**: Edit notes directly within the view without opening a separate tab
 - **Auto-save**: Changes saved automatically with 1-second debounce
 - **Current period highlight**: Visual indicator for today's/current period's note

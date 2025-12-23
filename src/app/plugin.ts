@@ -1,11 +1,15 @@
 import { Plugin } from 'obsidian'
 import {
     DEFAULT_SETTINGS,
+    DEFAULT_DONE_REVIEWS,
     PERIOD_TYPES,
     type PluginSettings,
+    type DoneReviews,
+    type PeriodType,
     type LifeTrackerPluginFileProvider,
     type AppWithPlugins
 } from './types'
+import { markPeriodWithCascade, isPeriodDone } from '../utils/done-reviews-utils'
 import { JournalBasesSettingTab } from './settings/settings-tab'
 import { log } from '../utils/log'
 import { produce } from 'immer'
@@ -26,6 +30,11 @@ export class JournalBasesPlugin extends Plugin {
     settings: PluginSettings = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
 
     /**
+     * Track which periodic reviews have been marked as done
+     */
+    doneReviews: DoneReviews = { ...DEFAULT_DONE_REVIEWS }
+
+    /**
      * Whether settings are synced from Periodic Notes plugin (makes settings read-only)
      */
     isPeriodicNotesSynced: boolean = false
@@ -44,6 +53,11 @@ export class JournalBasesPlugin extends Plugin {
      * Callbacks to notify when settings change
      */
     private settingsChangeCallbacks: Set<() => void> = new Set()
+
+    /**
+     * Callbacks to notify when done reviews change
+     */
+    private doneReviewsChangeCallbacks: Set<() => void> = new Set()
 
     /**
      * Register a file provider as active (called when view becomes visible)
@@ -220,13 +234,15 @@ export class JournalBasesPlugin extends Plugin {
     }
 
     /**
-     * Load the plugin settings
+     * Load the plugin settings and done reviews
      */
     async loadSettings(): Promise<void> {
         log('Loading settings', 'debug')
-        const loadedSettings = (await this.loadData()) as PluginSettings | null
+        const loadedData = (await this.loadData()) as
+            | (PluginSettings & { doneReviews?: DoneReviews })
+            | null
 
-        if (!loadedSettings) {
+        if (!loadedData) {
             log('Using default settings', 'debug')
             return
         }
@@ -234,7 +250,7 @@ export class JournalBasesPlugin extends Plugin {
         // Merge loaded settings with defaults to handle missing properties
         this.settings = produce(this.settings, (draft: Draft<PluginSettings>) => {
             for (const periodType of PERIOD_TYPES) {
-                const loaded = loadedSettings[periodType]
+                const loaded = loadedData[periodType]
                 if (loaded) {
                     draft[periodType].enabled = loaded.enabled ?? false
                     draft[periodType].folder = loaded.folder ?? ''
@@ -244,15 +260,30 @@ export class JournalBasesPlugin extends Plugin {
             }
         })
 
+        // Load done reviews if present
+        if (loadedData.doneReviews) {
+            this.doneReviews = {
+                daily: { ...loadedData.doneReviews.daily },
+                weekly: { ...loadedData.doneReviews.weekly },
+                monthly: { ...loadedData.doneReviews.monthly },
+                quarterly: { ...loadedData.doneReviews.quarterly },
+                yearly: { ...loadedData.doneReviews.yearly }
+            }
+        }
+
         log('Settings loaded', 'debug', this.settings)
     }
 
     /**
-     * Save the plugin settings
+     * Save the plugin settings and done reviews
      */
     async saveSettings(): Promise<void> {
         log('Saving settings', 'debug', this.settings)
-        await this.saveData(this.settings)
+        const dataToSave = {
+            ...this.settings,
+            doneReviews: this.doneReviews
+        }
+        await this.saveData(dataToSave)
         log('Settings saved', 'debug', this.settings)
         this.notifySettingsChanged()
     }
@@ -273,6 +304,62 @@ export class JournalBasesPlugin extends Plugin {
      */
     private notifySettingsChanged(): void {
         for (const callback of this.settingsChangeCallbacks) {
+            callback()
+        }
+    }
+
+    // ========================================
+    // Done Reviews Methods
+    // ========================================
+
+    /**
+     * Check if a period is marked as done
+     */
+    isDone(date: Date, periodType: PeriodType): boolean {
+        return isPeriodDone(this.doneReviews, date, periodType, this.settings)
+    }
+
+    /**
+     * Mark a period as done or not done.
+     * Cascades to all child periods (e.g., marking 2024 as done marks all quarters/months/weeks/days)
+     */
+    async setDone(date: Date, periodType: PeriodType, isDone: boolean): Promise<void> {
+        this.doneReviews = markPeriodWithCascade(
+            this.doneReviews,
+            date,
+            periodType,
+            this.settings,
+            isDone
+        )
+        await this.saveSettings()
+        this.notifyDoneReviewsChanged()
+    }
+
+    /**
+     * Toggle the done status of a period.
+     * Cascades to all child periods.
+     */
+    async toggleDone(date: Date, periodType: PeriodType): Promise<void> {
+        const currentlyDone = this.isDone(date, periodType)
+        await this.setDone(date, periodType, !currentlyDone)
+    }
+
+    /**
+     * Subscribe to done reviews changes.
+     * @returns Unsubscribe function
+     */
+    onDoneReviewsChange(callback: () => void): () => void {
+        this.doneReviewsChangeCallbacks.add(callback)
+        return () => {
+            this.doneReviewsChangeCallbacks.delete(callback)
+        }
+    }
+
+    /**
+     * Notify all subscribers that done reviews have changed
+     */
+    private notifyDoneReviewsChanged(): void {
+        for (const callback of this.doneReviewsChangeCallbacks) {
             callback()
         }
     }

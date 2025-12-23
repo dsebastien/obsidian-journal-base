@@ -178,3 +178,31 @@ A period is "current" if it contains today's date. Used for:
 - Auto-selection in Periodic Review
 
 Comparison uses `getStartOfPeriod()` normalization.
+
+---
+
+## Done Reviews
+
+### Cascade Behavior
+
+Marking a period as done CASCADES to all child periods:
+
+- Yearly → marks all quarters, months, weeks, days in that year
+- Quarterly → marks all months, weeks, days in that quarter
+- Monthly → marks all weeks, days in that month
+- Weekly → marks all days in that week
+- Daily → marks only that day
+
+### Data Structure
+
+Done reviews are stored in plugin data as `doneReviews: { daily: {}, weekly: {}, monthly: {}, quarterly: {}, yearly: {} }`. Each entry maps period identifier (e.g., "2025-10-10", "2025-W01") to `true`.
+
+### Period Identifiers
+
+Use formatted date strings from the period's format setting:
+
+- Daily: "2025-10-10"
+- Weekly: "2025-W01"
+- Monthly: "2025-10"
+- Quarterly: "2025-Q4"
+- Yearly: "2025"

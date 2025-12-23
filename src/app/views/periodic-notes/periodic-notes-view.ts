@@ -31,6 +31,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     private noteCards: Map<string, NoteCard> = new Map() // Keyed by file path
     private currentMode: PeriodType | null = null
     private currentEntries: BasesEntry[] = [] // Filtered entries for the current mode
+    private unsubscribeFromDoneReviews: (() => void) | null = null
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -40,6 +41,31 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
 
         // Register as active file provider for commands
         this.plugin.setActiveFileProvider(this)
+
+        // Subscribe to done reviews changes to refresh card states
+        this.unsubscribeFromDoneReviews = this.plugin.onDoneReviewsChange(() => {
+            this.refreshDoneStates()
+        })
+    }
+
+    /**
+     * Refresh done states for all note cards.
+     * Called when done reviews are updated.
+     */
+    private refreshDoneStates(): void {
+        if (!this.currentMode) return
+
+        for (const [path, card] of this.noteCards) {
+            // Find the entry for this card to get its date
+            const entry = this.currentEntries.find((e) => e.file.path === path)
+            if (entry) {
+                const config = this.plugin.settings[this.currentMode]
+                const date = extractDateFromNote(entry.file, config)
+                if (date) {
+                    card.setDoneState(this.plugin.isDone(date, this.currentMode))
+                }
+            }
+        }
     }
 
     /**
@@ -418,6 +444,12 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             shouldExpand,
             (file) => {
                 this.app.workspace.getLeaf('tab').openFile(file)
+            },
+            {
+                isDone: this.plugin.isDone(date, periodType),
+                onToggleDone: async () => {
+                    await this.plugin.toggleDone(date, periodType)
+                }
             }
         )
         this.noteCards.set(entry.file.path, card)
@@ -495,7 +527,17 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             expanded,
             (file) => {
                 this.app.workspace.getLeaf('tab').openFile(file)
-            }
+            },
+            noteDate
+                ? {
+                      isDone: this.plugin.isDone(noteDate, periodType),
+                      onToggleDone: async () => {
+                          if (noteDate) {
+                              await this.plugin.toggleDone(noteDate, periodType)
+                          }
+                      }
+                  }
+                : undefined
         )
         this.noteCards.set(entry.file.path, card)
     }
@@ -544,6 +586,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     override onunload(): void {
         // Unregister as file provider
         this.plugin.setActiveFileProvider(null)
+        this.unsubscribeFromDoneReviews?.()
         this.cleanupCards()
     }
 }

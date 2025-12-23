@@ -104,6 +104,23 @@
     background-color: var(--interactive-accent-hover);
 }
 
+/* Done toggle button in card header */
+.pn-card__done-btn {
+    @apply p-1 rounded;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.pn-card__done-btn:hover {
+    opacity: 1;
+    color: var(--text-accent);
+}
+
+.pn-card__done-btn--active {
+    opacity: 1;
+    color: var(--text-accent);
+}
+
 /* Embedded editor container */
 .pn-card__editor {
     @apply min-h-[100px];
@@ -437,6 +454,32 @@
 }
 
 .pr-period-item--current.pr-period-item--selected::before {
+    color: var(--text-on-accent);
+}
+
+/* Period item layout for label and done icon */
+.pr-period-item__label {
+    @apply flex-1 truncate;
+}
+
+.pr-period-item__done-icon {
+    @apply flex items-center justify-center ml-2 flex-shrink-0;
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.pr-period-item__done-icon:hover {
+    opacity: 1;
+    color: var(--text-accent);
+}
+
+/* Done state for period items */
+.pr-period-item--done .pr-period-item__done-icon {
+    opacity: 1;
+    color: var(--text-accent);
+}
+
+.pr-period-item--done.pr-period-item--selected .pr-period-item__done-icon {
     color: var(--text-on-accent);
 }
 
