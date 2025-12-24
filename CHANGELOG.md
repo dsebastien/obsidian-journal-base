@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.4.0...1.5.0) (2025-12-24)
+
+### Features
+
+* **all:** add support for saving the done status for periodic reviews ([40b8743](https://github.com/dsebastien/obsidian-journal-bases/commit/40b8743bd1c496b40ca28f47f595d61a14f7e31a))
+* **all:** save done status for periodic reviews in a note property ([b3d2e3d](https://github.com/dsebastien/obsidian-journal-bases/commit/b3d2e3d2d3376232ace6a4a78d77b5fdb71b9328))
 ## [1.4.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.3.0...1.4.0) (2025-12-22)
 
 ### Features
