@@ -90,7 +90,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     }
 
     /**
-     * Refresh done states for all virtual selectors.
+     * Refresh done states for all virtual selectors and NoteCards.
      * Called when done reviews are updated.
      */
     private refreshDoneStates(): void {
@@ -99,6 +99,11 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 state.virtualSelector.refreshDoneStates((date) =>
                     this.plugin.isDone(date, periodType)
                 )
+            }
+            // Also refresh NoteCard done state if present
+            if (state.noteCard && state.selectedDate) {
+                const isDone = this.plugin.isDone(state.selectedDate, periodType)
+                state.noteCard.setDoneState(isDone)
             }
         }
     }
@@ -669,6 +674,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
 
         // Create NoteCard with the same component used in periodic notes view
         // In review view: not foldable, always source mode, no mode toggle buttons
+        const isDone = state.selectedDate
+            ? this.plugin.isDone(state.selectedDate, state.periodType)
+            : false
         state.noteCard = new NoteCard(
             contentEl,
             this.app,
@@ -679,7 +687,17 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             (file) => {
                 this.app.workspace.getLeaf('tab').openFile(file)
             },
-            { foldable: false, forcedMode: 'source', hideModeToggle: true }
+            {
+                foldable: false,
+                forcedMode: 'source',
+                hideModeToggle: true,
+                isDone,
+                onToggleDone: () => {
+                    if (state.selectedDate) {
+                        this.plugin.toggleDone(state.selectedDate, state.periodType)
+                    }
+                }
+            }
         )
     }
 
