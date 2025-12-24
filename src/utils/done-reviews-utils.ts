@@ -1,12 +1,14 @@
-import type { DoneReviews } from '../app/types/done-reviews.type'
+import type { App, TFile } from 'obsidian'
 import type { PeriodType, PluginSettings } from '../app/types'
 import { PERIOD_TYPES } from '../app/types'
 import {
     formatDateAsFilename,
     getStartOfPeriod,
     getEndOfPeriod,
-    generateDateRange
+    formatDate,
+    parseDateFromFormat
 } from './date-utils'
+import { isNoteDone, setNoteDone } from './frontmatter-utils'
 
 /**
  * Get the period identifier (formatted date string) for a given date and period type.
@@ -22,6 +24,35 @@ export function getPeriodIdentifier(
 }
 
 /**
+ * Get the expected file path for a periodic note.
+ */
+export function getPeriodicNotePath(
+    date: Date,
+    periodType: PeriodType,
+    settings: PluginSettings
+): string {
+    const config = settings[periodType]
+    const filename = formatDate(date, config.format)
+    // Normalize folder path to remove trailing slash
+    const folder = config.folder.endsWith('/') ? config.folder.slice(0, -1) : config.folder
+    return `${folder}/${filename}.md`
+}
+
+/**
+ * Find the TFile for a periodic note if it exists.
+ */
+export function findPeriodicNoteFile(
+    app: App,
+    date: Date,
+    periodType: PeriodType,
+    settings: PluginSettings
+): TFile | null {
+    const path = getPeriodicNotePath(date, periodType, settings)
+    const file = app.vault.getAbstractFileByPath(path)
+    return file instanceof app.vault.adapter.constructor ? null : (file as TFile | null)
+}
+
+/**
  * Get all child period types for a given period type.
  * Returns types in order from largest to smallest.
  */
@@ -33,98 +64,130 @@ function getChildPeriodTypes(periodType: PeriodType): PeriodType[] {
 }
 
 /**
- * Generate all period identifiers for child periods within a parent period.
- * For example, if marking 2024 yearly as done, returns all quarterly, monthly, weekly, daily
- * identifiers that fall within 2024.
+ * Get all markdown files in a folder (and subfolders) using Obsidian's API.
+ * Uses app.vault.getMarkdownFiles() for efficiency.
  */
-export function getChildPeriodIdentifiers(
+function getMarkdownFilesInFolder(app: App, folderPath: string): TFile[] {
+    const normalizedFolder = folderPath.endsWith('/') ? folderPath : `${folderPath}/`
+    return app.vault.getMarkdownFiles().filter((file) => file.path.startsWith(normalizedFolder))
+}
+
+/**
+ * Check if a date falls within a period range (inclusive).
+ */
+function isDateInPeriod(date: Date, periodStart: Date, periodEnd: Date): boolean {
+    const time = date.getTime()
+    return time >= periodStart.getTime() && time <= periodEnd.getTime()
+}
+
+/**
+ * Extract the filename format from a full format string that may include path components.
+ * E.g., "YYYY/WW/YYYY-MM-DD" → "YYYY-MM-DD"
+ */
+function getFilenameFormat(format: string): string {
+    const parts = format.split('/')
+    return parts[parts.length - 1] ?? format
+}
+
+/**
+ * Find all periodic notes in a folder that fall within a date range.
+ * Parses file paths using the format string to extract dates.
+ * Handles formats with path separators (e.g., "YYYY/YYYY-MM-DD").
+ */
+function findNotesInPeriod(
+    app: App,
+    folderPath: string,
+    format: string,
+    periodStart: Date,
+    periodEnd: Date
+): TFile[] {
+    const allFiles = getMarkdownFilesInFolder(app, folderPath)
+    const matchingFiles: TFile[] = []
+
+    // Extract just the filename format (last segment after /)
+    const filenameFormat = getFilenameFormat(format)
+
+    for (const file of allFiles) {
+        const parsedDate = parseDateFromFormat(file.basename, filenameFormat)
+        if (parsedDate && isDateInPeriod(parsedDate, periodStart, periodEnd)) {
+            matchingFiles.push(file)
+        }
+    }
+
+    return matchingFiles
+}
+
+/**
+ * Check if a periodic note is marked as done by reading its frontmatter.
+ * Returns false if the note doesn't exist.
+ */
+export function isPeriodDone(
+    app: App,
     date: Date,
-    parentType: PeriodType,
+    periodType: PeriodType,
     settings: PluginSettings
-): Map<PeriodType, string[]> {
-    const result = new Map<PeriodType, string[]>()
-    const childTypes = getChildPeriodTypes(parentType)
+): boolean {
+    const path = getPeriodicNotePath(date, periodType, settings)
+    const file = app.vault.getAbstractFileByPath(path)
 
-    if (childTypes.length === 0) {
-        return result
+    if (!file || !(file instanceof Object && 'extension' in file)) {
+        return false
     }
 
-    const parentStart = getStartOfPeriod(date, parentType)
-    const parentEnd = getEndOfPeriod(date, parentType)
-
-    for (const childType of childTypes) {
-        const config = settings[childType]
-        if (!config.enabled) continue
-
-        const childPeriods = generateDateRange(parentStart, parentEnd, childType)
-        const identifiers = childPeriods.map((d) => formatDateAsFilename(d, config.format))
-        result.set(childType, identifiers)
-    }
-
-    return result
+    return isNoteDone(app, file as TFile, settings.donePropertyName)
 }
 
 /**
  * Mark a period and all its child periods as done (or not done).
  * This is the cascade logic that runs when marking a parent period.
+ * Scans ALL enabled periodic note folders to find existing notes that fall within the period.
+ * Only updates notes that exist - doesn't create new files.
  *
- * @param doneReviews - Current done reviews state
+ * @param app - Obsidian app instance
  * @param date - The date of the period being marked
  * @param periodType - The type of period being marked
- * @param settings - Plugin settings (for format strings)
+ * @param settings - Plugin settings (for format strings and folders)
  * @param isDone - Whether to mark as done (true) or not done (false)
- * @returns Updated done reviews object
  */
-export function markPeriodWithCascade(
-    doneReviews: DoneReviews,
+export async function markPeriodWithCascade(
+    app: App,
     date: Date,
     periodType: PeriodType,
     settings: PluginSettings,
     isDone: boolean
-): DoneReviews {
-    // Clone the done reviews to avoid mutation
-    const updated: DoneReviews = {
-        daily: { ...doneReviews.daily },
-        weekly: { ...doneReviews.weekly },
-        monthly: { ...doneReviews.monthly },
-        quarterly: { ...doneReviews.quarterly },
-        yearly: { ...doneReviews.yearly }
-    }
+): Promise<void> {
+    const filesToUpdate: TFile[] = []
+    const periodStart = getStartOfPeriod(date, periodType)
+    const periodEnd = getEndOfPeriod(date, periodType)
 
-    // Mark the parent period
-    const parentConfig = settings[periodType]
-    const parentId = formatDateAsFilename(date, parentConfig.format)
-    if (isDone) {
-        updated[periodType][parentId] = true
-    } else {
-        delete updated[periodType][parentId]
-    }
+    // Get all period types that should be updated (the marked type + all child types)
+    const childTypes = getChildPeriodTypes(periodType)
+    const typesToUpdate: PeriodType[] = [periodType, ...childTypes]
 
-    // Cascade to child periods
-    const childIdentifiers = getChildPeriodIdentifiers(date, periodType, settings)
-    for (const [childType, identifiers] of childIdentifiers) {
-        for (const id of identifiers) {
-            if (isDone) {
-                updated[childType][id] = true
-            } else {
-                delete updated[childType][id]
+    // Scan all enabled period type folders
+    for (const type of typesToUpdate) {
+        const config = settings[type]
+        if (!config.enabled || !config.folder) continue
+
+        // Find all notes in this folder that fall within the period
+        const matchingFiles = findNotesInPeriod(
+            app,
+            config.folder,
+            config.format,
+            periodStart,
+            periodEnd
+        )
+
+        for (const file of matchingFiles) {
+            // Avoid duplicates
+            if (!filesToUpdate.some((f) => f.path === file.path)) {
+                filesToUpdate.push(file)
             }
         }
     }
 
-    return updated
-}
-
-/**
- * Check if a period is marked as done.
- */
-export function isPeriodDone(
-    doneReviews: DoneReviews,
-    date: Date,
-    periodType: PeriodType,
-    settings: PluginSettings
-): boolean {
-    const config = settings[periodType]
-    const id = formatDateAsFilename(date, config.format)
-    return doneReviews[periodType][id] === true
+    // Update all found files
+    for (const file of filesToUpdate) {
+        await setNoteDone(app, file, isDone, settings.donePropertyName)
+    }
 }

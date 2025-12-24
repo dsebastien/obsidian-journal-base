@@ -44,6 +44,9 @@ export class JournalBasesSettingTab extends PluginSettingTab {
             this.renderPeriodSection(containerEl, periodType)
         }
 
+        // Render done status settings
+        this.renderDoneStatusSection(containerEl)
+
         // Render support section
         this.renderSupportHeader(containerEl)
     }
@@ -348,6 +351,23 @@ export class JournalBasesSettingTab extends PluginSettingTab {
     private async updateSettings(updater: (draft: Draft<PluginSettings>) => void): Promise<void> {
         this.plugin.settings = produce(this.plugin.settings, updater)
         await this.plugin.saveSettings()
+    }
+
+    private renderDoneStatusSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName('Done status').setHeading()
+
+        new Setting(containerEl)
+            .setName('Property name')
+            .setDesc('Frontmatter property name used to mark periodic notes as done')
+            .addText((text) => {
+                text.setPlaceholder('periodic_review_completed')
+                    .setValue(this.plugin.settings.donePropertyName)
+                    .onChange(async (value) => {
+                        await this.updateSettings((draft) => {
+                            draft.donePropertyName = value.trim() || 'periodic_review_completed'
+                        })
+                    })
+            })
     }
 
     private renderSupportHeader(containerEl: HTMLElement): void {

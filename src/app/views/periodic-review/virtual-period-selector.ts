@@ -261,6 +261,10 @@ export class VirtualPeriodSelector extends Component {
         // Click on done icon toggles done status
         doneIcon.addEventListener('click', (e) => {
             e.stopPropagation()
+            // Optimistic UI update - toggle immediately before async operation
+            const newDoneState = !item.isDone
+            this.updateItem(item.date, { isDone: newDoneState })
+            // Then trigger the actual toggle (which will do file updates and full refresh)
             this.onToggleDone?.(item.date)
         })
 

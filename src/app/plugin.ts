@@ -1,10 +1,8 @@
-import { Plugin } from 'obsidian'
+import { Notice, Plugin } from 'obsidian'
 import {
     DEFAULT_SETTINGS,
-    DEFAULT_DONE_REVIEWS,
     PERIOD_TYPES,
     type PluginSettings,
-    type DoneReviews,
     type PeriodType,
     type LifeTrackerPluginFileProvider,
     type AppWithPlugins
@@ -30,11 +28,6 @@ export class JournalBasesPlugin extends Plugin {
     settings: PluginSettings = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
 
     /**
-     * Track which periodic reviews have been marked as done
-     */
-    doneReviews: DoneReviews = { ...DEFAULT_DONE_REVIEWS }
-
-    /**
      * Whether settings are synced from Periodic Notes plugin (makes settings read-only)
      */
     isPeriodicNotesSynced: boolean = false
@@ -58,6 +51,13 @@ export class JournalBasesPlugin extends Plugin {
      * Callbacks to notify when done reviews change
      */
     private doneReviewsChangeCallbacks: Set<() => void> = new Set()
+
+    /**
+     * Pending done state updates (optimistic updates while cache is updating).
+     * Key is `${periodType}-${date.getTime()}`, value is the expected done state.
+     * Used to prevent stale cache data from reverting optimistic UI updates.
+     */
+    private pendingDoneStates: Map<string, boolean> = new Map()
 
     /**
      * Register a file provider as active (called when view becomes visible)
@@ -234,15 +234,13 @@ export class JournalBasesPlugin extends Plugin {
     }
 
     /**
-     * Load the plugin settings and done reviews
+     * Load the plugin settings
      */
     async loadSettings(): Promise<void> {
         log('Loading settings', 'debug')
-        const loadedData = (await this.loadData()) as
-            | (PluginSettings & { doneReviews?: DoneReviews })
-            | null
+        const loadedSettings = (await this.loadData()) as PluginSettings | null
 
-        if (!loadedData) {
+        if (!loadedSettings) {
             log('Using default settings', 'debug')
             return
         }
@@ -250,7 +248,7 @@ export class JournalBasesPlugin extends Plugin {
         // Merge loaded settings with defaults to handle missing properties
         this.settings = produce(this.settings, (draft: Draft<PluginSettings>) => {
             for (const periodType of PERIOD_TYPES) {
-                const loaded = loadedData[periodType]
+                const loaded = loadedSettings[periodType]
                 if (loaded) {
                     draft[periodType].enabled = loaded.enabled ?? false
                     draft[periodType].folder = loaded.folder ?? ''
@@ -258,32 +256,20 @@ export class JournalBasesPlugin extends Plugin {
                     draft[periodType].template = loaded.template ?? ''
                 }
             }
+            // Load donePropertyName setting
+            draft.donePropertyName =
+                loadedSettings.donePropertyName ?? DEFAULT_SETTINGS.donePropertyName
         })
-
-        // Load done reviews if present
-        if (loadedData.doneReviews) {
-            this.doneReviews = {
-                daily: { ...loadedData.doneReviews.daily },
-                weekly: { ...loadedData.doneReviews.weekly },
-                monthly: { ...loadedData.doneReviews.monthly },
-                quarterly: { ...loadedData.doneReviews.quarterly },
-                yearly: { ...loadedData.doneReviews.yearly }
-            }
-        }
 
         log('Settings loaded', 'debug', this.settings)
     }
 
     /**
-     * Save the plugin settings and done reviews
+     * Save the plugin settings
      */
     async saveSettings(): Promise<void> {
         log('Saving settings', 'debug', this.settings)
-        const dataToSave = {
-            ...this.settings,
-            doneReviews: this.doneReviews
-        }
-        await this.saveData(dataToSave)
+        await this.saveData(this.settings)
         log('Settings saved', 'debug', this.settings)
         this.notifySettingsChanged()
     }
@@ -310,29 +296,54 @@ export class JournalBasesPlugin extends Plugin {
 
     // ========================================
     // Done Reviews Methods
+    // Done status is stored in note frontmatter, not plugin data.
     // ========================================
 
     /**
-     * Check if a period is marked as done
+     * Create a key for the pending done states map.
+     */
+    private getPendingDoneKey(date: Date, periodType: PeriodType): string {
+        return `${periodType}-${date.getTime()}`
+    }
+
+    /**
+     * Check if a period is marked as done.
+     * First checks pending states (optimistic updates), then falls back to frontmatter cache.
+     * Returns false if the note doesn't exist.
      */
     isDone(date: Date, periodType: PeriodType): boolean {
-        return isPeriodDone(this.doneReviews, date, periodType, this.settings)
+        // Check pending states first (for optimistic UI updates)
+        const pendingKey = this.getPendingDoneKey(date, periodType)
+        if (this.pendingDoneStates.has(pendingKey)) {
+            return this.pendingDoneStates.get(pendingKey)!
+        }
+        return isPeriodDone(this.app, date, periodType, this.settings)
     }
 
     /**
      * Mark a period as done or not done.
+     * Updates the 'done' property in the note's frontmatter.
      * Cascades to all child periods (e.g., marking 2024 as done marks all quarters/months/weeks/days)
+     * Only updates notes that exist - doesn't create new files.
      */
     async setDone(date: Date, periodType: PeriodType, isDone: boolean): Promise<void> {
-        this.doneReviews = markPeriodWithCascade(
-            this.doneReviews,
-            date,
-            periodType,
-            this.settings,
-            isDone
-        )
-        await this.saveSettings()
-        this.notifyDoneReviewsChanged()
+        // Set pending state for the clicked period to prevent stale cache from reverting UI
+        const pendingKey = this.getPendingDoneKey(date, periodType)
+        this.pendingDoneStates.set(pendingKey, isDone)
+
+        const notice = new Notice(`Updating ${periodType} notes...`, 0)
+        try {
+            await markPeriodWithCascade(this.app, date, periodType, this.settings, isDone)
+            // Delay to allow metadata cache to update before refreshing views
+            await new Promise((resolve) => setTimeout(resolve, 100))
+            this.notifyDoneReviewsChanged()
+        } finally {
+            notice.hide()
+            // Clear pending state after a longer delay to ensure cache is fully updated
+            setTimeout(() => {
+                this.pendingDoneStates.delete(pendingKey)
+            }, 1000)
+        }
     }
 
     /**
