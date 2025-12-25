@@ -1,5 +1,13 @@
 import type { PeriodType } from '../../types'
-import { getYear, getMonth, getQuarter, getWeek, getISOWeekYear } from '../../../utils/date-utils'
+import {
+    getYear,
+    getMonth,
+    getQuarter,
+    getWeek,
+    getISOWeekYear,
+    getEndOfPeriod,
+    doesPeriodOverlapParent
+} from '../../../utils/date-utils'
 
 /**
  * Snapshot of the selection context state for save/restore operations.
@@ -136,15 +144,48 @@ export class SelectionContext {
                 this._weekExists = false
                 break
 
-            case 'weekly':
-                // Also update parent values from the date
-                this._selectedYear = getYear(date)
-                this._selectedQuarter = getQuarter(date)
-                this._selectedMonth = getMonth(date)
-                this._selectedWeek = getWeek(date)
-                this._selectedWeekYear = getISOWeekYear(date)
+            case 'weekly': {
+                // Check if the week overlaps with the currently selected parent period
+                // If so, preserve the parent context to avoid unexpected selection changes
+                // This handles weeks that span month/quarter/year boundaries
+                const weekDate = date
+
+                // Check overlap from most specific (month) to least specific (year)
+                if (this._selectedMonth !== null) {
+                    const monthStart = new Date(this._selectedYear, this._selectedMonth, 1)
+                    const monthEnd = getEndOfPeriod(monthStart, 'monthly')
+                    if (doesPeriodOverlapParent(weekDate, 'weekly', monthStart, monthEnd)) {
+                        // Week overlaps current month - only update week selection
+                        this._selectedWeek = getWeek(weekDate)
+                        this._selectedWeekYear = getISOWeekYear(weekDate)
+                        this._weekExists = exists
+                        break
+                    }
+                }
+
+                if (this._selectedQuarter !== null) {
+                    const quarterMonth = (this._selectedQuarter - 1) * 3
+                    const quarterStart = new Date(this._selectedYear, quarterMonth, 1)
+                    const quarterEnd = getEndOfPeriod(quarterStart, 'quarterly')
+                    if (doesPeriodOverlapParent(weekDate, 'weekly', quarterStart, quarterEnd)) {
+                        // Week overlaps current quarter - update month and week, preserve quarter/year
+                        this._selectedMonth = getMonth(weekDate)
+                        this._selectedWeek = getWeek(weekDate)
+                        this._selectedWeekYear = getISOWeekYear(weekDate)
+                        this._weekExists = exists
+                        break
+                    }
+                }
+
+                // No overlap with current selection or no selection - update all parent values
+                this._selectedYear = getYear(weekDate)
+                this._selectedQuarter = getQuarter(weekDate)
+                this._selectedMonth = getMonth(weekDate)
+                this._selectedWeek = getWeek(weekDate)
+                this._selectedWeekYear = getISOWeekYear(weekDate)
                 this._weekExists = exists
                 break
+            }
 
             case 'daily':
                 // Daily has no child contexts
