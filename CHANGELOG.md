@@ -1,3 +1,10 @@
+## [1.6.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.5.0...1.6.0) (2025-12-25)
+
+### Features
+
+* **all:** added previous/next buttons to navigate between periodic notes ([4ad0602](https://github.com/dsebastien/obsidian-journal-bases/commit/4ad0602f8aa5bb55f8a286515abd7efcbfa3ee9f))
+* **all:** improved the selection behavior for periods that span two larger periods ([08a0d71](https://github.com/dsebastien/obsidian-journal-bases/commit/08a0d716003291e7b6c6558fc8d524511e4e772c))
+* **all:** show to done button in the card headers in the periodic review view ([3d31a5e](https://github.com/dsebastien/obsidian-journal-bases/commit/3d31a5e27f4e6e350094f681b680c7cb112359e4))
 ## [1.5.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.4.0...1.5.0) (2025-12-24)
 
 ### Features
