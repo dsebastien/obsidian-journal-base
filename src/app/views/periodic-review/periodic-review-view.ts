@@ -622,6 +622,102 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     }
 
     /**
+     * Navigate to the previous period in a column.
+     * Since items are sorted newest first, "previous" means going backwards in time,
+     * which is the next item in the array (higher index).
+     */
+    private navigateToPreviousPeriod(state: ColumnState): void {
+        if (!state.virtualSelector || !state.selectedDate) return
+
+        const config = this.plugin.settings[state.periodType]
+        const items = this.buildVirtualItems(state, config)
+        if (items.length === 0) return
+
+        // Find current selection index
+        const currentIndex = items.findIndex(
+            (item) => item.date.getTime() === state.selectedDate!.getTime()
+        )
+
+        if (currentIndex === -1) return
+
+        // Previous in time = higher index (since sorted newest first)
+        const prevIndex = currentIndex + 1
+        if (prevIndex >= items.length) return // Already at oldest
+
+        const prevItem = items[prevIndex]
+        if (prevItem) {
+            this.selectPeriod(state, prevItem.date, prevItem.entry)
+            state.virtualSelector.scrollToIndex(prevIndex)
+        }
+    }
+
+    /**
+     * Navigate to the next period in a column.
+     * Since items are sorted newest first, "next" means going forward in time,
+     * which is the previous item in the array (lower index).
+     */
+    private navigateToNextPeriod(state: ColumnState): void {
+        if (!state.virtualSelector || !state.selectedDate) return
+
+        const config = this.plugin.settings[state.periodType]
+        const items = this.buildVirtualItems(state, config)
+        if (items.length === 0) return
+
+        // Find current selection index
+        const currentIndex = items.findIndex(
+            (item) => item.date.getTime() === state.selectedDate!.getTime()
+        )
+
+        if (currentIndex === -1) return
+
+        // Next in time = lower index (since sorted newest first)
+        const nextIndex = currentIndex - 1
+        if (nextIndex < 0) return // Already at newest
+
+        const nextItem = items[nextIndex]
+        if (nextItem) {
+            this.selectPeriod(state, nextItem.date, nextItem.entry)
+            state.virtualSelector.scrollToIndex(nextIndex)
+        }
+    }
+
+    /**
+     * Check if there's a previous period available in the column.
+     */
+    private hasPreviousPeriod(state: ColumnState): boolean {
+        if (!state.selectedDate) return false
+
+        const config = this.plugin.settings[state.periodType]
+        const items = this.buildVirtualItems(state, config)
+        if (items.length === 0) return false
+
+        const currentIndex = items.findIndex(
+            (item) => item.date.getTime() === state.selectedDate!.getTime()
+        )
+
+        // Previous = higher index (since sorted newest first)
+        return currentIndex !== -1 && currentIndex < items.length - 1
+    }
+
+    /**
+     * Check if there's a next period available in the column.
+     */
+    private hasNextPeriod(state: ColumnState): boolean {
+        if (!state.selectedDate) return false
+
+        const config = this.plugin.settings[state.periodType]
+        const items = this.buildVirtualItems(state, config)
+        if (items.length === 0) return false
+
+        const currentIndex = items.findIndex(
+            (item) => item.date.getTime() === state.selectedDate!.getTime()
+        )
+
+        // Next = lower index (since sorted newest first)
+        return currentIndex !== -1 && currentIndex > 0
+    }
+
+    /**
      * Cascade updates downward to child columns.
      * Updates all child columns to reflect the new parent selection.
      */
@@ -677,6 +773,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         const isDone = state.selectedDate
             ? this.plugin.isDone(state.selectedDate, state.periodType)
             : false
+        const hasPrev = this.hasPreviousPeriod(state)
+        const hasNext = this.hasNextPeriod(state)
         state.noteCard = new NoteCard(
             contentEl,
             this.app,
@@ -696,7 +794,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                     if (state.selectedDate) {
                         this.plugin.toggleDone(state.selectedDate, state.periodType)
                     }
-                }
+                },
+                onPrevious: hasPrev ? () => this.navigateToPreviousPeriod(state) : undefined,
+                onNext: hasNext ? () => this.navigateToNextPeriod(state) : undefined
             }
         )
     }

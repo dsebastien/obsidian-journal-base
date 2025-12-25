@@ -121,6 +121,27 @@
     color: var(--text-accent);
 }
 
+/* Navigation buttons in card header */
+.pn-card__nav {
+    @apply flex items-center gap-0.5 p-0.5 rounded;
+    background-color: var(--background-modifier-hover);
+}
+
+.pn-card__nav-btn {
+    @apply p-1 rounded transition-all duration-150;
+    color: var(--text-muted);
+}
+
+.pn-card__nav-btn:hover:not(:disabled) {
+    color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+}
+
+.pn-card__nav-btn--disabled {
+    @apply cursor-not-allowed;
+    opacity: 0.3;
+}
+
 /* Embedded editor container */
 .pn-card__editor {
     @apply min-h-[100px];

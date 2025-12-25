@@ -16,6 +16,10 @@ const SOURCE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="
 const CHECK_CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
 const CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
 
+// SVG icons for navigation
+const CHEVRON_LEFT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
+const CHEVRON_RIGHT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`
+
 export interface NoteCardOptions {
     /** Whether the card can be folded/collapsed. Defaults to true. */
     foldable?: boolean
@@ -27,6 +31,10 @@ export interface NoteCardOptions {
     isDone?: boolean
     /** Callback when done status is toggled. */
     onToggleDone?: () => void
+    /** Callback to navigate to previous period. If not provided, button is hidden. */
+    onPrevious?: () => void
+    /** Callback to navigate to next period. If not provided, button is hidden. */
+    onNext?: () => void
 }
 
 export class NoteCard extends Component {
@@ -44,6 +52,8 @@ export class NoteCard extends Component {
     private lastRenderedContent: string | null = null
     private isDone: boolean
     private onToggleDone?: () => void
+    private onPrevious?: () => void
+    private onNext?: () => void
     private doneButton: HTMLButtonElement | null = null
 
     constructor(
@@ -62,6 +72,8 @@ export class NoteCard extends Component {
         this.hideModeToggle = options?.hideModeToggle ?? false
         this.isDone = options?.isDone ?? false
         this.onToggleDone = options?.onToggleDone
+        this.onPrevious = options?.onPrevious
+        this.onNext = options?.onNext
         this.mode = this.forcedMode ?? 'view'
         this.expanded = this.foldable ? initiallyExpanded : true // Always expanded if not foldable
         this.saveDebounced = debounce((content: string) => this.saveContent(content), 1000, true)
@@ -106,6 +118,39 @@ export class NoteCard extends Component {
             this.registerDomEvent(this.doneButton, 'click', (e) => {
                 e.stopPropagation()
                 this.onToggleDone?.()
+            })
+        }
+
+        // Navigation buttons (if onPrevious or onNext is provided)
+        if (this.onPrevious || this.onNext) {
+            const navEl = actionsEl.createDiv({ cls: 'pn-card__nav' })
+
+            const prevBtn = navEl.createEl('button', {
+                cls: 'pn-card__nav-btn clickable-icon',
+                attr: { 'aria-label': 'Previous period' }
+            })
+            prevBtn.innerHTML = CHEVRON_LEFT_ICON
+            if (!this.onPrevious) {
+                prevBtn.disabled = true
+                prevBtn.addClass('pn-card__nav-btn--disabled')
+            }
+            this.registerDomEvent(prevBtn, 'click', (e) => {
+                e.stopPropagation()
+                this.onPrevious?.()
+            })
+
+            const nextBtn = navEl.createEl('button', {
+                cls: 'pn-card__nav-btn clickable-icon',
+                attr: { 'aria-label': 'Next period' }
+            })
+            nextBtn.innerHTML = CHEVRON_RIGHT_ICON
+            if (!this.onNext) {
+                nextBtn.disabled = true
+                nextBtn.addClass('pn-card__nav-btn--disabled')
+            }
+            this.registerDomEvent(nextBtn, 'click', (e) => {
+                e.stopPropagation()
+                this.onNext?.()
             })
         }
 
