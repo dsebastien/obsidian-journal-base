@@ -227,8 +227,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             return
         }
 
-        const columnWidth = (this.config.get('columnWidth') as number) ?? 400
-
         // Create columns for each visible period type in order
         for (const periodType of PERIOD_TYPE_ORDER) {
             if (!newVisibleTypes.includes(periodType)) continue
@@ -243,7 +241,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 this.plugin.settings,
                 this.dataVersion
             )
-            this.createColumn(periodType, config, entries, columnWidth)
+            this.createColumn(periodType, config, entries)
         }
 
         if (hadSelection) {
@@ -285,16 +283,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
      * Uses caching and virtual selector for optimal performance.
      */
     private incrementalUpdate(): void {
-        // Update column width (in case view option changed)
-        const columnWidth = (this.config.get('columnWidth') as number) ?? 400
-
         // Update entries for each column
         for (const [periodType, state] of this.columns) {
             const config = this.plugin.settings[periodType]
             if (!config.enabled) continue
-
-            // Update column width
-            state.column.setWidth(columnWidth)
 
             // Use cache for entries (major performance improvement)
             state.entries = this.cache.getEntriesByType(
@@ -334,11 +326,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private createColumn(
         periodType: PeriodType,
         config: PeriodicNoteConfig,
-        entries: BasesEntry[],
-        width: number
+        entries: BasesEntry[]
     ): void {
         const column = new FoldableColumn(this.columnsEl, PERIOD_TYPE_LABELS[periodType])
-        column.setWidth(width)
 
         // Create virtual selector for this column
         const selectorEl = column.getSelectorEl()

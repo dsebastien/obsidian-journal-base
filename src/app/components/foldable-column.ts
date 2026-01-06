@@ -12,7 +12,6 @@ export class FoldableColumn extends Component {
     private contentEl!: HTMLElement
     private foldBtn!: HTMLButtonElement
     private folded: boolean = false
-    private configuredWidth: number | null = null
 
     constructor(
         parent: HTMLElement,
@@ -67,33 +66,12 @@ export class FoldableColumn extends Component {
     toggleFold(): void {
         this.folded = !this.folded
         this.containerEl.classList.toggle('pr-column--folded', this.folded)
-        this.updateWidthStyles()
         this.updateFoldButton()
     }
 
     private updateFoldButton(): void {
         this.foldBtn.innerHTML = this.folded ? ICON_EXPAND : ICON_COLLAPSE
         this.foldBtn.setAttribute('aria-label', this.folded ? 'Expand column' : 'Collapse column')
-    }
-
-    private updateWidthStyles(): void {
-        if (this.folded) {
-            // Clear inline styles so CSS can take over
-            this.containerEl.style.minWidth = ''
-            this.containerEl.style.maxWidth = ''
-        } else if (this.configuredWidth !== null) {
-            // Restore configured width
-            this.containerEl.style.minWidth = `${this.configuredWidth}px`
-            this.containerEl.style.maxWidth = `${this.configuredWidth}px`
-        }
-    }
-
-    setWidth(width: number): void {
-        this.configuredWidth = width
-        if (!this.folded) {
-            this.containerEl.style.minWidth = `${width}px`
-            this.containerEl.style.maxWidth = `${width}px`
-        }
     }
 
     fold(): void {

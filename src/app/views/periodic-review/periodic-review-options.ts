@@ -1,4 +1,4 @@
-import type { SliderOption, ToggleOption, ViewOption } from 'obsidian'
+import type { ToggleOption, ViewOption } from 'obsidian'
 import type { PluginSettings, PeriodType } from '../../types'
 
 /**
@@ -47,17 +47,6 @@ export function createPeriodicReviewViewOptions(
                 } as ToggleOption)
             }
         }
-
-        // Always include the column width slider
-        options.push({
-            type: 'slider',
-            key: 'columnWidth',
-            displayName: 'Column width',
-            min: 300,
-            max: 600,
-            step: 50,
-            default: 400
-        } as SliderOption)
 
         return options
     }
