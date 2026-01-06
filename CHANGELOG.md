@@ -1,3 +1,8 @@
+## [1.7.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.6.0...1.7.0) (2026-01-06)
+
+### Features
+
+* **all:** periodic review columns now always use as much space as possible and adjust ([21b7be9](https://github.com/dsebastien/obsidian-journal-bases/commit/21b7be980274d30e28dfe0679a0b081e60b34ff9)), closes [#40](https://github.com/dsebastien/obsidian-journal-bases/issues/40)
 ## [1.6.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.5.0...1.6.0) (2025-12-25)
 
 ### Features
