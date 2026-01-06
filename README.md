@@ -17,6 +17,10 @@ In addition to capturing information about the past, periodic notes also enable 
 
 This plugin aims to codify and ease this process by providing dedicated views that make journaling and periodic reviews a breeze.
 
+## Overview Video
+
+https://www.youtube.com/watch?v=VHdccDohK10
+
 ## The Two Views
 
 This plugin provides two specialized Base view types, each designed for a specific workflow:
