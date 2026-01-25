@@ -1,3 +1,8 @@
+## [1.7.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.7.0...1.7.1) (2026-01-25)
+
+### Bug Fixes
+
+* **all:** fix lint issues and fixed bug with checked status in periodic review ([0c6964a](https://github.com/dsebastien/obsidian-journal-bases/commit/0c6964a5573b8a76190abb40cbf217f2b2aaea81))
 ## [1.7.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.6.0...1.7.0) (2026-01-06)
 
 ### Features
