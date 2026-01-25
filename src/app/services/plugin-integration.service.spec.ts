@@ -3,8 +3,8 @@ import { describe, expect, test, mock, beforeAll } from 'bun:test'
 // Mock obsidian module before importing the service
 const mockNotice = mock(() => {})
 
-beforeAll(() => {
-    mock.module('obsidian', () => ({
+beforeAll(async () => {
+    await mock.module('obsidian', () => ({
         Notice: mockNotice,
         App: class {},
         TFile: class {},

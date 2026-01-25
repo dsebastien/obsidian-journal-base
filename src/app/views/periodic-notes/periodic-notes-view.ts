@@ -252,7 +252,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
         // Refresh existing cards
         // The refreshContent method preserves cursor position and scroll state
         for (const card of this.noteCards.values()) {
-            card.refreshContent()
+            void card.refreshContent()
         }
 
         // Rebuild the DOM order to match new data order
@@ -443,12 +443,12 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             date,
             shouldExpand,
             (file) => {
-                this.app.workspace.getLeaf('tab').openFile(file)
+                void this.app.workspace.getLeaf('tab').openFile(file)
             },
             {
                 isDone: this.plugin.isDone(date, periodType),
-                onToggleDone: async () => {
-                    await this.plugin.toggleDone(date, periodType)
+                onToggleDone: () => {
+                    void this.plugin.toggleDone(date, periodType)
                 }
             }
         )
@@ -526,14 +526,14 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             noteDate,
             expanded,
             (file) => {
-                this.app.workspace.getLeaf('tab').openFile(file)
+                void this.app.workspace.getLeaf('tab').openFile(file)
             },
             noteDate
                 ? {
                       isDone: this.plugin.isDone(noteDate, periodType),
-                      onToggleDone: async () => {
+                      onToggleDone: () => {
                           if (noteDate) {
-                              await this.plugin.toggleDone(noteDate, periodType)
+                              void this.plugin.toggleDone(noteDate, periodType)
                           }
                       }
                   }

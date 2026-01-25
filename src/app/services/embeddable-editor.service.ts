@@ -103,7 +103,7 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
     const tempContainer = document.createElement('div')
     const widgetEditorView = embedRegistry.embedByExtension.md(
         { app, containerEl: tempContainer },
-        null as unknown as TFile,
+        null,
         ''
     )
 

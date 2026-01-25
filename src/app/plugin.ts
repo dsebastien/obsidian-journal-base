@@ -1,4 +1,4 @@
-import { Notice, Plugin } from 'obsidian'
+import { Notice, Plugin, type TFile } from 'obsidian'
 import {
     DEFAULT_SETTINGS,
     PERIOD_TYPES,
@@ -8,6 +8,7 @@ import {
     type AppWithPlugins
 } from './types'
 import { markPeriodWithCascade, isPeriodDone } from '../utils/done-reviews-utils'
+import { isNoteDone } from '../utils/frontmatter-utils'
 import { JournalBasesSettingTab } from './settings/settings-tab'
 import { log } from '../utils/log'
 import { produce } from 'immer'
@@ -94,20 +95,22 @@ export class JournalBasesPlugin extends Plugin {
         await this.syncFromPeriodicNotesPlugin()
 
         // Listen for Periodic Notes settings changes
-        this.integrationService.subscribeToPeriodicNotesChanges(async () => {
+        this.integrationService.subscribeToPeriodicNotesChanges(() => {
             log('Periodic Notes settings updated, syncing...', 'debug')
-            await this.syncFromPeriodicNotesPlugin()
-            // Refresh settings tab if open
-            this.settingTab?.display()
+            void this.syncFromPeriodicNotesPlugin().then(() => {
+                // Refresh settings tab if open
+                this.settingTab?.display()
+            })
         })
 
         // Watch for Periodic Notes plugin enable/disable
         this.integrationService.subscribeToPeriodicNotesPluginState(
             // On enabled: sync settings and make read-only
-            async () => {
+            () => {
                 log('Periodic Notes plugin was enabled, syncing settings...', 'debug')
-                await this.syncFromPeriodicNotesPlugin()
-                this.settingTab?.display()
+                void this.syncFromPeriodicNotesPlugin().then(() => {
+                    this.settingTab?.display()
+                })
             },
             // On disabled: make settings editable again
             () => {
@@ -318,6 +321,14 @@ export class JournalBasesPlugin extends Plugin {
             return this.pendingDoneStates.get(pendingKey)!
         }
         return isPeriodDone(this.app, date, periodType, this.settings)
+    }
+
+    /**
+     * Check if a file is marked as done by reading its frontmatter directly.
+     * Use this when you have the actual file reference rather than reconstructing the path.
+     */
+    isDoneFile(file: TFile): boolean {
+        return isNoteDone(this.app, file, this.settings.donePropertyName)
     }
 
     /**

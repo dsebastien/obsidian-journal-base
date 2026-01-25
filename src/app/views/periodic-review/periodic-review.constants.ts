@@ -32,7 +32,7 @@ export const PERIOD_TYPE_LABELS: Readonly<Record<PeriodType, string>> = {
 export function getChildPeriodTypes(periodType: PeriodType): PeriodType[] {
     const index = PERIOD_TYPE_ORDER.indexOf(periodType)
     if (index <= 0) return []
-    return PERIOD_TYPE_ORDER.slice(0, index).reverse() as PeriodType[]
+    return [...PERIOD_TYPE_ORDER.slice(0, index)].reverse()
 }
 
 /**
@@ -42,7 +42,7 @@ export function getChildPeriodTypes(periodType: PeriodType): PeriodType[] {
 export function getParentPeriodTypes(periodType: PeriodType): PeriodType[] {
     const index = PERIOD_TYPE_ORDER.indexOf(periodType)
     if (index < 0 || index >= PERIOD_TYPE_ORDER.length - 1) return []
-    return PERIOD_TYPE_ORDER.slice(index + 1) as PeriodType[]
+    return [...PERIOD_TYPE_ORDER.slice(index + 1)]
 }
 
 /**

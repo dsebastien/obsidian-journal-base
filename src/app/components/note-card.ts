@@ -187,7 +187,7 @@ export class NoteCard extends Component {
 
         // Load content if initially expanded
         if (this.expanded) {
-            this.loadContent()
+            void this.loadContent()
         }
 
         return container
@@ -201,7 +201,7 @@ export class NoteCard extends Component {
         this.containerEl.classList.toggle('pn-card--expanded', this.expanded)
 
         if (this.expanded && !this.contentLoaded) {
-            this.loadContent()
+            void this.loadContent()
         }
     }
 
@@ -296,7 +296,7 @@ export class NoteCard extends Component {
 
         // Save any pending changes before switching modes
         if (this.editor && this.mode !== 'view') {
-            this.saveContent(this.editor.getValue())
+            void this.saveContent(this.editor.getValue())
         }
 
         this.mode = mode
@@ -307,7 +307,7 @@ export class NoteCard extends Component {
         this.contentLoaded = false
 
         if (this.expanded) {
-            this.loadContent()
+            void this.loadContent()
         }
     }
 

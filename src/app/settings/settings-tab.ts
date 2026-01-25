@@ -222,12 +222,13 @@ export class JournalBasesSettingTab extends PluginSettingTab {
             item.addEventListener('mouseleave', () => {
                 item.style.backgroundColor = ''
             })
-            item.addEventListener('click', async () => {
-                await this.updateSettings((draft) => {
+            item.addEventListener('click', () => {
+                void this.updateSettings((draft) => {
                     draft[periodType].template = file.path
+                }).then(() => {
+                    document.body.removeChild(menu)
+                    this.display()
                 })
-                document.body.removeChild(menu)
-                this.display()
             })
         }
 
@@ -312,12 +313,13 @@ export class JournalBasesSettingTab extends PluginSettingTab {
                 item.addEventListener('mouseleave', () => {
                     item.style.backgroundColor = ''
                 })
-                item.addEventListener('click', async () => {
-                    await this.updateSettings((draft) => {
+                item.addEventListener('click', () => {
+                    void this.updateSettings((draft) => {
                         draft[periodType].template = file.path
+                    }).then(() => {
+                        document.body.removeChild(modal)
+                        this.display()
                     })
-                    document.body.removeChild(modal)
-                    this.display()
                 })
             }
         }

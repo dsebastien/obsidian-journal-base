@@ -96,13 +96,16 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private refreshDoneStates(): void {
         for (const [periodType, state] of this.columns) {
             if (state.virtualSelector) {
-                state.virtualSelector.refreshDoneStates((date) =>
-                    this.plugin.isDone(date, periodType)
+                state.virtualSelector.refreshDoneStates((date, entry) =>
+                    entry
+                        ? this.plugin.isDoneFile(entry.file)
+                        : this.plugin.isDone(date, periodType)
                 )
             }
             // Also refresh NoteCard done state if present
             if (state.noteCard && state.selectedDate) {
-                const isDone = this.plugin.isDone(state.selectedDate, periodType)
+                // Use the file directly from NoteCard for accurate done status
+                const isDone = this.plugin.isDoneFile(state.noteCard.getFile())
                 state.noteCard.setDoneState(isDone)
             }
         }
@@ -302,7 +305,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             // If there's a selected period, refresh the NoteCard
             // The refreshContent method preserves cursor position and scroll state
             if (state.selectedDate && state.noteCard) {
-                state.noteCard.refreshContent()
+                void state.noteCard.refreshContent()
             }
         }
     }
@@ -320,7 +323,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             const cfg = configMap[pt]
             const show = (this.config.get(cfg.key) as boolean) ?? cfg.default
             return show && enabledTypes.includes(pt)
-        }) as PeriodType[]
+        })
     }
 
     private createColumn(
@@ -340,9 +343,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                     this.selectPeriod(columnState, date, entry)
                 }
             },
-            async (date) => {
+            (date) => {
                 // Toggle done status for this period (cascades to children)
-                await this.plugin.toggleDone(date, periodType)
+                void this.plugin.toggleDone(date, periodType)
             }
         )
         this.addChild(virtualSelector)
@@ -461,7 +464,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 entry,
                 isMissing: !entry,
                 isCurrent: isCurrentPeriod(date, state.periodType),
-                isDone: this.plugin.isDone(date, state.periodType)
+                isDone: entry
+                    ? this.plugin.isDoneFile(entry.file)
+                    : this.plugin.isDone(date, state.periodType)
             })
         }
 
@@ -507,27 +512,25 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         })
         createBtn.innerHTML = PLUS_ICON
 
-        createBtn.addEventListener('click', async (e) => {
+        createBtn.addEventListener('click', (e) => {
             e.stopPropagation()
             createBtn.disabled = true
             createBtn.addClass('pr-column__create-btn--loading')
 
-            const file = await this.noteCreationService.createPeriodicNote(
-                nextYearDate,
-                config,
-                'yearly'
-            )
-
-            if (file) {
-                const newEntry = { file } as BasesEntry
-                state.entries = [...state.entries, newEntry]
-                this.renderCreateNextYearButton(state, config)
-                this.updateVirtualSelector(state, config)
-                new Notice(`Created ${nextYear} note`)
-            } else {
-                createBtn.disabled = false
-                createBtn.removeClass('pr-column__create-btn--loading')
-            }
+            void this.noteCreationService
+                .createPeriodicNote(nextYearDate, config, 'yearly')
+                .then((file) => {
+                    if (file) {
+                        const newEntry = { file } as BasesEntry
+                        state.entries = [...state.entries, newEntry]
+                        this.renderCreateNextYearButton(state, config)
+                        this.updateVirtualSelector(state, config)
+                        new Notice(`Created ${nextYear} note`)
+                    } else {
+                        createBtn.disabled = false
+                        createBtn.removeClass('pr-column__create-btn--loading')
+                    }
+                })
         })
     }
 
@@ -773,7 +776,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             state.selectedDate,
             true, // Always expanded
             (file) => {
-                this.app.workspace.getLeaf('tab').openFile(file)
+                void this.app.workspace.getLeaf('tab').openFile(file)
             },
             {
                 foldable: false,
@@ -782,7 +785,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 isDone,
                 onToggleDone: () => {
                     if (state.selectedDate) {
-                        this.plugin.toggleDone(state.selectedDate, state.periodType)
+                        void this.plugin.toggleDone(state.selectedDate, state.periodType)
                     }
                 },
                 onPrevious: hasPrev ? () => this.navigateToPreviousPeriod(state) : undefined,

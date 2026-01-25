@@ -1,4 +1,5 @@
-import type { App, TFile } from 'obsidian'
+import { TFile } from 'obsidian'
+import type { App } from 'obsidian'
 import type { PeriodType, PluginSettings } from '../app/types'
 import { PERIOD_TYPES } from '../app/types'
 import {
@@ -130,11 +131,11 @@ export function isPeriodDone(
     const path = getPeriodicNotePath(date, periodType, settings)
     const file = app.vault.getAbstractFileByPath(path)
 
-    if (!file || !(file instanceof Object && 'extension' in file)) {
+    if (!(file instanceof TFile)) {
         return false
     }
 
-    return isNoteDone(app, file as TFile, settings.donePropertyName)
+    return isNoteDone(app, file, settings.donePropertyName)
 }
 
 /**

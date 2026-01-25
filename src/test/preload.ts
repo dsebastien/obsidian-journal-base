@@ -1,7 +1,8 @@
 import { mock } from 'bun:test'
 
 // Mock obsidian module before any tests run
-mock.module('obsidian', () => ({
+// Note: This top-level await is intentional for module initialization
+await mock.module('obsidian', () => ({
     Notice: class Notice {
         constructor(_message: string, _duration?: number) {}
     },

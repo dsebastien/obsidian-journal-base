@@ -312,10 +312,11 @@ export class VirtualPeriodSelector extends Component {
     /**
      * Refresh done states for all items based on a callback.
      * Used when done reviews are updated externally.
+     * The callback receives both the date and the entry so it can check the file directly when available.
      */
-    refreshDoneStates(getDoneState: (date: Date) => boolean): void {
+    refreshDoneStates(getDoneState: (date: Date, entry: BasesEntry | null) => boolean): void {
         for (const item of this.items) {
-            item.isDone = getDoneState(item.date)
+            item.isDone = getDoneState(item.date, item.entry)
         }
 
         // Update rendered elements
