@@ -1,766 +1,778 @@
-@import 'tailwindcss';
+/* Tailwind CSS Configuration for Obsidian Plugin
+   - No preflight: prevents resetting Obsidian's base styles and other plugins
+   - Theme reference: provides values for utilities without adding CSS variables to :root
+   - Uses CSS layers to isolate styles from other plugins */
 
-/* ========================================
+/* Define layer order for cascade isolation */
+@layer jb-base, jb-components, jb-utilities;
+
+@import 'tailwindcss/theme' layer(theme) theme(reference);
+@import 'tailwindcss/utilities' layer(jb-utilities);
+
+/* All custom plugin styles go in jb-components layer for proper cascade isolation */
+@layer jb-components {
+    /* ========================================
    SUPPORT & UI SECTIONS
    ======================================== */
 
-/* Support section */
-.support-header-margin {
-    @apply mb-5;
-}
+    /* Support section */
+    .support-header-margin {
+        @apply mb-5;
+    }
 
-/* ========================================
+    /* ========================================
    PERIODIC NOTES VIEW
    ======================================== */
 
-.periodic-notes-view {
-    @apply flex flex-col gap-4 p-4;
-}
-
-/* Period Tabs */
-.pn-tabs {
-    @apply flex gap-2 mb-4;
-}
-
-.pn-tab {
-    @apply px-3 py-1.5 rounded cursor-pointer transition-all duration-150;
-    background-color: var(--background-secondary);
-    color: var(--text-muted);
-}
-
-.pn-tab:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.pn-tab--active {
-    @apply cursor-default font-semibold;
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-}
-
-.pn-tab--active:hover {
-    background-color: var(--interactive-accent);
-}
-
-/* Note Cards */
-.pn-cards {
-    @apply flex flex-col gap-3;
-}
-
-.pn-card {
-    @apply rounded border overflow-hidden;
-    background-color: var(--background-primary);
-    border-color: var(--background-modifier-border);
-}
-
-.pn-card__header {
-    @apply flex items-center justify-between px-4 py-3 cursor-pointer;
-    background-color: var(--background-secondary);
-}
-
-.pn-card__header:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.pn-card__title {
-    @apply font-medium flex-1;
-    color: var(--text-normal);
-}
-
-.pn-card__title--missing {
-    color: var(--text-muted);
-}
-
-.pn-card__actions {
-    @apply flex items-center gap-2 mr-2;
-}
-
-.pn-card__action-btn {
-    @apply p-1 rounded;
-}
-
-/* Mode toggle buttons */
-.pn-card__mode-toggle {
-    @apply flex items-center gap-0.5 p-0.5 rounded;
-    background-color: var(--background-modifier-hover);
-}
-
-.pn-card__mode-btn {
-    @apply p-1 rounded transition-all duration-150;
-    color: var(--text-muted);
-}
-
-.pn-card__mode-btn:hover {
-    color: var(--text-normal);
-    background-color: var(--background-modifier-hover);
-}
-
-.pn-card__mode-btn--active {
-    color: var(--text-on-accent);
-    background-color: var(--interactive-accent);
-}
-
-.pn-card__mode-btn--active:hover {
-    background-color: var(--interactive-accent-hover);
-}
-
-/* Done toggle button in card header */
-.pn-card__done-btn {
-    @apply p-1 rounded;
-    color: var(--text-muted);
-    opacity: 0.6;
-}
-
-.pn-card__done-btn:hover {
-    opacity: 1;
-    color: var(--text-accent);
-}
-
-.pn-card__done-btn--active {
-    opacity: 1;
-    color: var(--text-accent);
-}
-
-/* Navigation buttons in card header */
-.pn-card__nav {
-    @apply flex items-center gap-0.5 p-0.5 rounded;
-    background-color: var(--background-modifier-hover);
-}
-
-.pn-card__nav-btn {
-    @apply p-1 rounded transition-all duration-150;
-    color: var(--text-muted);
-}
-
-.pn-card__nav-btn:hover:not(:disabled) {
-    color: var(--text-normal);
-    background-color: var(--background-modifier-hover);
-}
-
-.pn-card__nav-btn--disabled {
-    @apply cursor-not-allowed;
-    opacity: 0.3;
-}
-
-/* Embedded editor container */
-.pn-card__editor {
-    @apply min-h-[100px];
-}
-
-.pn-card__editor .cm-editor {
-    background-color: transparent;
-}
-
-.pn-card__editor .cm-scroller {
-    @apply overflow-auto;
-}
-
-.pn-card__editor .cm-content {
-    @apply py-0;
-}
-
-.pn-card__toggle {
-    @apply transition-transform duration-200;
-}
-
-.pn-card--expanded .pn-card__toggle {
-    @apply rotate-180;
-}
-
-.pn-card__content {
-    @apply hidden px-4 py-3;
-}
-
-.pn-card--expanded .pn-card__content {
-    @apply block;
-}
-
-.pn-card--missing {
-    @apply opacity-70;
-    border-style: dashed;
-}
-
-.pn-card--current {
-    border-color: var(--interactive-accent);
-    border-width: 2px;
-}
-
-/* Current period dot indicator in card title */
-.pn-card--current .pn-card__title {
-    @apply flex items-center gap-1.5;
-}
-
-.pn-card--current .pn-card__title::before {
-    content: '●';
-    @apply text-[0.5rem] leading-none;
-    color: var(--interactive-accent);
-}
-
-.pn-card--current.pn-card--missing {
-    @apply opacity-100;
-}
-
-.pn-card__header--missing {
-    @apply justify-between;
-}
-
-.pn-card__error {
-    @apply py-2 text-sm;
-    color: var(--text-error);
-}
-
-/* Create Button */
-.pn-create-btn {
-    @apply flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer;
-    @apply transition-all duration-150 text-sm font-medium;
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-}
-
-.pn-create-btn:hover {
-    @apply opacity-90;
-}
-
-.pn-create-btn--loading {
-    @apply cursor-not-allowed opacity-70;
-}
-
-.pn-create-btn--loading:hover {
-    @apply opacity-70;
-}
-
-.pn-create-btn__icon {
-    @apply flex items-center justify-center;
-}
-
-/* Spinner animation */
-.pn-spinner {
-    animation: pn-spin 1s linear infinite;
-}
-
-@keyframes pn-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Large Create Button (for periodic review view) */
-.pn-create-large {
-    @apply flex items-center justify-center w-full h-full;
-}
-
-.pn-create-large__btn {
-    @apply flex items-center gap-3 px-6 py-3 rounded-lg cursor-pointer;
-    @apply transition-all duration-150 text-base font-medium;
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-}
-
-.pn-create-large__btn:hover {
-    @apply opacity-90;
-}
-
-.pn-create-large__btn--loading {
-    @apply cursor-not-allowed opacity-70;
-}
-
-.pn-create-large__btn--loading:hover {
-    @apply opacity-70;
-}
-
-.pn-create-large__icon {
-    @apply flex items-center justify-center;
-}
-
-.pn-create-large__text {
-    @apply font-medium;
-}
-
-/* Missing Card (placeholder for missing notes) */
-.pn-missing-card {
-    @apply rounded border px-4 py-3 flex items-center justify-between;
-    border-style: dashed;
-    background-color: var(--background-secondary-alt, var(--background-secondary));
-    border-color: var(--background-modifier-border);
-}
-
-.pn-missing-card__label {
-    @apply text-sm italic;
-    color: var(--text-muted);
-}
-
-/* Empty State */
-.pn-empty-state {
-    @apply flex flex-col items-center justify-center py-12 gap-4;
-    color: var(--text-muted);
-}
-
-.pn-empty-state__icon {
-    @apply opacity-50;
-}
-
-.pn-empty-state__text {
-    @apply text-center max-w-md;
-}
-
-/* ========================================
-   PERIODIC REVIEW VIEW (Sliding Panes Style)
-   ======================================== */
-
-.periodic-review-view {
-    @apply h-full overflow-x-auto overflow-y-hidden;
-}
-
-.pr-columns {
-    @apply flex h-full;
-}
-
-.pr-column {
-    @apply flex flex-col h-full border-r relative flex-1 transition-all duration-200 min-w-[250px];
-    border-color: var(--background-modifier-border);
-}
-
-.pr-column.pr-column--folded {
-    @apply overflow-hidden flex-none min-w-[48px] w-[48px] max-w-[48px] cursor-pointer;
-    flex-basis: 48px;
-}
-
-/* Column header */
-.pr-column__header {
-    @apply flex items-center gap-2 px-3 py-2 cursor-pointer;
-    background-color: var(--background-secondary);
-}
-
-.pr-column__header:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-/* Folded header - vertical layout */
-.pr-column--folded .pr-column__header {
-    @apply absolute inset-0 flex-col items-center pt-3 px-0;
-}
-
-.pr-column__title {
-    @apply font-medium text-sm;
-    color: var(--text-normal);
-}
-
-/* Folded title - rotated 90° left (counter-clockwise) */
-.pr-column--folded .pr-column__title {
-    writing-mode: vertical-rl;
-    @apply mt-2 whitespace-nowrap;
-}
-
-.pr-column__fold-btn {
-    @apply p-1 rounded cursor-pointer;
-}
-
-.pr-column__fold-btn:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.pr-column--folded .pr-column__fold-btn {
-    @apply mb-0;
-}
-
-/* Header actions container (right side) */
-.pr-column__header-actions {
-    @apply flex items-center gap-1 ml-auto;
-}
-
-.pr-column--folded .pr-column__header-actions {
-    @apply hidden;
-}
-
-.pr-column__create-btn {
-    @apply p-1 rounded cursor-pointer;
-    color: var(--text-muted);
-}
-
-.pr-column__create-btn:hover {
-    background-color: var(--background-modifier-hover);
-    color: var(--text-normal);
-}
-
-.pr-column__create-btn--loading {
-    @apply cursor-not-allowed opacity-50;
-}
-
-.pr-column__selector {
-    @apply flex-shrink-0 overflow-y-auto border-b;
-    height: 140px; /* Fixed height: 5 entries × 28px per entry */
-    border-color: var(--background-modifier-border);
-}
-
-/* Virtual period selector for optimized rendering */
-.pr-virtual-selector {
-    @apply relative;
-    overflow: auto;
-    height: 140px; /* Fixed height: 5 entries × 28px per entry */
-}
-
-.pr-virtual-spacer {
-    @apply pointer-events-none;
-    width: 1px;
-    visibility: hidden;
-}
-
-.pr-virtual-items {
-    @apply absolute inset-x-0 top-0;
-}
-
-.pr-column--folded .pr-column__selector {
-    @apply hidden;
-}
-
-.pr-column__content {
-    @apply flex-1 overflow-y-auto p-3;
-}
-
-.pr-column--folded .pr-column__content {
-    @apply hidden;
-}
-
-/* Period selector items - fixed height for virtual scrolling */
-.pr-period-item {
-    @apply flex items-center px-3 cursor-pointer text-sm;
-    height: 28px;
-    line-height: 28px;
-    box-sizing: border-box;
-    color: var(--text-muted);
-}
-
-.pr-period-item:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.pr-period-item--selected {
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-}
-
-.pr-period-item--missing {
-    @apply italic;
-    opacity: 0.6;
-}
-
-/* Missing + selected: keep italic but increase opacity for better visibility */
-.pr-period-item--missing.pr-period-item--selected {
-    @apply italic;
-    opacity: 0.85;
-}
-
-/* Current period indicator - uses border + dot icon */
-.pr-period-item--current {
-    @apply relative font-medium;
-    border-left: 3px solid var(--interactive-accent);
-    padding-left: calc(0.75rem - 1px);
-}
-
-.pr-period-item--current::before {
-    content: '●';
-    @apply absolute text-[0.5rem] leading-none;
-    left: 0.25rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--interactive-accent);
-}
-
-/* When current is also selected, keep the dot visible but adjust color */
-.pr-period-item--current.pr-period-item--selected {
-    border-left-color: var(--text-on-accent);
-}
-
-.pr-period-item--current.pr-period-item--selected::before {
-    color: var(--text-on-accent);
-}
-
-/* Period item layout for label and done icon */
-.pr-period-item__label {
-    @apply flex-1 truncate;
-}
-
-.pr-period-item__done-icon {
-    @apply flex items-center justify-center ml-2 flex-shrink-0;
-    color: var(--text-muted);
-    opacity: 0.6;
-}
-
-.pr-period-item__done-icon:hover {
-    opacity: 1;
-    color: var(--text-accent);
-}
-
-/* Done state for period items */
-.pr-period-item--done .pr-period-item__done-icon {
-    opacity: 1;
-    color: var(--text-accent);
-}
-
-.pr-period-item--done.pr-period-item--selected .pr-period-item__done-icon {
-    color: var(--text-on-accent);
-}
-
-/* Message when parent period doesn't exist */
-.pr-parent-missing {
-    @apply flex items-center justify-center p-4 text-center;
-    color: var(--text-muted);
-}
-
-.pr-parent-missing__text {
-    @apply text-sm italic max-w-xs leading-relaxed;
-}
-
-/* Section styling */
-.pr-section {
-    @apply mb-4 pb-4 border-b;
-    border-color: var(--background-modifier-border);
-}
-
-.pr-section:last-child {
-    @apply border-b-0;
-}
-
-.pr-section__header {
-    @apply flex items-center justify-between mb-2;
-}
-
-.pr-section__title {
-    @apply font-medium;
-    color: var(--text-normal);
-}
-
-.pr-copy-btn {
-    @apply text-xs px-2 py-1 rounded cursor-pointer;
-    background-color: var(--background-modifier-hover);
-    color: var(--text-muted);
-}
-
-.pr-copy-btn:hover {
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-}
-
-.pr-section__content {
-    @apply text-sm;
-}
-
-/* Review view empty state */
-.pr-empty-state {
-    @apply flex flex-col items-center justify-center h-full gap-4 p-8;
-    color: var(--text-muted);
-}
-
-.pr-empty-state__icon {
-    @apply opacity-50;
-}
-
-.pr-empty-state__text {
-    @apply text-center max-w-md text-sm;
-}
-
-/* Create note placeholder in review view */
-.pr-create-note {
-    @apply flex items-center justify-center h-full p-4;
-}
-
-/* Content wrapper for markdown rendering */
-.pr-markdown-content {
-    @apply text-sm;
-}
-
-.pr-markdown-content h1,
-.pr-markdown-content h2,
-.pr-markdown-content h3,
-.pr-markdown-content h4,
-.pr-markdown-content h5,
-.pr-markdown-content h6 {
-    @apply mt-3 mb-2;
-}
-
-.pr-markdown-content h1:first-child,
-.pr-markdown-content h2:first-child,
-.pr-markdown-content h3:first-child {
-    @apply mt-0;
-}
-
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
-
-/* Mobile breakpoint (< 600px) */
-@media (max-width: 599px) {
-    /* Periodic Notes View - Mobile */
     .periodic-notes-view {
-        @apply p-2 gap-3;
+        @apply flex flex-col gap-4 p-4;
     }
 
+    /* Period Tabs */
     .pn-tabs {
-        @apply flex-wrap gap-1.5 mb-3;
+        @apply flex gap-2 mb-4;
     }
 
     .pn-tab {
-        @apply px-2 py-1 text-sm;
+        @apply px-3 py-1.5 rounded cursor-pointer transition-all duration-150;
+        background-color: var(--background-secondary);
+        color: var(--text-muted);
     }
 
+    .pn-tab:hover {
+        background-color: var(--background-modifier-hover);
+    }
+
+    .pn-tab--active {
+        @apply cursor-default font-semibold;
+        background-color: var(--interactive-accent);
+        color: var(--text-on-accent);
+    }
+
+    .pn-tab--active:hover {
+        background-color: var(--interactive-accent);
+    }
+
+    /* Note Cards */
     .pn-cards {
-        @apply gap-2;
+        @apply flex flex-col gap-3;
+    }
+
+    .pn-card {
+        @apply rounded border overflow-hidden;
+        background-color: var(--background-primary);
+        border-color: var(--background-modifier-border);
     }
 
     .pn-card__header {
-        @apply px-3 py-2;
+        @apply flex items-center justify-between px-4 py-3 cursor-pointer;
+        background-color: var(--background-secondary);
     }
 
-    .pn-card__content {
-        @apply px-3 py-2;
+    .pn-card__header:hover {
+        background-color: var(--background-modifier-hover);
+    }
+
+    .pn-card__title {
+        @apply font-medium flex-1;
+        color: var(--text-normal);
+    }
+
+    .pn-card__title--missing {
+        color: var(--text-muted);
     }
 
     .pn-card__actions {
-        @apply gap-1;
+        @apply flex items-center gap-2 mr-2;
     }
 
+    .pn-card__action-btn {
+        @apply p-1 rounded;
+    }
+
+    /* Mode toggle buttons */
     .pn-card__mode-toggle {
-        @apply gap-0;
+        @apply flex items-center gap-0.5 p-0.5 rounded;
+        background-color: var(--background-modifier-hover);
     }
 
+    .pn-card__mode-btn {
+        @apply p-1 rounded transition-all duration-150;
+        color: var(--text-muted);
+    }
+
+    .pn-card__mode-btn:hover {
+        color: var(--text-normal);
+        background-color: var(--background-modifier-hover);
+    }
+
+    .pn-card__mode-btn--active {
+        color: var(--text-on-accent);
+        background-color: var(--interactive-accent);
+    }
+
+    .pn-card__mode-btn--active:hover {
+        background-color: var(--interactive-accent-hover);
+    }
+
+    /* Done toggle button in card header */
+    .pn-card__done-btn {
+        @apply p-1 rounded;
+        color: var(--text-muted);
+        opacity: 0.6;
+    }
+
+    .pn-card__done-btn:hover {
+        opacity: 1;
+        color: var(--text-accent);
+    }
+
+    .pn-card__done-btn--active {
+        opacity: 1;
+        color: var(--text-accent);
+    }
+
+    /* Navigation buttons in card header */
+    .pn-card__nav {
+        @apply flex items-center gap-0.5 p-0.5 rounded;
+        background-color: var(--background-modifier-hover);
+    }
+
+    .pn-card__nav-btn {
+        @apply p-1 rounded transition-all duration-150;
+        color: var(--text-muted);
+    }
+
+    .pn-card__nav-btn:hover:not(:disabled) {
+        color: var(--text-normal);
+        background-color: var(--background-modifier-hover);
+    }
+
+    .pn-card__nav-btn--disabled {
+        @apply cursor-not-allowed;
+        opacity: 0.3;
+    }
+
+    /* Embedded editor container */
+    .pn-card__editor {
+        @apply min-h-[100px];
+    }
+
+    .pn-card__editor .cm-editor {
+        background-color: transparent;
+    }
+
+    .pn-card__editor .cm-scroller {
+        @apply overflow-auto;
+    }
+
+    .pn-card__editor .cm-content {
+        @apply py-0;
+    }
+
+    .pn-card__toggle {
+        @apply transition-transform duration-200;
+    }
+
+    .pn-card--expanded .pn-card__toggle {
+        @apply rotate-180;
+    }
+
+    .pn-card__content {
+        @apply hidden px-4 py-3;
+    }
+
+    .pn-card--expanded .pn-card__content {
+        @apply block;
+    }
+
+    .pn-card--missing {
+        @apply opacity-70;
+        border-style: dashed;
+    }
+
+    .pn-card--current {
+        border-color: var(--interactive-accent);
+        border-width: 2px;
+    }
+
+    /* Current period dot indicator in card title */
+    .pn-card--current .pn-card__title {
+        @apply flex items-center gap-1.5;
+    }
+
+    .pn-card--current .pn-card__title::before {
+        content: '●';
+        @apply text-[0.5rem] leading-none;
+        color: var(--interactive-accent);
+    }
+
+    .pn-card--current.pn-card--missing {
+        @apply opacity-100;
+    }
+
+    .pn-card__header--missing {
+        @apply justify-between;
+    }
+
+    .pn-card__error {
+        @apply py-2 text-sm;
+        color: var(--text-error);
+    }
+
+    /* Create Button */
+    .pn-create-btn {
+        @apply flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer;
+        @apply transition-all duration-150 text-sm font-medium;
+        background-color: var(--interactive-accent);
+        color: var(--text-on-accent);
+    }
+
+    .pn-create-btn:hover {
+        @apply opacity-90;
+    }
+
+    .pn-create-btn--loading {
+        @apply cursor-not-allowed opacity-70;
+    }
+
+    .pn-create-btn--loading:hover {
+        @apply opacity-70;
+    }
+
+    .pn-create-btn__icon {
+        @apply flex items-center justify-center;
+    }
+
+    /* Spinner animation */
+    .pn-spinner {
+        animation: pn-spin 1s linear infinite;
+    }
+
+    @keyframes pn-spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Large Create Button (for periodic review view) */
+    .pn-create-large {
+        @apply flex items-center justify-center w-full h-full;
+    }
+
+    .pn-create-large__btn {
+        @apply flex items-center gap-3 px-6 py-3 rounded-lg cursor-pointer;
+        @apply transition-all duration-150 text-base font-medium;
+        background-color: var(--interactive-accent);
+        color: var(--text-on-accent);
+    }
+
+    .pn-create-large__btn:hover {
+        @apply opacity-90;
+    }
+
+    .pn-create-large__btn--loading {
+        @apply cursor-not-allowed opacity-70;
+    }
+
+    .pn-create-large__btn--loading:hover {
+        @apply opacity-70;
+    }
+
+    .pn-create-large__icon {
+        @apply flex items-center justify-center;
+    }
+
+    .pn-create-large__text {
+        @apply font-medium;
+    }
+
+    /* Missing Card (placeholder for missing notes) */
+    .pn-missing-card {
+        @apply rounded border px-4 py-3 flex items-center justify-between;
+        border-style: dashed;
+        background-color: var(--background-secondary-alt, var(--background-secondary));
+        border-color: var(--background-modifier-border);
+    }
+
+    .pn-missing-card__label {
+        @apply text-sm italic;
+        color: var(--text-muted);
+    }
+
+    /* Empty State */
     .pn-empty-state {
-        @apply py-8 gap-3;
+        @apply flex flex-col items-center justify-center py-12 gap-4;
+        color: var(--text-muted);
     }
 
-    /* Periodic Review View - Mobile: Stack columns vertically */
+    .pn-empty-state__icon {
+        @apply opacity-50;
+    }
+
+    .pn-empty-state__text {
+        @apply text-center max-w-md;
+    }
+
+    /* ========================================
+   PERIODIC REVIEW VIEW (Sliding Panes Style)
+   ======================================== */
+
     .periodic-review-view {
-        @apply overflow-x-hidden overflow-y-auto;
+        @apply h-full overflow-x-auto overflow-y-hidden;
     }
 
     .pr-columns {
-        @apply flex-col;
+        @apply flex h-full;
     }
 
     .pr-column {
-        @apply w-full border-r-0 border-b shrink grow-0;
-        min-width: 100% !important;
-        max-width: 100% !important;
+        @apply flex flex-col h-full border-r relative flex-1 transition-all duration-200 min-w-[250px];
+        border-color: var(--background-modifier-border);
     }
 
     .pr-column.pr-column--folded {
-        @apply w-full h-auto;
-        min-width: 100% !important;
-        max-width: 100% !important;
-        flex-basis: auto;
+        @apply overflow-hidden flex-none min-w-[48px] w-[48px] max-w-[48px] cursor-pointer;
+        flex-basis: 48px;
     }
 
-    /* Folded column on mobile - horizontal layout instead of vertical */
+    /* Column header */
+    .pr-column__header {
+        @apply flex items-center gap-2 px-3 py-2 cursor-pointer;
+        background-color: var(--background-secondary);
+    }
+
+    .pr-column__header:hover {
+        background-color: var(--background-modifier-hover);
+    }
+
+    /* Folded header - vertical layout */
     .pr-column--folded .pr-column__header {
-        @apply relative flex-row items-center pt-2 px-3;
-        position: relative;
-        inset: auto;
+        @apply absolute inset-0 flex-col items-center pt-3 px-0;
     }
 
+    .pr-column__title {
+        @apply font-medium text-sm;
+        color: var(--text-normal);
+    }
+
+    /* Folded title - rotated 90° left (counter-clockwise) */
     .pr-column--folded .pr-column__title {
-        writing-mode: horizontal-tb;
-        @apply mt-0 ml-2;
+        writing-mode: vertical-rl;
+        @apply mt-2 whitespace-nowrap;
+    }
+
+    .pr-column__fold-btn {
+        @apply p-1 rounded cursor-pointer;
+    }
+
+    .pr-column__fold-btn:hover {
+        background-color: var(--background-modifier-hover);
+    }
+
+    .pr-column--folded .pr-column__fold-btn {
+        @apply mb-0;
+    }
+
+    /* Header actions container (right side) */
+    .pr-column__header-actions {
+        @apply flex items-center gap-1 ml-auto;
+    }
+
+    .pr-column--folded .pr-column__header-actions {
+        @apply hidden;
+    }
+
+    .pr-column__create-btn {
+        @apply p-1 rounded cursor-pointer;
+        color: var(--text-muted);
+    }
+
+    .pr-column__create-btn:hover {
+        background-color: var(--background-modifier-hover);
+        color: var(--text-normal);
+    }
+
+    .pr-column__create-btn--loading {
+        @apply cursor-not-allowed opacity-50;
+    }
+
+    .pr-column__selector {
+        @apply flex-shrink-0 overflow-y-auto border-b;
+        height: 140px; /* Fixed height: 5 entries × 28px per entry */
+        border-color: var(--background-modifier-border);
+    }
+
+    /* Virtual period selector for optimized rendering */
+    .pr-virtual-selector {
+        @apply relative;
+        overflow: auto;
+        height: 140px; /* Fixed height: 5 entries × 28px per entry */
+    }
+
+    .pr-virtual-spacer {
+        @apply pointer-events-none;
+        width: 1px;
+        visibility: hidden;
+    }
+
+    .pr-virtual-items {
+        @apply absolute inset-x-0 top-0;
     }
 
     .pr-column--folded .pr-column__selector {
         @apply hidden;
     }
 
+    .pr-column__content {
+        @apply flex-1 overflow-y-auto p-3;
+    }
+
     .pr-column--folded .pr-column__content {
         @apply hidden;
     }
 
-    .pr-column--folded .pr-column__header-actions {
-        @apply flex ml-auto;
-    }
-
-    .pr-column__header {
-        @apply px-2 py-2;
-    }
-
-    .pr-column__selector {
-        height: 112px; /* 4 entries × 28px on mobile */
-    }
-
-    .pr-virtual-selector {
-        height: 112px;
-    }
-
-    .pr-column__content {
-        @apply p-2;
-        /* Limit content height on mobile to prevent single column taking all space */
-        max-height: 50vh;
-    }
-
+    /* Period selector items - fixed height for virtual scrolling */
     .pr-period-item {
-        @apply px-2;
+        @apply flex items-center px-3 cursor-pointer text-sm;
+        height: 28px;
+        line-height: 28px;
+        box-sizing: border-box;
+        color: var(--text-muted);
     }
 
-    .pr-empty-state {
-        @apply p-4 gap-3;
+    .pr-period-item:hover {
+        background-color: var(--background-modifier-hover);
     }
 
-    .pr-empty-state__text {
-        @apply text-xs;
+    .pr-period-item--selected {
+        background-color: var(--interactive-accent);
+        color: var(--text-on-accent);
     }
 
-    .pr-create-note {
-        @apply p-2;
+    .pr-period-item--missing {
+        @apply italic;
+        opacity: 0.6;
     }
 
-    .pn-create-large__btn {
-        @apply px-4 py-2 text-sm gap-2;
+    /* Missing + selected: keep italic but increase opacity for better visibility */
+    .pr-period-item--missing.pr-period-item--selected {
+        @apply italic;
+        opacity: 0.85;
     }
 
+    /* Current period indicator - uses border + dot icon */
+    .pr-period-item--current {
+        @apply relative font-medium;
+        border-left: 3px solid var(--interactive-accent);
+        padding-left: calc(0.75rem - 1px);
+    }
+
+    .pr-period-item--current::before {
+        content: '●';
+        @apply absolute text-[0.5rem] leading-none;
+        left: 0.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--interactive-accent);
+    }
+
+    /* When current is also selected, keep the dot visible but adjust color */
+    .pr-period-item--current.pr-period-item--selected {
+        border-left-color: var(--text-on-accent);
+    }
+
+    .pr-period-item--current.pr-period-item--selected::before {
+        color: var(--text-on-accent);
+    }
+
+    /* Period item layout for label and done icon */
+    .pr-period-item__label {
+        @apply flex-1 truncate;
+    }
+
+    .pr-period-item__done-icon {
+        @apply flex items-center justify-center ml-2 flex-shrink-0;
+        color: var(--text-muted);
+        opacity: 0.6;
+    }
+
+    .pr-period-item__done-icon:hover {
+        opacity: 1;
+        color: var(--text-accent);
+    }
+
+    /* Done state for period items */
+    .pr-period-item--done .pr-period-item__done-icon {
+        opacity: 1;
+        color: var(--text-accent);
+    }
+
+    .pr-period-item--done.pr-period-item--selected .pr-period-item__done-icon {
+        color: var(--text-on-accent);
+    }
+
+    /* Message when parent period doesn't exist */
     .pr-parent-missing {
-        @apply p-2;
+        @apply flex items-center justify-center p-4 text-center;
+        color: var(--text-muted);
     }
 
     .pr-parent-missing__text {
-        @apply text-xs;
-    }
-}
-
-/* Tablet breakpoint (600px - 899px) */
-@media (min-width: 600px) and (max-width: 899px) {
-    /* Periodic Notes View - Tablet */
-    .periodic-notes-view {
-        @apply p-3 gap-3;
+        @apply text-sm italic max-w-xs leading-relaxed;
     }
 
-    .pn-tabs {
-        @apply flex-wrap;
+    /* Section styling */
+    .pr-section {
+        @apply mb-4 pb-4 border-b;
+        border-color: var(--background-modifier-border);
     }
 
-    /* Periodic Review View - Tablet */
-    .pr-column {
-        min-width: 200px;
+    .pr-section:last-child {
+        @apply border-b-0;
     }
 
-    .pr-column.pr-column--folded {
-        min-width: 40px !important;
-        max-width: 40px !important;
-        width: 40px !important;
+    .pr-section__header {
+        @apply flex items-center justify-between mb-2;
     }
 
-    .pr-column__content {
-        @apply p-2;
+    .pr-section__title {
+        @apply font-medium;
+        color: var(--text-normal);
     }
 
-    .pr-column__selector {
-        height: 112px;
+    .pr-copy-btn {
+        @apply text-xs px-2 py-1 rounded cursor-pointer;
+        background-color: var(--background-modifier-hover);
+        color: var(--text-muted);
     }
 
-    .pr-virtual-selector {
-        height: 112px;
+    .pr-copy-btn:hover {
+        background-color: var(--interactive-accent);
+        color: var(--text-on-accent);
     }
-}
 
-/* Large desktop (> 1200px) */
-@media (min-width: 1200px) {
-    .pr-column {
-        min-width: 300px;
+    .pr-section__content {
+        @apply text-sm;
     }
-}
+
+    /* Review view empty state */
+    .pr-empty-state {
+        @apply flex flex-col items-center justify-center h-full gap-4 p-8;
+        color: var(--text-muted);
+    }
+
+    .pr-empty-state__icon {
+        @apply opacity-50;
+    }
+
+    .pr-empty-state__text {
+        @apply text-center max-w-md text-sm;
+    }
+
+    /* Create note placeholder in review view */
+    .pr-create-note {
+        @apply flex items-center justify-center h-full p-4;
+    }
+
+    /* Content wrapper for markdown rendering */
+    .pr-markdown-content {
+        @apply text-sm;
+    }
+
+    .pr-markdown-content h1,
+    .pr-markdown-content h2,
+    .pr-markdown-content h3,
+    .pr-markdown-content h4,
+    .pr-markdown-content h5,
+    .pr-markdown-content h6 {
+        @apply mt-3 mb-2;
+    }
+
+    .pr-markdown-content h1:first-child,
+    .pr-markdown-content h2:first-child,
+    .pr-markdown-content h3:first-child {
+        @apply mt-0;
+    }
+
+    /* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+    /* Mobile breakpoint (< 600px) */
+    @media (max-width: 599px) {
+        /* Periodic Notes View - Mobile */
+        .periodic-notes-view {
+            @apply p-2 gap-3;
+        }
+
+        .pn-tabs {
+            @apply flex-wrap gap-1.5 mb-3;
+        }
+
+        .pn-tab {
+            @apply px-2 py-1 text-sm;
+        }
+
+        .pn-cards {
+            @apply gap-2;
+        }
+
+        .pn-card__header {
+            @apply px-3 py-2;
+        }
+
+        .pn-card__content {
+            @apply px-3 py-2;
+        }
+
+        .pn-card__actions {
+            @apply gap-1;
+        }
+
+        .pn-card__mode-toggle {
+            @apply gap-0;
+        }
+
+        .pn-empty-state {
+            @apply py-8 gap-3;
+        }
+
+        /* Periodic Review View - Mobile: Stack columns vertically */
+        .periodic-review-view {
+            @apply overflow-x-hidden overflow-y-auto;
+        }
+
+        .pr-columns {
+            @apply flex-col;
+        }
+
+        .pr-column {
+            @apply w-full border-r-0 border-b shrink grow-0;
+            min-width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .pr-column.pr-column--folded {
+            @apply w-full h-auto;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            flex-basis: auto;
+        }
+
+        /* Folded column on mobile - horizontal layout instead of vertical */
+        .pr-column--folded .pr-column__header {
+            @apply relative flex-row items-center pt-2 px-3;
+            position: relative;
+            inset: auto;
+        }
+
+        .pr-column--folded .pr-column__title {
+            writing-mode: horizontal-tb;
+            @apply mt-0 ml-2;
+        }
+
+        .pr-column--folded .pr-column__selector {
+            @apply hidden;
+        }
+
+        .pr-column--folded .pr-column__content {
+            @apply hidden;
+        }
+
+        .pr-column--folded .pr-column__header-actions {
+            @apply flex ml-auto;
+        }
+
+        .pr-column__header {
+            @apply px-2 py-2;
+        }
+
+        .pr-column__selector {
+            height: 112px; /* 4 entries × 28px on mobile */
+        }
+
+        .pr-virtual-selector {
+            height: 112px;
+        }
+
+        .pr-column__content {
+            @apply p-2;
+            /* Limit content height on mobile to prevent single column taking all space */
+            max-height: 50vh;
+        }
+
+        .pr-period-item {
+            @apply px-2;
+        }
+
+        .pr-empty-state {
+            @apply p-4 gap-3;
+        }
+
+        .pr-empty-state__text {
+            @apply text-xs;
+        }
+
+        .pr-create-note {
+            @apply p-2;
+        }
+
+        .pn-create-large__btn {
+            @apply px-4 py-2 text-sm gap-2;
+        }
+
+        .pr-parent-missing {
+            @apply p-2;
+        }
+
+        .pr-parent-missing__text {
+            @apply text-xs;
+        }
+    }
+
+    /* Tablet breakpoint (600px - 899px) */
+    @media (min-width: 600px) and (max-width: 899px) {
+        /* Periodic Notes View - Tablet */
+        .periodic-notes-view {
+            @apply p-3 gap-3;
+        }
+
+        .pn-tabs {
+            @apply flex-wrap;
+        }
+
+        /* Periodic Review View - Tablet */
+        .pr-column {
+            min-width: 200px;
+        }
+
+        .pr-column.pr-column--folded {
+            min-width: 40px !important;
+            max-width: 40px !important;
+            width: 40px !important;
+        }
+
+        .pr-column__content {
+            @apply p-2;
+        }
+
+        .pr-column__selector {
+            height: 112px;
+        }
+
+        .pr-virtual-selector {
+            height: 112px;
+        }
+    }
+
+    /* Large desktop (> 1200px) */
+    @media (min-width: 1200px) {
+        .pr-column {
+            min-width: 300px;
+        }
+    }
+} /* End @layer jb-components */
