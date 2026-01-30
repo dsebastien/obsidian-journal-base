@@ -1,3 +1,9 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+
+
 ## [1.7.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.7.0...1.7.1) (2026-01-25)
 
 ### Bug Fixes
@@ -122,3 +128,5 @@
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
+
