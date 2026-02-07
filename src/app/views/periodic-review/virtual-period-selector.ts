@@ -40,7 +40,7 @@ export class VirtualPeriodSelector extends Component {
     constructor(
         private containerEl: HTMLElement,
         private onSelect: (date: Date, entry: BasesEntry | null) => void,
-        private onToggleDone?: (date: Date) => void
+        private onToggleDone?: (date: Date, entry: BasesEntry | null) => void
     ) {
         super()
         this.setupDOM()
@@ -265,7 +265,8 @@ export class VirtualPeriodSelector extends Component {
             const newDoneState = !item.isDone
             this.updateItem(item.date, { isDone: newDoneState })
             // Then trigger the actual toggle (which will do file updates and full refresh)
-            this.onToggleDone?.(item.date)
+            // Pass entry so the caller can use the file directly for accurate done status
+            this.onToggleDone?.(item.date, item.entry)
         })
 
         // Click on label/item selects the period

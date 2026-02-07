@@ -360,9 +360,11 @@ export class JournalBasesPlugin extends Plugin {
     /**
      * Toggle the done status of a period.
      * Cascades to all child periods.
+     * When a file reference is available, uses it directly for accurate status reading
+     * instead of reconstructing the path (which may not match the actual file).
      */
-    async toggleDone(date: Date, periodType: PeriodType): Promise<void> {
-        const currentlyDone = this.isDone(date, periodType)
+    async toggleDone(date: Date, periodType: PeriodType, file?: TFile): Promise<void> {
+        const currentlyDone = file ? this.isDoneFile(file) : this.isDone(date, periodType)
         await this.setDone(date, periodType, !currentlyDone)
     }
 

@@ -195,14 +195,8 @@ Marking a period as done CASCADES to all child periods:
 
 ### Data Structure
 
-Done reviews are stored in plugin data as `doneReviews: { daily: {}, weekly: {}, monthly: {}, quarterly: {}, yearly: {} }`. Each entry maps period identifier (e.g., "2025-10-10", "2025-W01") to `true`.
+Done status is stored in each note's YAML frontmatter using the `periodic_review_completed` property (configurable via `donePropertyName` setting). The value is a boolean (`true`/`false`).
 
-### Period Identifiers
+### Done Status Reading
 
-Use formatted date strings from the period's format setting:
-
-- Daily: "2025-10-10"
-- Weekly: "2025-W01"
-- Monthly: "2025-10"
-- Quarterly: "2025-Q4"
-- Yearly: "2025"
+When reading done status, always prefer `isDoneFile(file)` (reads frontmatter directly from the file reference) over `isDone(date, periodType)` (reconstructs the file path). Path reconstruction may not match the actual file path, leading to incorrect status.

@@ -305,6 +305,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             // If there's a selected period, refresh the NoteCard
             // The refreshContent method preserves cursor position and scroll state
             if (state.selectedDate && state.noteCard) {
+                // Also refresh done state from the actual file frontmatter
+                const noteIsDone = this.plugin.isDoneFile(state.noteCard.getFile())
+                state.noteCard.setDoneState(noteIsDone)
                 void state.noteCard.refreshContent()
             }
         }
@@ -343,9 +346,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                     this.selectPeriod(columnState, date, entry)
                 }
             },
-            (date) => {
+            (date, entry) => {
                 // Toggle done status for this period (cascades to children)
-                void this.plugin.toggleDone(date, periodType)
+                // Pass the file reference when available for accurate done status reading
+                void this.plugin.toggleDone(date, periodType, entry?.file)
             }
         )
         this.addChild(virtualSelector)
@@ -763,9 +767,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
 
         // Create NoteCard with the same component used in periodic notes view
         // In review view: not foldable, always source mode, no mode toggle buttons
-        const isDone = state.selectedDate
-            ? this.plugin.isDone(state.selectedDate, state.periodType)
-            : false
+        // Use isDoneFile with the actual file reference for accurate status reading
+        const isDone = this.plugin.isDoneFile(entry.file)
         const hasPrev = this.hasPreviousPeriod(state)
         const hasNext = this.hasNextPeriod(state)
         state.noteCard = new NoteCard(
@@ -785,7 +788,12 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 isDone,
                 onToggleDone: () => {
                     if (state.selectedDate) {
-                        void this.plugin.toggleDone(state.selectedDate, state.periodType)
+                        // Pass the file reference for accurate done status reading
+                        void this.plugin.toggleDone(
+                            state.selectedDate,
+                            state.periodType,
+                            entry.file
+                        )
                     }
                 },
                 onPrevious: hasPrev ? () => this.navigateToPreviousPeriod(state) : undefined,
