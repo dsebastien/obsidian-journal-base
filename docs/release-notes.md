@@ -1,5 +1,16 @@
 # Release Notes
 
+## 1.8.0 (2026-02-07)
+
+### Features
+
+- **all:** added release and validate scripts
+- **all:** updated
+
+### Bug Fixes
+
+- **all:** fixed issue with periodic review done status flag
+
 ## 1.7.1 (2026-01-25)
 
 ### Bug Fixes

@@ -2,7 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.7.1...1.8.0) (2026-02-07)
 
+### Features
+
+* **all:** added release and validate scripts ([2426099](https://github.com/dsebastien/obsidian-journal-bases/commit/242609996d626878391b1886d603ca288867afbb))
+* **all:** updated ([82538e9](https://github.com/dsebastien/obsidian-journal-bases/commit/82538e9177499c4cd4302936d1393463716e3212))
+
+### Bug Fixes
+
+* **all:** fixed issue with periodic review done status flag ([2cfcaca](https://github.com/dsebastien/obsidian-journal-bases/commit/2cfcaca75ad5e9b9380fb3453b5137981c614581))
 
 ## [1.7.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.7.0...1.7.1) (2026-01-25)
 
@@ -128,5 +137,6 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
