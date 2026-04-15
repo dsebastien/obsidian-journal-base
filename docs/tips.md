@@ -1,3 +1,8 @@
+---
+title: Tips & best practices
+nav_order: 90
+---
+
 # Tips & Best Practices
 
 Get the most out of Journal Bases with these tips.

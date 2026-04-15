@@ -1,3 +1,8 @@
+---
+title: Usage
+nav_order: 2
+---
+
 # Usage Guide
 
 Journal Bases provides two specialized Base views: **Periodic Notes** for daily journaling and **Periodic Review** for extracting insights across period types.

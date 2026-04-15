@@ -1,3 +1,9 @@
+---
+title: Overview
+nav_order: 1
+permalink: /
+---
+
 # Journal Bases Documentation
 
 Navigate and manage your journal and periodic reviews with purpose-built Base views.
