@@ -21,6 +21,22 @@
     }
 
     /* ========================================
+   SETTINGS TAB
+   ======================================== */
+
+    .jb-sync-notice {
+        @apply mb-4;
+        padding: 0.75em 1em;
+        background-color: var(--background-modifier-info);
+        border-radius: var(--radius-s);
+    }
+
+    .jb-input-readonly {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* ========================================
    PERIODIC NOTES VIEW
    ======================================== */
 
@@ -421,6 +437,14 @@
 
     .pr-virtual-items {
         @apply absolute inset-x-0 top-0;
+    }
+
+    /* Items positioned absolutely inside the virtual scroller; the `top`
+       offset is set inline via a CSS variable from createItemEl. */
+    .pr-virtual-items .pr-period-item {
+        position: absolute;
+        left: 0;
+        right: 0;
     }
 
     .pr-column--folded .pr-column__selector {

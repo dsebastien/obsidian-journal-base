@@ -1,9 +1,9 @@
 {
     "id": "journal-bases",
     "name": "Journal Bases",
-    "description": "Custom Base views for journaling and periodic reviews",
+    "description": "Custom Base views for journaling and periodic reviews.",
     "version": "1.8.0",
-    "minAppVersion": "1.4.0",
+    "minAppVersion": "1.10.0",
     "isDesktopOnly": false,
     "author": "Sébastien Dubois",
     "authorUrl": "https://dsebastien.net",

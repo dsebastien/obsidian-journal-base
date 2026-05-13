@@ -1,4 +1,4 @@
-import { BasesView, BasesEntry, Notice, type TFile, debounce } from 'obsidian'
+import { BasesView, BasesEntry, Notice, type TFile, debounce, setIcon } from 'obsidian'
 import type { QueryController, Debouncer } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import type { PeriodType, PeriodicNoteConfig, LifeTrackerPluginFileProvider } from '../../types'
@@ -22,9 +22,6 @@ import { generatePeriodsForContext } from './period-generator'
 import { filterEntriesByContext } from './entry-filter'
 import { PeriodCache } from './period-cache'
 import { VirtualPeriodSelector, type VirtualPeriodItem } from './virtual-period-selector'
-
-// Plus icon for create button in column header
-const PLUS_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
 
 interface ColumnState {
     periodType: PeriodType
@@ -514,7 +511,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             cls: 'pr-column__create-btn clickable-icon',
             attr: { 'aria-label': `Create ${nextYear} note` }
         })
-        createBtn.innerHTML = PLUS_ICON
+        setIcon(createBtn, 'plus')
 
         createBtn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -967,14 +964,8 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
 
     private renderEmptyState(message: string): void {
         const emptyEl = this.columnsEl.createDiv({ cls: 'pr-empty-state' })
-        emptyEl.createDiv({ cls: 'pr-empty-state__icon' }).innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"/>
-                <rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-            </svg>
-        `
+        const iconEl = emptyEl.createDiv({ cls: 'pr-empty-state__icon' })
+        setIcon(iconEl, 'layout-grid')
         emptyEl.createDiv({ cls: 'pr-empty-state__text', text: message })
     }
 

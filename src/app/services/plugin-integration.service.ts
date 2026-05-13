@@ -35,7 +35,7 @@ interface TemplaterPlugin {
 
 export class PluginIntegrationService {
     private periodicNotesEventRef: EventRef | null = null
-    private pluginStateCheckInterval: ReturnType<typeof setInterval> | null = null
+    private pluginStateCheckInterval: number | null = null
     private lastPeriodicNotesState: boolean = false
     private onPeriodicNotesEnabled: (() => void) | null = null
     private onPeriodicNotesDisabled: (() => void) | null = null
@@ -53,7 +53,7 @@ export class PluginIntegrationService {
         return this.app.plugins.enabledPlugins.has('periodic-notes')
     }
 
-    getPeriodicNotesPlugin(): unknown | null {
+    getPeriodicNotesPlugin(): unknown {
         if (!this.isPeriodicNotesPluginEnabled()) return null
         return this.app.plugins.getPlugin('periodic-notes')
     }
@@ -125,7 +125,7 @@ export class PluginIntegrationService {
         this.lastPeriodicNotesState = this.isPeriodicNotesPluginEnabled()
 
         // Poll for plugin state changes every second
-        this.pluginStateCheckInterval = setInterval(() => {
+        this.pluginStateCheckInterval = window.setInterval(() => {
             this.checkPeriodicNotesPluginState()
         }, 1000)
     }
@@ -151,7 +151,7 @@ export class PluginIntegrationService {
 
     unsubscribeFromPeriodicNotesPluginState(): void {
         if (this.pluginStateCheckInterval) {
-            clearInterval(this.pluginStateCheckInterval)
+            window.clearInterval(this.pluginStateCheckInterval)
             this.pluginStateCheckInterval = null
         }
         this.onPeriodicNotesEnabled = null

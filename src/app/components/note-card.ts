@@ -1,4 +1,4 @@
-import { App, Component, MarkdownRenderer, TFile, debounce, Notice } from 'obsidian'
+import { App, Component, MarkdownRenderer, TFile, debounce, Notice, setIcon } from 'obsidian'
 import type { Debouncer } from 'obsidian'
 import type { PeriodType } from '../types'
 import { getPeriodSuffix, isCurrentPeriod } from '../../utils/date-utils'
@@ -7,18 +7,11 @@ import { EmbeddableEditor } from '../services/embeddable-editor.service'
 
 export type CardMode = 'view' | 'edit' | 'source'
 
-// SVG icons for mode buttons
-const VIEW_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`
-const EDIT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`
-const SOURCE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
-
-// SVG icons for done status
-const CHECK_CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
-const CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
-
-// SVG icons for navigation
-const CHEVRON_LEFT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
-const CHEVRON_RIGHT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`
+const MODE_ICON_NAMES: Record<CardMode, string> = {
+    view: 'eye',
+    edit: 'pencil',
+    source: 'code'
+}
 
 export interface NoteCardOptions {
     /** Whether the card can be folded/collapsed. Defaults to true. */
@@ -102,9 +95,9 @@ export class NoteCard extends Component {
         // Mode toggle buttons (only shown if not hidden)
         if (!this.hideModeToggle) {
             const modeToggleEl = actionsEl.createDiv({ cls: 'pn-card__mode-toggle' })
-            this.createModeButton(modeToggleEl, 'view', VIEW_ICON, 'Reading view')
-            this.createModeButton(modeToggleEl, 'edit', EDIT_ICON, 'Live preview')
-            this.createModeButton(modeToggleEl, 'source', SOURCE_ICON, 'Source mode')
+            this.createModeButton(modeToggleEl, 'view', 'Reading view')
+            this.createModeButton(modeToggleEl, 'edit', 'Live preview')
+            this.createModeButton(modeToggleEl, 'source', 'Source mode')
             this.updateModeButtons()
         }
 
@@ -114,7 +107,7 @@ export class NoteCard extends Component {
                 cls: `pn-card__done-btn clickable-icon ${this.isDone ? 'pn-card__done-btn--active' : ''}`,
                 attr: { 'aria-label': this.isDone ? 'Mark as not done' : 'Mark as done' }
             })
-            this.doneButton.innerHTML = this.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+            setIcon(this.doneButton, this.isDone ? 'check-circle' : 'circle')
             this.registerDomEvent(this.doneButton, 'click', (e) => {
                 e.stopPropagation()
                 this.onToggleDone?.()
@@ -129,7 +122,7 @@ export class NoteCard extends Component {
                 cls: 'pn-card__nav-btn clickable-icon',
                 attr: { 'aria-label': 'Previous period' }
             })
-            prevBtn.innerHTML = CHEVRON_LEFT_ICON
+            setIcon(prevBtn, 'chevron-left')
             if (!this.onPrevious) {
                 prevBtn.disabled = true
                 prevBtn.addClass('pn-card__nav-btn--disabled')
@@ -143,7 +136,7 @@ export class NoteCard extends Component {
                 cls: 'pn-card__nav-btn clickable-icon',
                 attr: { 'aria-label': 'Next period' }
             })
-            nextBtn.innerHTML = CHEVRON_RIGHT_ICON
+            setIcon(nextBtn, 'chevron-right')
             if (!this.onNext) {
                 nextBtn.disabled = true
                 nextBtn.addClass('pn-card__nav-btn--disabled')
@@ -159,7 +152,7 @@ export class NoteCard extends Component {
             cls: 'pn-card__action-btn clickable-icon',
             attr: { 'aria-label': 'Open in new tab' }
         })
-        openBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`
+        setIcon(openBtn, 'external-link')
         this.registerDomEvent(openBtn, 'click', (e) => {
             e.stopPropagation()
             this.onOpen?.(this.file)
@@ -168,7 +161,7 @@ export class NoteCard extends Component {
         // Toggle icon (only if foldable)
         if (this.foldable) {
             const toggleIcon = header.createSpan({ cls: 'pn-card__toggle' })
-            toggleIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
+            setIcon(toggleIcon, 'chevron-down')
         }
 
         // Content area
@@ -264,17 +257,12 @@ export class NoteCard extends Component {
         }
     }
 
-    private createModeButton(
-        container: HTMLElement,
-        mode: CardMode,
-        icon: string,
-        label: string
-    ): void {
+    private createModeButton(container: HTMLElement, mode: CardMode, label: string): void {
         const btn = container.createEl('button', {
             cls: 'pn-card__mode-btn clickable-icon',
             attr: { 'aria-label': label }
         })
-        btn.innerHTML = icon
+        setIcon(btn, MODE_ICON_NAMES[mode])
         this.modeButtons.set(mode, btn)
 
         this.registerDomEvent(btn, 'click', (e) => {
@@ -444,7 +432,7 @@ export class NoteCard extends Component {
         this.containerEl.classList.toggle('pn-card--done', isDone)
 
         if (this.doneButton) {
-            this.doneButton.innerHTML = isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+            setIcon(this.doneButton, isDone ? 'check-circle' : 'circle')
             this.doneButton.classList.toggle('pn-card__done-btn--active', isDone)
             this.doneButton.setAttribute('aria-label', isDone ? 'Mark as not done' : 'Mark as done')
         }

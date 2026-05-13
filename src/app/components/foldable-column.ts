@@ -1,8 +1,4 @@
-import { Component } from 'obsidian'
-
-// SVG icons for fold button
-const ICON_COLLAPSE = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`
-const ICON_EXPAND = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`
+import { Component, setIcon } from 'obsidian'
 
 export class FoldableColumn extends Component {
     private containerEl!: HTMLElement
@@ -32,7 +28,7 @@ export class FoldableColumn extends Component {
             cls: 'pr-column__fold-btn clickable-icon',
             attr: { 'aria-label': 'Collapse column' }
         })
-        this.foldBtn.innerHTML = ICON_COLLAPSE
+        setIcon(this.foldBtn, 'chevron-left')
 
         this.headerEl.createSpan({
             cls: 'pr-column__title',
@@ -70,7 +66,7 @@ export class FoldableColumn extends Component {
     }
 
     private updateFoldButton(): void {
-        this.foldBtn.innerHTML = this.folded ? ICON_EXPAND : ICON_COLLAPSE
+        setIcon(this.foldBtn, this.folded ? 'chevron-right' : 'chevron-left')
         this.foldBtn.setAttribute('aria-label', this.folded ? 'Expand column' : 'Collapse column')
     }
 

@@ -100,7 +100,7 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
     const embedRegistry = app.embedRegistry as EmbedRegistry
 
     // Create a temporary widget editor to extract the prototype
-    const tempContainer = document.createElement('div')
+    const tempContainer = activeDocument.createElement('div')
     const widgetEditorView = embedRegistry.embedByExtension.md(
         { app, containerEl: tempContainer },
         null,
@@ -118,9 +118,10 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
         throw new Error('Failed to resolve editor prototype: editMode is undefined')
     }
 
-    const MarkdownEditorPrototype = Object.getPrototypeOf(Object.getPrototypeOf(editMode))
-    cachedEditorPrototype =
-        MarkdownEditorPrototype.constructor as ScrollableMarkdownEditorConstructor
+    const MarkdownEditorPrototype = Object.getPrototypeOf(
+        Object.getPrototypeOf(editMode) as object
+    ) as { constructor: ScrollableMarkdownEditorConstructor }
+    cachedEditorPrototype = MarkdownEditorPrototype.constructor
 
     // Clean up the temporary instance
     widgetEditorView.unload()

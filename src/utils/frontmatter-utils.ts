@@ -10,7 +10,7 @@ export function getFrontmatterProperty(app: App, file: TFile, property: string):
     if (!cache?.frontmatter) {
         return false
     }
-    const value = cache.frontmatter[property]
+    const value: unknown = cache.frontmatter[property]
     // Handle both boolean true and string "true"
     return value === true || value === 'true'
 }
@@ -36,7 +36,7 @@ export async function setFrontmatterProperty(
     value: boolean
 ): Promise<void> {
     try {
-        await app.fileManager.processFrontMatter(file, (frontmatter) => {
+        await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
             frontmatter[property] = value
         })
     } catch (error) {

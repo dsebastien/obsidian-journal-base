@@ -1,4 +1,4 @@
-import { BasesView, BasesEntry, type TFile } from 'obsidian'
+import { BasesView, BasesEntry, type TFile, setIcon } from 'obsidian'
 import type { QueryController } from 'obsidian'
 import type JournalBasesPlugin from '../../../main'
 import { PERIODIC_NOTES_VIEW_TYPE } from './periodic-notes.constants'
@@ -401,7 +401,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
                 }
             } else if (item.type === 'missing') {
                 // Create missing card placeholder
-                const tempContainer = document.createElement('div')
+                const tempContainer = activeDocument.createElement('div')
                 this.renderMissingCard(tempContainer, item.date, config, periodType)
                 const missingElement = tempContainer.firstElementChild as HTMLElement
                 if (missingElement) {
@@ -561,14 +561,8 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
 
     private renderEmptyState(message: string): void {
         const emptyEl = this.containerEl.createDiv({ cls: 'pn-empty-state' })
-        emptyEl.createDiv({ cls: 'pn-empty-state__icon' }).innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-        `
+        const iconEl = emptyEl.createDiv({ cls: 'pn-empty-state__icon' })
+        setIcon(iconEl, 'calendar')
         emptyEl.createDiv({ cls: 'pn-empty-state__text', text: message })
     }
 

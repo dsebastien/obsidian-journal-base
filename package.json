@@ -1,7 +1,7 @@
 {
     "name": "obsidian-journal-bases",
     "version": "1.8.0",
-    "description": "Custom Base views for journaling and periodic reviews",
+    "description": "Custom Base views for journaling and periodic reviews.",
     "author": {
         "name": "Sébastien Dubois",
         "email": "sebastien.dubois@gmail.com",
@@ -57,7 +57,6 @@
         "release:update-version": "bun scripts/update-version.ts",
         "release:version-bump": "bun scripts/version-bump.ts",
         "release:changelog": "bun scripts/generate-changelog.ts",
-        "release:zip": "bun scripts/create-release-zip.ts",
         "release": "./scripts/release.sh",
         "validate": "bun run --parallel tsc test lint"
     },
@@ -82,6 +81,8 @@
         "typescript-eslint": "8.49.0"
     },
     "dependencies": {
+        "@codemirror/state": "6.5.0",
+        "@codemirror/view": "6.38.6",
         "date-fns": "4.1.0",
         "immer": "11.0.1",
         "zod": "4.1.13"

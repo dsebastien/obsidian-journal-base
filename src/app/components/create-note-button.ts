@@ -1,13 +1,6 @@
+import { setIcon } from 'obsidian'
 import type { PeriodicNoteConfig, PeriodType } from '../types'
 import { formatFilenameWithSuffix, isCurrentPeriod } from '../../utils/date-utils'
-
-// SVG icons - small variant
-const PLUS_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
-const SPINNER_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pn-spinner"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`
-
-// SVG icons - large variant
-const PLUS_ICON_LARGE = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
-const SPINNER_ICON_LARGE = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pn-spinner"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`
 
 export type CreateNoteButtonVariant = 'default' | 'large'
 
@@ -53,7 +46,7 @@ export class CreateNoteButton {
 
         // Icon container
         this.iconEl = this.buttonEl.createSpan({ cls: 'pn-create-btn__icon' })
-        this.iconEl.innerHTML = PLUS_ICON
+        setIcon(this.iconEl, 'plus')
         this.buttonEl.createSpan({ text: 'Create' })
 
         this.attachClickHandler()
@@ -69,7 +62,7 @@ export class CreateNoteButton {
         })
 
         this.iconEl = this.buttonEl.createSpan({ cls: 'pn-create-large__icon' })
-        this.iconEl.innerHTML = PLUS_ICON_LARGE
+        setIcon(this.iconEl, 'plus')
         this.buttonEl.createSpan({ cls: 'pn-create-large__text', text: 'Create' })
 
         this.attachClickHandler()
@@ -94,17 +87,17 @@ export class CreateNoteButton {
         this.isLoading = loading
         const isLarge = this.variant === 'large'
         const loadingClass = isLarge ? 'pn-create-large__btn--loading' : 'pn-create-btn--loading'
-        const plusIcon = isLarge ? PLUS_ICON_LARGE : PLUS_ICON
-        const spinnerIcon = isLarge ? SPINNER_ICON_LARGE : SPINNER_ICON
 
         if (loading) {
             this.buttonEl.disabled = true
             this.buttonEl.addClass(loadingClass)
-            this.iconEl.innerHTML = spinnerIcon
+            setIcon(this.iconEl, 'loader-circle')
+            this.iconEl.addClass('pn-spinner')
         } else {
             this.buttonEl.disabled = false
             this.buttonEl.removeClass(loadingClass)
-            this.iconEl.innerHTML = plusIcon
+            this.iconEl.removeClass('pn-spinner')
+            setIcon(this.iconEl, 'plus')
         }
     }
 

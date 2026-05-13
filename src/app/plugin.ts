@@ -346,12 +346,12 @@ export class JournalBasesPlugin extends Plugin {
         try {
             await markPeriodWithCascade(this.app, date, periodType, this.settings, isDone)
             // Delay to allow metadata cache to update before refreshing views
-            await new Promise((resolve) => setTimeout(resolve, 100))
+            await new Promise((resolve) => window.setTimeout(resolve, 100))
             this.notifyDoneReviewsChanged()
         } finally {
             notice.hide()
             // Clear pending state after a longer delay to ensure cache is fully updated
-            setTimeout(() => {
+            window.setTimeout(() => {
                 this.pendingDoneStates.delete(pendingKey)
             }, 1000)
         }

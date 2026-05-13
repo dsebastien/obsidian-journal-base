@@ -1,9 +1,5 @@
-import { Component } from 'obsidian'
+import { Component, setIcon } from 'obsidian'
 import type { BasesEntry } from 'obsidian'
-
-// SVG icons for done status (lucide-style)
-const CHECK_CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
-const CIRCLE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`
 
 export interface VirtualPeriodItem {
     date: Date
@@ -61,7 +57,7 @@ export class VirtualPeriodSelector extends Component {
     private setupScrollListener(): void {
         this.registerDomEvent(this.containerEl, 'scroll', () => {
             if (!this.ticking) {
-                requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
                     this.renderVisibleItems()
                     this.ticking = false
                 })
@@ -125,9 +121,9 @@ export class VirtualPeriodSelector extends Component {
             el.classList.toggle('pr-period-item--done', !!item.isDone)
 
             // Update done icon
-            const doneIcon = el.querySelector('.pr-period-item__done-icon')
+            const doneIcon = el.querySelector<HTMLElement>('.pr-period-item__done-icon')
             if (doneIcon) {
-                doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+                setIcon(doneIcon, item.isDone ? 'check-circle' : 'circle')
             }
         }
     }
@@ -233,12 +229,9 @@ export class VirtualPeriodSelector extends Component {
     private createItemEl(item: VirtualPeriodItem, index: number): HTMLElement {
         const el = createDiv()
 
-        // Position absolutely
-        el.style.position = 'absolute'
+        // Position absolutely (position/left/right come from `.pr-virtual-items .pr-period-item`).
+        // `top` is dynamic per index — template literal is allowed by `no-static-styles-assignment`.
         el.style.top = `${index * this.itemHeight}px`
-        el.style.left = '0'
-        el.style.right = '0'
-        el.style.height = `${this.itemHeight}px`
 
         // Apply classes
         const classes = ['pr-period-item']
@@ -255,7 +248,7 @@ export class VirtualPeriodSelector extends Component {
 
         // Done icon (clickable, on the right side)
         const doneIcon = el.createSpan({ cls: 'pr-period-item__done-icon clickable-icon' })
-        doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+        setIcon(doneIcon, item.isDone ? 'check-circle' : 'circle')
         doneIcon.setAttribute('aria-label', item.isDone ? 'Mark as not done' : 'Mark as done')
 
         // Click on done icon toggles done status
@@ -299,9 +292,9 @@ export class VirtualPeriodSelector extends Component {
             el.classList.toggle('pr-period-item--done', !!item.isDone)
 
             // Update done icon
-            const doneIcon = el.querySelector('.pr-period-item__done-icon')
+            const doneIcon = el.querySelector<HTMLElement>('.pr-period-item__done-icon')
             if (doneIcon) {
-                doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+                setIcon(doneIcon, item.isDone ? 'check-circle' : 'circle')
                 doneIcon.setAttribute(
                     'aria-label',
                     item.isDone ? 'Mark as not done' : 'Mark as done'
@@ -326,9 +319,9 @@ export class VirtualPeriodSelector extends Component {
             if (!item) continue
 
             el.classList.toggle('pr-period-item--done', !!item.isDone)
-            const doneIcon = el.querySelector('.pr-period-item__done-icon')
+            const doneIcon = el.querySelector<HTMLElement>('.pr-period-item__done-icon')
             if (doneIcon) {
-                doneIcon.innerHTML = item.isDone ? CHECK_CIRCLE_ICON : CIRCLE_ICON
+                setIcon(doneIcon, item.isDone ? 'check-circle' : 'circle')
                 doneIcon.setAttribute(
                     'aria-label',
                     item.isDone ? 'Mark as not done' : 'Mark as done'
@@ -346,7 +339,7 @@ export class VirtualPeriodSelector extends Component {
         this.renderedRange = { start: -1, end: -1 }
         this.itemPool.forEach((el) => el.remove())
         this.itemPool.clear()
-        this.spacerEl.style.height = '0'
+        this.updateTotalHeight()
     }
 
     /**
