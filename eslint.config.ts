@@ -54,8 +54,6 @@ export default tseslint.config(
             '@typescript-eslint/no-unsafe-enum-comparison': 'off',
             '@typescript-eslint/no-redundant-type-constituents': 'off',
             'no-prototype-builtins': 'off',
-            // Disable dependency ban rule - lint-staged is intentionally used
-            'depend/ban-dependencies': 'off',
             // Allow confirm for delete confirmations
             'no-alert': 'off',
             // Disable sentence case rule - it has false positives for already-correct text
