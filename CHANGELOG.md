@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.9.0...1.9.1) (2026-05-14)
+
 ## [1.9.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.8.0...1.9.0) (2026-05-13)
 
 ### Features
@@ -143,6 +145,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
