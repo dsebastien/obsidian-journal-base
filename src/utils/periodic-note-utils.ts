@@ -22,19 +22,31 @@ export function getFilenameFormat(format: string): string {
 }
 
 /**
- * Detect the period type of a file based on its path
+ * Detect the period type of a file based on its path.
+ *
+ * Matches the most specific (longest) configured folder first so a nested
+ * weekly folder like `Journal/Weekly` is not shadowed by a parent daily
+ * folder like `Journal`. Also enforces a path-segment boundary so
+ * `JournalArchive/foo.md` is not treated as a child of `Journal`.
  */
 export function detectPeriodType(file: TFile, settings: PluginSettings): PeriodType | null {
-    const periodTypes: PeriodType[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']
+    const candidates = (['daily', 'weekly', 'monthly', 'quarterly', 'yearly'] as PeriodType[])
+        .map((periodType) => ({ periodType, config: settings[periodType] }))
+        .filter(({ config }) => config.enabled && config.folder)
+        .sort((a, b) => b.config.folder.length - a.config.folder.length)
 
-    for (const periodType of periodTypes) {
-        const config = settings[periodType]
-        if (config.enabled && config.folder && file.path.startsWith(config.folder)) {
+    for (const { periodType, config } of candidates) {
+        if (isPathInFolder(file.path, config.folder)) {
             return periodType
         }
     }
 
     return null
+}
+
+function isPathInFolder(filePath: string, folder: string): boolean {
+    if (filePath === folder) return true
+    return filePath.startsWith(folder.endsWith('/') ? folder : `${folder}/`)
 }
 
 /**
