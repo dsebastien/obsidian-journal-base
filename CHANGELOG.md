@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.2](https://github.com/dsebastien/obsidian-journal-bases/compare/1.9.1...1.9.2) (2026-05-15)
+
+### Bug Fixes
+
+* **plugin:** classify periodic notes by most-specific folder ([268e150](https://github.com/dsebastien/obsidian-journal-bases/commit/268e150c40b69b433e2f67a027ed865158ef416b)), closes [#41](https://github.com/dsebastien/obsidian-journal-bases/issues/41)
+
 ## [1.9.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.9.0...1.9.1) (2026-05-14)
 
 ## [1.9.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.8.0...1.9.0) (2026-05-13)
@@ -145,6 +151,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

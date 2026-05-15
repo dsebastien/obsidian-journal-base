@@ -1,5 +1,11 @@
 # Release Notes
 
+## 1.9.2 (2026-05-15)
+
+### Bug Fixes
+
+- **plugin:** classify periodic notes by most-specific folder
+
 ## 1.9.1 (2026-05-14)
 
 ## 1.9.0 (2026-05-13)
