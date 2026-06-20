@@ -488,9 +488,12 @@
         opacity: 0.85;
     }
 
-    /* Current period indicator - uses border + dot icon */
+    /* Current period indicator - uses border + dot icon.
+       No `position` declaration here: items are absolutely positioned via inline
+       style in createItemEl(), which is already a positioned element. The ::before
+       dot resolves its containing block against the item without needing relative. */
     .pr-period-item--current {
-        @apply relative font-medium;
+        @apply font-medium;
         border-left: 3px solid var(--interactive-accent);
         padding-left: calc(0.75rem - 1px);
     }

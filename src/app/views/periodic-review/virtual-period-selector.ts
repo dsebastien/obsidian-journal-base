@@ -229,8 +229,13 @@ export class VirtualPeriodSelector extends Component {
     private createItemEl(item: VirtualPeriodItem, index: number): HTMLElement {
         const el = createDiv()
 
-        // Position absolutely (position/left/right come from `.pr-virtual-items .pr-period-item`).
-        // `top` is dynamic per index — template literal is allowed by `no-static-styles-assignment`.
+        // Position absolutely via inline styles so no CSS layer or theme rule can override.
+        // `position/left/right` must be inline (not CSS-only) because @layer jb-components rules
+        // are beaten by any unlayered Obsidian/theme CSS regardless of specificity.
+        // `top` template literal is dynamic — allowed by `no-static-styles-assignment`.
+        el.style.position = 'absolute'
+        el.style.left = '0'
+        el.style.right = '0'
         el.style.top = `${index * this.itemHeight}px`
 
         // Apply classes
