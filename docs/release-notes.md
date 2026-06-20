@@ -1,5 +1,17 @@
 # Release Notes
 
+## 1.10.0 (2026-06-20)
+
+### Features
+
+- **plugin:** add command palette commands for periodic notes
+
+### Bug Fixes
+
+- **plugin:** make embedded editor the sole scroller in review view
+- **plugin:** position selector items inline so layered CSS can't break them
+- **plugin:** refresh editor with a minimal diff to avoid flicker and keep cursor/scroll
+
 ## 1.9.2 (2026-05-15)
 
 ### Bug Fixes

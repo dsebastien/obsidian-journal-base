@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.9.2...1.10.0) (2026-06-20)
+
+### Features
+
+* **plugin:** add command palette commands for periodic notes ([de1f8a9](https://github.com/dsebastien/obsidian-journal-bases/commit/de1f8a9f3bd460b5d60f37223264951b644ba406))
+
+### Bug Fixes
+
+* **plugin:** make embedded editor the sole scroller in review view ([9233f8f](https://github.com/dsebastien/obsidian-journal-bases/commit/9233f8f973d1bef61f9b45986c1c8471ecbb8f72))
+* **plugin:** position selector items inline so layered CSS can't break them ([a505077](https://github.com/dsebastien/obsidian-journal-bases/commit/a50507737ddf2c591a3de4eab8491dca8e756fcc))
+* **plugin:** refresh editor with a minimal diff to avoid flicker and keep cursor/scroll ([f901432](https://github.com/dsebastien/obsidian-journal-bases/commit/f901432b4d64a60590205a2e9c710bba7158e8af))
+
 ## [1.9.2](https://github.com/dsebastien/obsidian-journal-bases/compare/1.9.1...1.9.2) (2026-05-15)
 
 ### Bug Fixes
@@ -151,6 +163,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
