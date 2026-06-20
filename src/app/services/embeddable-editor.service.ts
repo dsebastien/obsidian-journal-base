@@ -3,6 +3,7 @@ import { EditorView } from '@codemirror/view'
 import { EditorSelection, type SelectionRange } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
 import { log } from '../../utils/log'
+import { computeMinimalEdit } from '../../utils/text-diff'
 
 /**
  * Represents the complete state of an editor for preservation during updates.
@@ -378,8 +379,15 @@ export class EmbeddableEditor extends Component {
     }
 
     /**
-     * Update content while preserving cursor position relative to surrounding text.
-     * Uses a smart algorithm to find the best cursor position after the update.
+     * Update content seamlessly while preserving cursor, selection and scroll.
+     *
+     * Instead of replacing the whole document (which forces CodeMirror to
+     * re-render every visible line — the cause of flicker and lost position),
+     * this computes the minimal changed range and dispatches only that change.
+     * The `selection` key is intentionally omitted so CodeMirror maps the
+     * existing cursor/selection ranges through the change automatically:
+     * positions before the edit are untouched, positions after it shift by the
+     * net delta, and positions inside a deletion collapse to the edit boundary.
      *
      * @param newContent - The new content to set
      * @returns true if content was updated, false if content was identical
@@ -391,85 +399,29 @@ export class EmbeddableEditor extends Component {
         }
 
         const editorView = this.editor.cm
-        const savedState = this.getState()
+        const savedScrollTop = editorView.scrollDOM.scrollTop
 
         // Set flag to prevent onChange from firing
         this.isUpdatingExternally = true
 
         try {
-            // Calculate the new cursor position based on content changes
-            const newCursorPos = this.calculateNewCursorPosition(
-                currentContent,
-                newContent,
-                savedState.cursorPos
-            )
+            const edit = computeMinimalEdit(currentContent, newContent)
+            if (edit) {
+                // Dispatch only the changed range. No `selection` and no
+                // `scrollIntoView`, so CodeMirror maps the selection itself and
+                // does not force a scroll jump.
+                editorView.dispatch({ changes: edit })
+            }
 
-            // Replace entire document content
-            editorView.dispatch({
-                changes: {
-                    from: 0,
-                    to: currentContent.length,
-                    insert: newContent
-                },
-                selection: EditorSelection.cursor(Math.min(newCursorPos, newContent.length))
-            })
-
-            // Restore scroll position
-            editorView.scrollDOM.scrollTop = savedState.scrollTop
+            // Safety net: a minimal edit on a small range should not move the
+            // scroller, but restore synchronously (before paint) in case the
+            // dispatch nudged it.
+            editorView.scrollDOM.scrollTop = savedScrollTop
 
             return true
         } finally {
             this.isUpdatingExternally = false
         }
-    }
-
-    /**
-     * Calculate the best cursor position after content changes.
-     * Tries to maintain cursor position relative to surrounding context.
-     */
-    private calculateNewCursorPosition(
-        oldContent: string,
-        newContent: string,
-        oldCursorPos: number
-    ): number {
-        // If cursor was at the end, keep it at the end
-        if (oldCursorPos >= oldContent.length) {
-            return newContent.length
-        }
-
-        // If cursor was at the beginning, keep it at the beginning
-        if (oldCursorPos === 0) {
-            return 0
-        }
-
-        // Try to find the cursor position based on context
-        // Get text before and after cursor in old content
-        const contextSize = 20
-        const textBefore = oldContent.slice(Math.max(0, oldCursorPos - contextSize), oldCursorPos)
-        const textAfter = oldContent.slice(oldCursorPos, oldCursorPos + contextSize)
-
-        // Try to find the same context in new content
-        if (textBefore.length > 0) {
-            // Search for the context before cursor
-            const searchStart = Math.max(0, oldCursorPos - contextSize - 50)
-            const searchEnd = Math.min(newContent.length, oldCursorPos + contextSize + 50)
-            const searchArea = newContent.slice(searchStart, searchEnd)
-            const contextIndex = searchArea.lastIndexOf(textBefore)
-
-            if (contextIndex !== -1) {
-                const newPos = searchStart + contextIndex + textBefore.length
-                // Verify the text after also matches (if possible)
-                if (
-                    textAfter.length === 0 ||
-                    newContent.slice(newPos, newPos + textAfter.length) === textAfter
-                ) {
-                    return newPos
-                }
-            }
-        }
-
-        // Fallback: use the same absolute position, clamped
-        return Math.min(oldCursorPos, newContent.length)
     }
 
     /**
