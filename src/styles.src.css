@@ -622,6 +622,48 @@
         @apply mt-0;
     }
 
+    /* ----------------------------------------
+   Review view note scrolling
+
+   The selected note renders a single embedded CodeMirror editor that must
+   fill the column. We build a flex column chain from .pr-column__content
+   down to .cm-scroller so the editor's own scroller is the SOLE vertical
+   scroll region. Without this, .pr-column__content (overflow-y-auto) and an
+   unbounded .cm-scroller form two nested scrollers; CodeMirror's measure pass
+   then calls scrollIntoView on the outer container and snaps it back to top.
+   Scoped to .periodic-review-view so the stacked periodic notes view is
+   untouched. Reverted to the outer-scroller model on mobile (below).
+   ---------------------------------------- */
+    .periodic-review-view .pr-column__content {
+        @apply flex flex-col overflow-hidden p-0;
+    }
+
+    .periodic-review-view .pr-column__content > .pn-card {
+        @apply flex flex-col flex-1 min-h-0;
+    }
+
+    .periodic-review-view .pr-column__content > .pn-card > .pn-card__header {
+        @apply flex-none;
+    }
+
+    /* Specificity 0,4,0 beats the global .pn-card--expanded .pn-card__content (0,2,0) */
+    .periodic-review-view .pr-column__content > .pn-card > .pn-card__content {
+        @apply flex flex-col flex-1 min-h-0 p-0;
+    }
+
+    .periodic-review-view .pn-card__editor {
+        @apply flex flex-col flex-1 min-h-0;
+    }
+
+    .periodic-review-view .pn-card__editor .cm-editor {
+        @apply flex flex-col flex-1 min-h-0;
+    }
+
+    /* The padding removed from .pn-card__content lives here so it scrolls with content */
+    .periodic-review-view .pn-card__editor .cm-scroller {
+        @apply overflow-auto p-3;
+    }
+
     /* ========================================
    RESPONSIVE DESIGN
    ======================================== */
@@ -727,6 +769,37 @@
             @apply p-2;
             /* Limit content height on mobile to prevent single column taking all space */
             max-height: 50vh;
+        }
+
+        /* On mobile the columns stack vertically and .pr-column__content is the
+           bounded scroll region (capped at 50vh). Undo the desktop flex-chain fix
+           so the outer container scrolls and the inner CM editor grows naturally. */
+        .periodic-review-view .pr-column__content {
+            @apply flex flex-col overflow-y-auto p-2;
+        }
+
+        .periodic-review-view .pr-column__content > .pn-card {
+            @apply block flex-none;
+            min-height: unset;
+        }
+
+        .periodic-review-view .pr-column__content > .pn-card > .pn-card__content {
+            @apply block p-3;
+            min-height: unset;
+        }
+
+        .periodic-review-view .pn-card__editor {
+            @apply block;
+            min-height: 100px;
+        }
+
+        .periodic-review-view .pn-card__editor .cm-editor {
+            @apply block;
+            min-height: unset;
+        }
+
+        .periodic-review-view .pn-card__editor .cm-scroller {
+            @apply overflow-auto p-0;
         }
 
         .pr-period-item {
