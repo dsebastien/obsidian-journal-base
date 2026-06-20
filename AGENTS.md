@@ -474,6 +474,7 @@ The community-plugin reviewer runs a fixed set of lint rules against every submi
 - When `!important` is genuinely load-bearing (visibility toggles like `.lt-hidden` are the canonical example), restore it and add a `/* stylelint-disable-next-line declaration-no-important -- reason: … */` comment. The reviewer accepts descriptive disables.
 - Collapse mirrored 4-value shorthands: `8px 0 12px 0` → `8px 0 12px`.
 - `obsidianmd/no-static-styles-assignment` only flags **literal** RHS — dynamic style assignments (template literals with expressions, ternaries, variable RHS) can stay inline. Move only the static ones to a CSS class.
+- **Cascade layers lose to unlayered CSS.** All plugin styles live in `@layer jb-components` (see `src/styles.src.css`). A named `@layer` is _always_ beaten by any unlayered stylesheet — Obsidian core and themes are unlayered — **regardless of specificity**. So a layered rule can be silently overridden by a broad unlayered Obsidian/theme selector (`.view-content *`, etc.). For layout that **must not** be overridable (e.g. the `position: absolute` that makes virtual-scroll items' inline `top` meaningful), set it **inline in JS** (inline beats every layer) rather than relying on a layered CSS rule. This caused a real selector-overlap bug; see `documentation/history/2026-06-20.md`.
 
 ### Logging
 
