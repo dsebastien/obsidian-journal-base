@@ -158,6 +158,12 @@ Both views share these capabilities:
 - **Template support**: Uses Templater for template-based note creation
 - **Folder creation**: Automatically creates nested folder structures
 
+### Commands
+
+- **Open notes**: Open (and create if missing) the current, previous or next note for any enabled period type — straight from the command palette
+- **Mark reviews done**: Toggle the done state of the current period's note, cascading to its children
+- **Bulk create**: Create all missing current-period notes at once
+
 ### Integration
 
 - **Periodic Notes plugin sync**: Automatically syncs settings when Periodic Notes plugin is enabled

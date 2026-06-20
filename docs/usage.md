@@ -140,6 +140,44 @@ Nested folders are created automatically if they don't exist.
 
 ---
 
+## Commands
+
+Journal Bases adds commands to the command palette (open it with **Ctrl/Cmd + P**)
+so you can work with periodic notes without opening a Base view. Commands for a
+period type only appear when that period type is enabled in settings.
+
+### Open notes
+
+For each enabled period type, three commands open (and create if missing) a note
+relative to today:
+
+| Command (daily example)   | Opens          |
+| ------------------------- | -------------- |
+| **Open today's note**     | Current period |
+| **Open yesterday's note** | Previous period |
+| **Open tomorrow's note**  | Next period    |
+
+The weekly, monthly, quarterly and yearly variants read "this week's / last week's /
+next week's note", "this month's / last month's / next month's note", and so on.
+Notes open in the active pane, falling back to a new tab. Missing notes are created
+from the configured template (if any) before opening.
+
+### Mark reviews done
+
+- **Toggle done state for today's note** (and the weekly/monthly/… variants) flips
+  the done status of the current-period note, cascading to its child periods — the
+  same behavior as the check button in the Periodic Review view. If the current note
+  doesn't exist yet, a notice tells you so (done status is stored in frontmatter, so
+  the note must exist first).
+
+### Create notes in bulk
+
+- **Create all missing notes for the current period** creates the current note for
+  every enabled period type in one step and reports how many were created. Existing
+  notes are left untouched.
+
+---
+
 ## Week Boundary Handling
 
 Weeks that span month or year boundaries appear in both parent periods.

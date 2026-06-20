@@ -174,6 +174,24 @@ export function getNextPeriod(date: Date, periodType: PeriodType): Date {
 }
 
 /**
+ * Get the previous period before the given date
+ */
+export function getPreviousPeriod(date: Date, periodType: PeriodType): Date {
+    switch (periodType) {
+        case 'daily':
+            return addDays(date, -1)
+        case 'weekly':
+            return addWeeks(date, -1)
+        case 'monthly':
+            return addMonths(date, -1)
+        case 'quarterly':
+            return addQuarters(date, -1)
+        case 'yearly':
+            return addYears(date, -1)
+    }
+}
+
+/**
  * Get the start of a period for a given date
  */
 export function getStartOfPeriod(date: Date, periodType: PeriodType): Date {

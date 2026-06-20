@@ -5,6 +5,7 @@ import {
     formatDateAsFilename,
     formatFilenameWithSuffix,
     getPeriodSuffix,
+    getPreviousPeriod,
     parseDateFromFormat,
     doesPeriodOverlapParent
 } from './date-utils'
@@ -482,6 +483,44 @@ describe('date-utils', () => {
                 const q2End = new Date(2025, 5, 30)
                 expect(doesPeriodOverlapParent(weekDate, 'weekly', q2Start, q2End)).toBe(true)
             })
+        })
+    })
+
+    describe('getPreviousPeriod', () => {
+        test('daily goes back one day', () => {
+            expect(getPreviousPeriod(new Date(2025, 5, 20), 'daily')).toEqual(new Date(2025, 5, 19))
+        })
+
+        test('daily crosses month boundary', () => {
+            expect(getPreviousPeriod(new Date(2025, 5, 1), 'daily')).toEqual(new Date(2025, 4, 31))
+        })
+
+        test('weekly goes back seven days', () => {
+            expect(getPreviousPeriod(new Date(2025, 5, 20), 'weekly')).toEqual(new Date(2025, 5, 13))
+        })
+
+        test('monthly goes back one month', () => {
+            expect(getPreviousPeriod(new Date(2025, 5, 15), 'monthly')).toEqual(
+                new Date(2025, 4, 15)
+            )
+        })
+
+        test('monthly crosses year boundary', () => {
+            expect(getPreviousPeriod(new Date(2025, 0, 15), 'monthly')).toEqual(
+                new Date(2024, 11, 15)
+            )
+        })
+
+        test('quarterly goes back three months', () => {
+            expect(getPreviousPeriod(new Date(2025, 5, 15), 'quarterly')).toEqual(
+                new Date(2025, 2, 15)
+            )
+        })
+
+        test('yearly goes back one year', () => {
+            expect(getPreviousPeriod(new Date(2025, 5, 15), 'yearly')).toEqual(
+                new Date(2024, 5, 15)
+            )
         })
     })
 })

@@ -20,6 +20,7 @@ import { PERIODIC_REVIEW_VIEW_TYPE } from './views/periodic-review/periodic-revi
 import { PeriodicReviewView } from './views/periodic-review/periodic-review-view'
 import { createPeriodicReviewViewOptions } from './views/periodic-review/periodic-review-options'
 import { PluginIntegrationService } from './services/plugin-integration.service'
+import { registerCommands } from './commands'
 
 export class JournalBasesPlugin extends Plugin {
     declare app: AppWithPlugins
@@ -122,6 +123,9 @@ export class JournalBasesPlugin extends Plugin {
 
         // Register Base views
         this.registerViews()
+
+        // Register command palette commands
+        registerCommands(this)
 
         // Add a settings screen for the plugin
         this.settingTab = new JournalBasesSettingTab(this.app, this)
