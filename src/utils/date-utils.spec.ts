@@ -496,7 +496,9 @@ describe('date-utils', () => {
         })
 
         test('weekly goes back seven days', () => {
-            expect(getPreviousPeriod(new Date(2025, 5, 20), 'weekly')).toEqual(new Date(2025, 5, 13))
+            expect(getPreviousPeriod(new Date(2025, 5, 20), 'weekly')).toEqual(
+                new Date(2025, 5, 13)
+            )
         })
 
         test('monthly goes back one month', () => {

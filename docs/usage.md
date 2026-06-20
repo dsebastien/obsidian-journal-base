@@ -151,11 +151,11 @@ period type only appear when that period type is enabled in settings.
 For each enabled period type, three commands open (and create if missing) a note
 relative to today:
 
-| Command (daily example)   | Opens          |
-| ------------------------- | -------------- |
-| **Open today's note**     | Current period |
+| Command (daily example)   | Opens           |
+| ------------------------- | --------------- |
+| **Open today's note**     | Current period  |
 | **Open yesterday's note** | Previous period |
-| **Open tomorrow's note**  | Next period    |
+| **Open tomorrow's note**  | Next period     |
 
 The weekly, monthly, quarterly and yearly variants read "this week's / last week's /
 next week's note", "this month's / last month's / next month's note", and so on.

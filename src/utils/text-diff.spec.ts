@@ -9,8 +9,18 @@ describe('computeMinimalEdit', () => {
         expected: { from: number; to: number; insert: string } | null
     }> = [
         { name: 'identical strings', old: 'abc', next: 'abc', expected: null },
-        { name: 'append at end', old: 'abc', next: 'abcXYZ', expected: { from: 3, to: 3, insert: 'XYZ' } },
-        { name: 'prepend at start', old: 'abc', next: 'XYZabc', expected: { from: 0, to: 0, insert: 'XYZ' } },
+        {
+            name: 'append at end',
+            old: 'abc',
+            next: 'abcXYZ',
+            expected: { from: 3, to: 3, insert: 'XYZ' }
+        },
+        {
+            name: 'prepend at start',
+            old: 'abc',
+            next: 'XYZabc',
+            expected: { from: 0, to: 0, insert: 'XYZ' }
+        },
         {
             name: 'insert in middle',
             old: 'abcdef',
@@ -30,7 +40,12 @@ describe('computeMinimalEdit', () => {
             expected: { from: 0, to: 3, insert: 'bbb' }
         },
         { name: 'truncate end', old: 'abc', next: 'ab', expected: { from: 2, to: 3, insert: '' } },
-        { name: 'drop prefix character', old: 'Xabc', next: 'abc', expected: { from: 0, to: 1, insert: '' } },
+        {
+            name: 'drop prefix character',
+            old: 'Xabc',
+            next: 'abc',
+            expected: { from: 0, to: 1, insert: '' }
+        },
         {
             name: 'overlap clamp: shrink repeated chars',
             old: 'aaaa',
@@ -43,9 +58,24 @@ describe('computeMinimalEdit', () => {
             next: 'aaaa',
             expected: { from: 2, to: 2, insert: 'aa' }
         },
-        { name: 'empty old string', old: '', next: 'abc', expected: { from: 0, to: 0, insert: 'abc' } },
-        { name: 'empty new string', old: 'abc', next: '', expected: { from: 0, to: 3, insert: '' } },
-        { name: 'single char replace', old: 'a', next: 'b', expected: { from: 0, to: 1, insert: 'b' } },
+        {
+            name: 'empty old string',
+            old: '',
+            next: 'abc',
+            expected: { from: 0, to: 0, insert: 'abc' }
+        },
+        {
+            name: 'empty new string',
+            old: 'abc',
+            next: '',
+            expected: { from: 0, to: 3, insert: '' }
+        },
+        {
+            name: 'single char replace',
+            old: 'a',
+            next: 'b',
+            expected: { from: 0, to: 1, insert: 'b' }
+        },
         {
             name: 'multi-gap insert collapses to one range',
             old: 'abc',

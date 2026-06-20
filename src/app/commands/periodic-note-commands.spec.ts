@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { PeriodicNoteConfig } from '../types'
-import {
-    PERIOD_PHRASES,
-    resolvePeriodNotePath,
-    resolveTargetDate
-} from './periodic-note-commands'
+import { PERIOD_PHRASES, resolvePeriodNotePath, resolveTargetDate } from './periodic-note-commands'
 
 describe('periodic-note-commands', () => {
     describe('resolveTargetDate', () => {
