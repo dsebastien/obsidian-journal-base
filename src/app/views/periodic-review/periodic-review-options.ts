@@ -15,12 +15,13 @@ const COLUMN_OPTIONS: Record<PeriodType, { key: string; displayName: string; def
 
 /**
  * Option controlling whether a note's YAML frontmatter is collapsed when it
- * opens in a review column. Default off to preserve existing behavior.
+ * opens in a review column. Defaults to on so the note body is front and center
+ * during reviews; toggle off in the view options to keep frontmatter expanded.
  */
 export const COLLAPSE_FRONTMATTER_OPTION = {
     key: 'collapseFrontmatter',
     displayName: 'Collapse frontmatter',
-    default: false
+    default: true
 } as const
 
 /**
