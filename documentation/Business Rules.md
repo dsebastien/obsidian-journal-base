@@ -153,6 +153,20 @@ If file already exists at target path, return existing file (no overwrite). A no
 
 ---
 
+## Date Detection from Filenames
+
+A periodic note must be recognized as "existing" whenever its filename matches the configured moment.js format — including formats with decorative or redundant tokens that date-fns `parse` rejects natively (e.g. weekday name + year `YYYY-MM-DD-dddd`; month number + month name `YYYY-MM-MMMM`).
+
+`parseDateFromFormat` first attempts the direct date-fns parse; on failure it falls back to a tolerant regex extractor (`parseDateFromFormatTolerant`) that reads the determinant components and reconstructs the date, rejecting out-of-range values (no silent rollover). Detection and creation must stay consistent: a file the Create button finds must also be detected as existing in the views.
+
+---
+
+## Frontmatter Collapse
+
+The global `collapseFrontmatter` setting (default **on**) folds a note's leading YAML frontmatter when it opens in the Periodic Review view. It is global (no per-Base override), applies to all period-type columns, and only takes effect in source mode. A user manually unfolding is preserved across content refreshes.
+
+---
+
 ## Period Type Hierarchy
 
 Strict ordering from largest to smallest:

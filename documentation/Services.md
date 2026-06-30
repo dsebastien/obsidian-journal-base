@@ -166,17 +166,23 @@ constructor(
 
 #### Key Methods
 
-| Method                      | Description                                    |
-| --------------------------- | ---------------------------------------------- |
-| `getValue()`                | Get editor content                             |
-| `setValue()`                | Set editor content (resets cursor)             |
-| `setValuePreservingState()` | Set content while preserving cursor/scroll     |
-| `focus()`                   | Focus the editor                               |
-| `hasFocus()`                | Check if editor has focus                      |
-| `setMode()`                 | Switch source/preview mode                     |
-| `getEditorView()`           | Get underlying CodeMirror EditorView           |
-| `getState()`                | Capture cursor, selection, and scroll position |
-| `restoreState()`            | Restore previously captured state              |
+| Method                      | Description                                                       |
+| --------------------------- | ----------------------------------------------------------------- |
+| `getValue()`                | Get editor content                                                |
+| `setValue()`                | Set editor content (resets cursor)                                |
+| `setValuePreservingState()` | Set content while preserving cursor/scroll                        |
+| `focus()`                   | Focus the editor                                                  |
+| `hasFocus()`                | Check if editor has focus                                         |
+| `setMode()`                 | Switch source/preview mode                                        |
+| `getEditorView()`           | Get underlying CodeMirror EditorView                              |
+| `foldFrontmatter()`         | Fold the leading `---`…`---` block (source mode); no-op if absent |
+| `getState()`                | Capture cursor, selection, and scroll position                    |
+| `restoreState()`            | Restore previously captured state                                 |
+
+`foldFrontmatter()` dispatches a CodeMirror `foldEffect` (from `@codemirror/language`,
+externalized at build) over the range from `findFrontmatterFoldRange()` in
+`utils/frontmatter.ts`. Used by `NoteCard` when the global `collapseFrontmatter`
+setting is on.
 
 #### EditorState Type
 

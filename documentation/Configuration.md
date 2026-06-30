@@ -15,6 +15,23 @@ Each period type (daily, weekly, monthly, quarterly, yearly) has:
 | **Format**   | Moment.js format string for filenames                     |
 | **Template** | Path to Templater template file                           |
 
+### Done Status
+
+| Setting           | Default                     | Description                                     |
+| ----------------- | --------------------------- | ----------------------------------------------- |
+| **Property name** | `periodic_review_completed` | Frontmatter property used to mark notes as done |
+
+### Periodic Review
+
+| Setting                  | Type   | Default | Description                                              |
+| ------------------------ | ------ | ------- | -------------------------------------------------------- |
+| **Collapse frontmatter** | Toggle | On      | Fold a note's YAML frontmatter when it opens in a column |
+
+Global (not a per-Base view option), so one switch applies to every Periodic
+Review base. Plugin-specific like `donePropertyName`, so it survives Periodic
+Notes settings sync. Implemented via `EmbeddableEditor.foldFrontmatter()` and only
+takes effect in source mode (the mode the review view forces).
+
 ### Settings Sync
 
 When **Periodic Notes** plugin is enabled with meaningful configuration:
@@ -55,16 +72,28 @@ _Column toggles only appear for period types enabled in plugin settings._
 
 Uses Moment.js format tokens. Common patterns:
 
-| Token    | Output        | Example |
-| -------- | ------------- | ------- |
-| `YYYY`   | 4-digit year  | 2025    |
-| `MM`     | 2-digit month | 01-12   |
-| `DD`     | 2-digit day   | 01-31   |
-| `gggg`   | ISO week year | 2025    |
-| `ww`     | ISO week      | 01-53   |
-| `[Q]`    | Literal "Q"   | Q       |
-| `Q`      | Quarter       | 1-4     |
-| `[text]` | Literal text  | text    |
+| Token    | Output             | Example  |
+| -------- | ------------------ | -------- |
+| `YYYY`   | 4-digit year       | 2025     |
+| `MM`     | 2-digit month      | 01-12    |
+| `MMMM`   | Full month name    | January  |
+| `MMM`    | Short month name   | Jan      |
+| `DD`     | 2-digit day        | 01-31    |
+| `dddd`   | Full weekday name  | Saturday |
+| `ddd`    | Short weekday name | Sat      |
+| `gggg`   | ISO week year      | 2025     |
+| `ww`     | ISO week           | 01-53    |
+| `[Q]`    | Literal "Q"        | Q        |
+| `Q`      | Quarter            | 1-4      |
+| `[text]` | Literal text       | text     |
+
+**Decorative / redundant tokens** (e.g. weekday name `dddd`, or a month name
+alongside the month number as in `YYYY-MM-MMMM`) are supported for both formatting
+and detection. `date-utils` converts Moment tokens to date-fns and reverse-parses
+filenames; because date-fns `parse` rejects some combinations Moment accepts
+(weekday name + `yyyy`; duplicate month tokens), `parseDateFromFormat` falls back to
+a tolerant regex extractor (`parseDateFromFormatTolerant`) when the direct parse
+fails. See `documentation/history/2026-06-30.md` (issue #42).
 
 **Default Formats**:
 

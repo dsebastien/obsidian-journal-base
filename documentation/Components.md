@@ -15,6 +15,7 @@ UI components in `src/app/components/`.
 - State preservation during reconciliation
 - **Cursor and scroll position preservation during external updates**
 - External content updates don't interrupt active editing
+- Optional frontmatter fold on open (`collapseFrontmatter`, source mode only)
 
 ### Props
 
@@ -26,9 +27,25 @@ constructor(
     periodType: PeriodType,
     noteDate: Date | null,
     initiallyExpanded: boolean,
-    onOpen?: (file: TFile) => void
+    onOpen?: (file: TFile) => void,
+    options?: NoteCardOptions
 )
+
+interface NoteCardOptions {
+    foldable?: boolean // Card can be collapsed (default true)
+    forcedMode?: CardMode // Lock the mode; user can't switch
+    hideModeToggle?: boolean // Hide the view/edit/source buttons
+    isDone?: boolean
+    onToggleDone?: () => void
+    onPrevious?: () => void
+    onNext?: () => void
+    collapseFrontmatter?: boolean // Fold YAML frontmatter on open (default false)
+}
 ```
+
+The Periodic Review view passes `collapseFrontmatter: settings.collapseFrontmatter`
+(the global setting) to every card; the card calls `EmbeddableEditor.foldFrontmatter()`
+after creating the source-mode editor.
 
 ### State
 

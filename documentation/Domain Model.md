@@ -39,16 +39,25 @@ Formats can include folders: `YYYY/WW/YYYY-MM-DD` → `2025/51/2025-12-18.md`
 ### PluginSettings
 
 ```typescript
-type PluginSettings = Record<PeriodType, PeriodicNoteConfig>
+// Per-period configs plus plugin-wide options.
+type PluginSettings = Record<PeriodType, PeriodicNoteConfig> & {
+    donePropertyName: string // Frontmatter property used to mark notes done
+    collapseFrontmatter: boolean // Fold note frontmatter on open in Periodic Review
+}
 
 const DEFAULT_SETTINGS: PluginSettings = {
     daily: { enabled: false, folder: '', format: 'YYYY-MM-DD', template: '' },
     weekly: { enabled: false, folder: '', format: 'gggg-[W]ww', template: '' },
     monthly: { enabled: false, folder: '', format: 'YYYY-MM', template: '' },
     quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
-    yearly: { enabled: false, folder: '', format: 'YYYY', template: '' }
+    yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
+    donePropertyName: 'periodic_review_completed',
+    collapseFrontmatter: true
 }
 ```
+
+`collapseFrontmatter` is a **global** plugin setting (not a per-Base view option):
+one switch applies to every Periodic Review base. Default on.
 
 ## View-Specific Types
 

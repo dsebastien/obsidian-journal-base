@@ -48,9 +48,11 @@ src/
 │       ├── plugin-settings.type.ts
 │       └── periodic-notes-plugin-settings.schema.ts
 └── utils/
-    ├── date-utils.ts            # Date parsing/formatting (date-fns)
+    ├── date-utils.ts            # Date parsing/formatting (date-fns) + tolerant fallback
     ├── periodic-note-utils.ts   # Note detection/filtering
     ├── markdown-section-utils.ts # Section parsing
+    ├── frontmatter.ts           # YAML frontmatter fold-range detection
+    ├── text-diff.ts             # Minimal-edit computation for seamless editor updates
     └── log.ts                   # Logging utility
 ```
 
