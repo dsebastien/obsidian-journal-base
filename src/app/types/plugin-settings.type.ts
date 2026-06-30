@@ -21,6 +21,13 @@ export type PluginSettings = PeriodicNotesSettings & {
      * Default: true
      */
     collapseFrontmatter: boolean
+
+    /**
+     * Remember each Periodic Review column's collapsed/expanded state in the Base
+     * view file, restoring it when the view reopens.
+     * Default: true
+     */
+    rememberColumnState: boolean
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -30,5 +37,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
     yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
     donePropertyName: DEFAULT_DONE_PROPERTY_NAME,
-    collapseFrontmatter: true
+    collapseFrontmatter: true,
+    rememberColumnState: true
 }

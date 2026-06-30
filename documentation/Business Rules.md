@@ -163,7 +163,13 @@ A periodic note must be recognized as "existing" whenever its filename matches t
 
 ## Frontmatter Collapse
 
-The global `collapseFrontmatter` setting (default **on**) folds a note's leading YAML frontmatter when it opens in the Periodic Review view. It is global (no per-Base override), applies to all period-type columns, and only takes effect in source mode. A user manually unfolding is preserved across content refreshes.
+The global `collapseFrontmatter` setting (default **on**) folds a note's leading YAML frontmatter when it opens in the Periodic Review view. It is global (no per-Base override), applies to all period-type columns, and only takes effect in source mode. A user manually unfolding is preserved across content refreshes. The fold covers the whole block (both `---` fences), matching Obsidian's native fold.
+
+---
+
+## Column State Persistence
+
+The global `rememberColumnState` setting (default **on**) persists each Periodic Review column's collapsed/expanded state in the Base view config (key `folded_{periodType}`), restoring it when the view reopens. Persistence is per-Base (stored in the Base file) but gated by the global setting: while off, no state is written and all columns open expanded, ignoring any previously stored keys.
 
 ---
 

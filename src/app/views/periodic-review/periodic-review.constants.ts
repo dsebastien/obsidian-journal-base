@@ -26,6 +26,15 @@ export const PERIOD_TYPE_LABELS: Readonly<Record<PeriodType, string>> = {
 }
 
 /**
+ * Base-view config key that persists a column's collapsed/expanded state.
+ * Stored per period type in the Base view file (gated by the global
+ * `rememberColumnState` plugin setting).
+ */
+export function getColumnFoldedConfigKey(periodType: PeriodType): string {
+    return `folded_${periodType}`
+}
+
+/**
  * Get child period types for a given period type.
  * Returns types from largest to smallest (e.g., quarterly -> monthly -> weekly -> daily).
  */

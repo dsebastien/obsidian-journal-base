@@ -23,14 +23,21 @@ Each period type (daily, weekly, monthly, quarterly, yearly) has:
 
 ### Periodic Review
 
-| Setting                  | Type   | Default | Description                                              |
-| ------------------------ | ------ | ------- | -------------------------------------------------------- |
-| **Collapse frontmatter** | Toggle | On      | Fold a note's YAML frontmatter when it opens in a column |
+| Setting                   | Type   | Default | Description                                              |
+| ------------------------- | ------ | ------- | -------------------------------------------------------- |
+| **Collapse frontmatter**  | Toggle | On      | Fold a note's YAML frontmatter when it opens in a column |
+| **Remember column state** | Toggle | On      | Persist each column's collapsed state in the Base file   |
 
-Global (not a per-Base view option), so one switch applies to every Periodic
-Review base. Plugin-specific like `donePropertyName`, so it survives Periodic
-Notes settings sync. Implemented via `EmbeddableEditor.foldFrontmatter()` and only
-takes effect in source mode (the mode the review view forces).
+Global settings (not per-Base view options), so each switch applies to every
+Periodic Review base. Plugin-specific like `donePropertyName`, so they survive
+Periodic Notes settings sync.
+
+- **Collapse frontmatter** — implemented via `EmbeddableEditor.foldFrontmatter()`;
+  only takes effect in source mode (the mode the review view forces).
+- **Remember column state** — on fold/unfold, the column's state is written to the
+  Base view config via `config.set('folded_{periodType}', folded)` and restored on
+  open. Disabling stops writes immediately and columns open expanded; any
+  previously stored keys are ignored while off.
 
 ### Settings Sync
 

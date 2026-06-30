@@ -1,5 +1,12 @@
 import { Component, setIcon } from 'obsidian'
 
+export interface FoldableColumnOptions {
+    /** Whether the column starts collapsed. Defaults to false (expanded). */
+    initiallyFolded?: boolean
+    /** Called whenever the user folds/unfolds the column (not on initial state). */
+    onFoldChange?: (folded: boolean) => void
+}
+
 export class FoldableColumn extends Component {
     private containerEl!: HTMLElement
     private headerEl!: HTMLElement
@@ -7,13 +14,17 @@ export class FoldableColumn extends Component {
     private selectorEl!: HTMLElement
     private contentEl!: HTMLElement
     private foldBtn!: HTMLButtonElement
-    private folded: boolean = false
+    private folded: boolean
+    private onFoldChange?: (folded: boolean) => void
 
     constructor(
         parent: HTMLElement,
-        private title: string
+        private title: string,
+        options?: FoldableColumnOptions
     ) {
         super()
+        this.folded = options?.initiallyFolded ?? false
+        this.onFoldChange = options?.onFoldChange
         this.containerEl = this.render(parent)
     }
 
@@ -56,6 +67,14 @@ export class FoldableColumn extends Component {
         // Content area
         this.contentEl = container.createDiv({ cls: 'pr-column__content' })
 
+        // Apply any initial folded state (e.g. restored from the Base config)
+        // without firing onFoldChange — that callback is for user toggles only.
+        if (this.folded) {
+            container.classList.add('pr-column--folded')
+        }
+        this.applyFoldVisibility()
+        this.updateFoldButton()
+
         return container
     }
 
@@ -64,6 +83,7 @@ export class FoldableColumn extends Component {
         this.containerEl.classList.toggle('pr-column--folded', this.folded)
         this.applyFoldVisibility()
         this.updateFoldButton()
+        this.onFoldChange?.(this.folded)
     }
 
     /**

@@ -269,6 +269,9 @@ export class JournalBasesPlugin extends Plugin {
             // Load collapseFrontmatter setting
             draft.collapseFrontmatter =
                 loadedSettings.collapseFrontmatter ?? DEFAULT_SETTINGS.collapseFrontmatter
+            // Load rememberColumnState setting
+            draft.rememberColumnState =
+                loadedSettings.rememberColumnState ?? DEFAULT_SETTINGS.rememberColumnState
         })
 
         log('Settings loaded', 'debug', this.settings)

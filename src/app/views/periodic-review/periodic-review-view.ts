@@ -15,7 +15,8 @@ import {
     PERIOD_TYPE_ORDER,
     PERIOD_TYPE_LABELS,
     getChildPeriodTypes,
-    getParentPeriodTypes
+    getParentPeriodTypes,
+    getColumnFoldedConfigKey
 } from './periodic-review.constants'
 import { SelectionContext, type SelectionContextSnapshot } from './selection-context'
 import { generatePeriodsForContext } from './period-generator'
@@ -331,7 +332,20 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
         config: PeriodicNoteConfig,
         entries: BasesEntry[]
     ): void {
-        const column = new FoldableColumn(this.columnsEl, PERIOD_TYPE_LABELS[periodType])
+        const foldedConfigKey = getColumnFoldedConfigKey(periodType)
+        const rememberColumnState = this.plugin.settings.rememberColumnState
+        const column = new FoldableColumn(this.columnsEl, PERIOD_TYPE_LABELS[periodType], {
+            initiallyFolded: rememberColumnState
+                ? ((this.config.get(foldedConfigKey) as boolean) ?? false)
+                : false,
+            onFoldChange: (folded) => {
+                // Persist only when the feature is enabled; read the setting at
+                // toggle time so disabling it stops further writes immediately.
+                if (this.plugin.settings.rememberColumnState) {
+                    this.config.set(foldedConfigKey, folded)
+                }
+            }
+        })
 
         // Create virtual selector for this column
         const selectorEl = column.getSelectorEl()

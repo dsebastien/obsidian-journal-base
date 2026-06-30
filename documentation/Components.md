@@ -131,9 +131,19 @@ constructor(
 ```typescript
 constructor(
     parent: HTMLElement,
-    title: string
+    title: string,
+    options?: FoldableColumnOptions
 )
+
+interface FoldableColumnOptions {
+    initiallyFolded?: boolean // Start collapsed (e.g. restored from Base config)
+    onFoldChange?: (folded: boolean) => void // Fired on user toggles, not initial state
+}
 ```
+
+The Periodic Review view passes `initiallyFolded` from the persisted Base config
+(`folded_{periodType}`) and an `onFoldChange` that writes it back — both gated by the
+global `rememberColumnState` setting.
 
 ### Key Methods
 
@@ -148,6 +158,11 @@ constructor(
 | `getContentEl()`       | Get content container         |
 | `getHeaderActionsEl()` | Get header actions container  |
 | `clear()`              | Clear selector and content    |
+
+When folded, the selector and content elements are hidden via an **inline**
+`display: none` (set in `applyFoldVisibility()`), because the layered
+`.pr-column--folded` CSS loses to unlayered Obsidian/theme rules (see
+`documentation/history/2026-06-30.md`).
 
 ### CSS Classes
 

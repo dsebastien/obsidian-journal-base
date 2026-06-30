@@ -43,6 +43,7 @@ Formats can include folders: `YYYY/WW/YYYY-MM-DD` → `2025/51/2025-12-18.md`
 type PluginSettings = Record<PeriodType, PeriodicNoteConfig> & {
     donePropertyName: string // Frontmatter property used to mark notes done
     collapseFrontmatter: boolean // Fold note frontmatter on open in Periodic Review
+    rememberColumnState: boolean // Persist column collapsed state in the Base file
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
@@ -52,12 +53,16 @@ const DEFAULT_SETTINGS: PluginSettings = {
     quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
     yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
     donePropertyName: 'periodic_review_completed',
-    collapseFrontmatter: true
+    collapseFrontmatter: true,
+    rememberColumnState: true
 }
 ```
 
-`collapseFrontmatter` is a **global** plugin setting (not a per-Base view option):
-one switch applies to every Periodic Review base. Default on.
+`collapseFrontmatter` and `rememberColumnState` are **global** plugin settings (not
+per-Base view options): one switch each applies to every Periodic Review base, both
+default on. When `rememberColumnState` is on, each column's collapsed state is stored
+per period type in the Base view config under key `folded_{periodType}` (see
+`getColumnFoldedConfigKey`).
 
 ## View-Specific Types
 

@@ -82,7 +82,10 @@ default.
 
 ### Column Features
 
-- **Collapse/expand**: Click the fold button to minimize columns
+- **Collapse/expand**: Click the fold button to minimize columns. With **Remember
+  column state** on (Settings → Journal Bases → Periodic Review, default on), each
+  column's collapsed/expanded state is saved in the Base file and restored when you
+  reopen the view.
 - **Mark as Done**: Track completed reviews (cascades to child periods)
 - **Previous/Next**: Navigate between periods in each column
 - **Create buttons**: Appear for periods without notes

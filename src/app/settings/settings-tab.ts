@@ -287,6 +287,21 @@ export class JournalBasesSettingTab extends PluginSettingTab {
                         })
                     })
             })
+
+        new Setting(containerEl)
+            .setName('Remember column state')
+            .setDesc(
+                "Remember each column's collapsed/expanded state in the Base view file and restore it when the view reopens"
+            )
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.rememberColumnState)
+                    .onChange(async (value) => {
+                        await this.updateSettings((draft) => {
+                            draft.rememberColumnState = value
+                        })
+                    })
+            })
     }
 
     private renderSupportHeader(containerEl: HTMLElement): void {

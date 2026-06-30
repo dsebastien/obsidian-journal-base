@@ -91,9 +91,10 @@ View options are configured per Base instance via the view options menu (gear ic
 
 Configured globally in **Settings > Journal Bases > Periodic Review**:
 
-| Setting              | Type   | Default | Description                                                      |
-| -------------------- | ------ | ------- | ---------------------------------------------------------------- |
-| Collapse frontmatter | Toggle | true    | Fold a note's YAML frontmatter when it opens in a review column. |
+| Setting               | Type   | Default | Description                                                                      |
+| --------------------- | ------ | ------- | -------------------------------------------------------------------------------- |
+| Collapse frontmatter  | Toggle | true    | Fold a note's YAML frontmatter when it opens in a review column.                 |
+| Remember column state | Toggle | true    | Remember each column's collapsed/expanded state in the Base file and restore it. |
 
 ## Periodic Notes Plugin Sync
 
