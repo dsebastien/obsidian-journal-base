@@ -1,5 +1,12 @@
 # Release Notes
 
+## 1.11.2 (2026-06-30)
+
+### Bug Fixes
+
+- **plugin:** fold entire frontmatter block, not just its body ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42))
+- **plugin:** hide folded column content inline ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42))
+
 ## 1.11.1 (2026-06-30)
 
 ## 1.11.0 (2026-06-30)

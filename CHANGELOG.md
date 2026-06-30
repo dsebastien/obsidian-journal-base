@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.2](https://github.com/dsebastien/obsidian-journal-bases/compare/1.11.1...1.11.2) (2026-06-30)
+
+### Bug Fixes
+
+* **plugin:** fold entire frontmatter block, not just its body ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42)) ([72677eb](https://github.com/dsebastien/obsidian-journal-bases/commit/72677eb2108f5b442b88d47b0c00fcd5799dad30))
+* **plugin:** hide folded column content inline ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42)) ([1caa0a1](https://github.com/dsebastien/obsidian-journal-bases/commit/1caa0a141929facf10fa136aed873552fb56c719))
+
 ## [1.11.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.11.0...1.11.1) (2026-06-30)
 
 ## [1.11.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.10.0...1.11.0) (2026-06-30)
@@ -176,6 +183,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
