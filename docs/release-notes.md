@@ -1,5 +1,11 @@
 # Release Notes
 
+## 1.12.0 (2026-06-30)
+
+### Features
+
+- **plugin:** remember Periodic Review column collapsed state
+
 ## 1.11.2 (2026-06-30)
 
 ### Bug Fixes

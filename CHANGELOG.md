@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.11.2...1.12.0) (2026-06-30)
+
+### Features
+
+* **plugin:** remember Periodic Review column collapsed state ([445a5a0](https://github.com/dsebastien/obsidian-journal-bases/commit/445a5a0dd5bfa398b49b78c95d1269028ba99401))
+
 ## [1.11.2](https://github.com/dsebastien/obsidian-journal-bases/compare/1.11.1...1.11.2) (2026-06-30)
 
 ### Bug Fixes
@@ -183,6 +189,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
