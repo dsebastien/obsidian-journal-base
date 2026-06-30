@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.10.0...1.11.0) (2026-06-30)
+
+### Features
+
+* **plugin:** collapse frontmatter on open in Periodic Review ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42)) ([51bc038](https://github.com/dsebastien/obsidian-journal-bases/commit/51bc0389f2952853a7e3203ea1668b5f47d98287))
+* **plugin:** default the Periodic Review frontmatter fold to on ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42)) ([277cff9](https://github.com/dsebastien/obsidian-journal-bases/commit/277cff906e48a489bb9c60fc47b38aa1fac901d9))
+
+### Bug Fixes
+
+* **plugin:** detect notes with custom date formats ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42)) ([306c2c4](https://github.com/dsebastien/obsidian-journal-bases/commit/306c2c420ccf41d80a185801361671e06037def2))
+
 ## [1.10.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.9.2...1.10.0) (2026-06-20)
 
 ### Features
@@ -163,6 +174,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

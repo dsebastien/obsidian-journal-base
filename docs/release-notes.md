@@ -1,5 +1,16 @@
 # Release Notes
 
+## 1.11.0 (2026-06-30)
+
+### Features
+
+- **plugin:** collapse frontmatter on open in Periodic Review ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42))
+- **plugin:** default the Periodic Review frontmatter fold to on ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42))
+
+### Bug Fixes
+
+- **plugin:** detect notes with custom date formats ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42))
+
 ## 1.10.0 (2026-06-20)
 
 ### Features
