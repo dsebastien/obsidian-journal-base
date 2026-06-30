@@ -71,11 +71,14 @@ This view (inspired by Andy Matuschak's sliding panes) lets you:
 
 ### View Options
 
-| Option               | Description                                           |
-| -------------------- | ----------------------------------------------------- |
-| Show columns         | Toggle visibility for each period type                |
-| Collapse frontmatter | Fold a note's YAML frontmatter when it opens (source) |
-| Column width         | Width of each column in pixels (300-600)              |
+| Option       | Description                              |
+| ------------ | ---------------------------------------- |
+| Show columns | Toggle visibility for each period type   |
+| Column width | Width of each column in pixels (300-600) |
+
+The **Collapse frontmatter** option (fold a note's YAML frontmatter when it opens)
+is a global setting under **Settings → Journal Bases → Periodic Review**, on by
+default.
 
 ### Column Features
 

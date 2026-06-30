@@ -15,6 +15,12 @@ export type PluginSettings = PeriodicNotesSettings & {
      * Default: 'periodic_review_completed'
      */
     donePropertyName: string
+
+    /**
+     * Collapse a note's YAML frontmatter when it opens in the Periodic Review view.
+     * Default: true
+     */
+    collapseFrontmatter: boolean
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -23,5 +29,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     monthly: { enabled: false, folder: '', format: 'YYYY-MM', template: '' },
     quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
     yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
-    donePropertyName: DEFAULT_DONE_PROPERTY_NAME
+    donePropertyName: DEFAULT_DONE_PROPERTY_NAME,
+    collapseFrontmatter: true
 }

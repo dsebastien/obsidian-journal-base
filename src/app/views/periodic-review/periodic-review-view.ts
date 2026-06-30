@@ -22,7 +22,6 @@ import { generatePeriodsForContext } from './period-generator'
 import { filterEntriesByContext } from './entry-filter'
 import { PeriodCache } from './period-cache'
 import { VirtualPeriodSelector, type VirtualPeriodItem } from './virtual-period-selector'
-import { COLLAPSE_FRONTMATTER_OPTION } from './periodic-review-options'
 
 interface ColumnState {
     periodType: PeriodType
@@ -309,13 +308,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 void state.noteCard.refreshContent()
             }
         }
-    }
-
-    private isFrontmatterCollapsed(): boolean {
-        return (
-            (this.config.get(COLLAPSE_FRONTMATTER_OPTION.key) as boolean) ??
-            COLLAPSE_FRONTMATTER_OPTION.default
-        )
     }
 
     private getVisiblePeriodTypes(enabledTypes: PeriodType[]): PeriodType[] {
@@ -790,7 +782,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                 foldable: false,
                 forcedMode: 'source',
                 hideModeToggle: true,
-                collapseFrontmatter: this.isFrontmatterCollapsed(),
+                collapseFrontmatter: this.plugin.settings.collapseFrontmatter,
                 isDone,
                 onToggleDone: () => {
                     if (state.selectedDate) {

@@ -266,6 +266,9 @@ export class JournalBasesPlugin extends Plugin {
             // Load donePropertyName setting
             draft.donePropertyName =
                 loadedSettings.donePropertyName ?? DEFAULT_SETTINGS.donePropertyName
+            // Load collapseFrontmatter setting
+            draft.collapseFrontmatter =
+                loadedSettings.collapseFrontmatter ?? DEFAULT_SETTINGS.collapseFrontmatter
         })
 
         log('Settings loaded', 'debug', this.settings)

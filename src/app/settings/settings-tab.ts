@@ -111,6 +111,9 @@ export class JournalBasesSettingTab extends PluginSettingTab {
         // Render done status settings
         this.renderDoneStatusSection(containerEl)
 
+        // Render Periodic Review settings
+        this.renderPeriodicReviewSection(containerEl)
+
         // Render support section
         this.renderSupportHeader(containerEl)
     }
@@ -264,6 +267,23 @@ export class JournalBasesSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         await this.updateSettings((draft) => {
                             draft.donePropertyName = value.trim() || 'periodic_review_completed'
+                        })
+                    })
+            })
+    }
+
+    private renderPeriodicReviewSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName('Periodic Review').setHeading()
+
+        new Setting(containerEl)
+            .setName('Collapse frontmatter')
+            .setDesc("Fold a note's YAML frontmatter when it opens in a Periodic Review column")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.collapseFrontmatter)
+                    .onChange(async (value) => {
+                        await this.updateSettings((draft) => {
+                            draft.collapseFrontmatter = value
                         })
                     })
             })
