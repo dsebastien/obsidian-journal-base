@@ -327,9 +327,9 @@ export class EmbeddableEditor extends Component {
      * document opens with one. Only meaningful in source mode, where frontmatter
      * is shown as raw text; in live preview it is rendered as a properties widget.
      *
-     * The fold runs from the end of the opening `---` line to the end of the
-     * closing `---` line, leaving the opening fence visible with a fold
-     * placeholder — matching Obsidian's native frontmatter fold. Relies on the
+     * The fold covers the WHOLE block (opening fence through closing fence), so
+     * nothing but the fold placeholder remains — no leading `---` left behind —
+     * matching the result of Obsidian's native frontmatter fold. Relies on the
      * folding state Obsidian installs in its editors. No-op when there is no
      * frontmatter or the block is unterminated.
      *
