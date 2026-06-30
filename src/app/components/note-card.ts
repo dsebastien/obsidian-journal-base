@@ -28,6 +28,8 @@ export interface NoteCardOptions {
     onPrevious?: () => void
     /** Callback to navigate to next period. If not provided, button is hidden. */
     onNext?: () => void
+    /** Collapse the YAML frontmatter block when the editor opens. Defaults to false. */
+    collapseFrontmatter?: boolean
 }
 
 export class NoteCard extends Component {
@@ -47,6 +49,7 @@ export class NoteCard extends Component {
     private onToggleDone?: () => void
     private onPrevious?: () => void
     private onNext?: () => void
+    private collapseFrontmatter: boolean
     private doneButton: HTMLButtonElement | null = null
 
     constructor(
@@ -67,6 +70,7 @@ export class NoteCard extends Component {
         this.onToggleDone = options?.onToggleDone
         this.onPrevious = options?.onPrevious
         this.onNext = options?.onNext
+        this.collapseFrontmatter = options?.collapseFrontmatter ?? false
         this.mode = this.forcedMode ?? 'view'
         this.expanded = this.foldable ? initiallyExpanded : true // Always expanded if not foldable
         this.saveDebounced = debounce((content: string) => this.saveContent(content), 1000, true)
@@ -247,6 +251,12 @@ export class NoteCard extends Component {
                 })
                 this.addChild(this.editor)
                 this.contentLoaded = true
+
+                // Collapse the frontmatter on open when requested. Only applies in
+                // source mode; in live preview frontmatter is a properties widget.
+                if (this.collapseFrontmatter && this.mode === 'source') {
+                    this.editor.foldFrontmatter()
+                }
             }
         } catch (error) {
             log('Failed to load note content:', 'error', error)

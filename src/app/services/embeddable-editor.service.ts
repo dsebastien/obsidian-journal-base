@@ -2,6 +2,8 @@ import { App, Component, TFile, Scope } from 'obsidian'
 import { EditorView } from '@codemirror/view'
 import { EditorSelection, type SelectionRange } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
+import { foldEffect } from '@codemirror/language'
+import { findFrontmatterFoldRange } from '../../utils/frontmatter'
 import { log } from '../../utils/log'
 import { computeMinimalEdit } from '../../utils/text-diff'
 
@@ -318,6 +320,30 @@ export class EmbeddableEditor extends Component {
      */
     getEditorView(): EditorView {
         return this.editor.cm
+    }
+
+    /**
+     * Fold the YAML frontmatter block (the leading `---` … `---` region) if the
+     * document opens with one. Only meaningful in source mode, where frontmatter
+     * is shown as raw text; in live preview it is rendered as a properties widget.
+     *
+     * The fold runs from the end of the opening `---` line to the end of the
+     * closing `---` line, leaving the opening fence visible with a fold
+     * placeholder — matching Obsidian's native frontmatter fold. Relies on the
+     * folding state Obsidian installs in its editors. No-op when there is no
+     * frontmatter or the block is unterminated.
+     *
+     * @returns true if a fold was dispatched, false otherwise
+     */
+    foldFrontmatter(): boolean {
+        const editorView = this.editor.cm
+        const range = findFrontmatterFoldRange(editorView.state.doc.toString())
+        if (!range) {
+            return false
+        }
+
+        editorView.dispatch({ effects: foldEffect.of(range) })
+        return true
     }
 
     /**

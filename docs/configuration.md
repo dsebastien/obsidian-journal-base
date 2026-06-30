@@ -78,14 +78,15 @@ View options are configured per Base instance via the view options menu (gear ic
 
 ### Periodic Review View Options
 
-| Option         | Type   | Default | Description                      |
-| -------------- | ------ | ------- | -------------------------------- |
-| Show daily     | Toggle | true    | Show daily column                |
-| Show weekly    | Toggle | true    | Show weekly column               |
-| Show monthly   | Toggle | true    | Show monthly column              |
-| Show quarterly | Toggle | true    | Show quarterly column            |
-| Show yearly    | Toggle | true    | Show yearly column               |
-| Column width   | Slider | 400     | Column width in pixels (300-600) |
+| Option               | Type   | Default | Description                                  |
+| -------------------- | ------ | ------- | -------------------------------------------- |
+| Show daily           | Toggle | true    | Show daily column                            |
+| Show weekly          | Toggle | true    | Show weekly column                           |
+| Show monthly         | Toggle | true    | Show monthly column                          |
+| Show quarterly       | Toggle | true    | Show quarterly column                        |
+| Show yearly          | Toggle | true    | Show yearly column                           |
+| Collapse frontmatter | Toggle | false   | Fold a note's YAML frontmatter when it opens |
+| Column width         | Slider | 400     | Column width in pixels (300-600)             |
 
 ## Periodic Notes Plugin Sync
 

@@ -14,6 +14,16 @@ const COLUMN_OPTIONS: Record<PeriodType, { key: string; displayName: string; def
 }
 
 /**
+ * Option controlling whether a note's YAML frontmatter is collapsed when it
+ * opens in a review column. Default off to preserve existing behavior.
+ */
+export const COLLAPSE_FRONTMATTER_OPTION = {
+    key: 'collapseFrontmatter',
+    displayName: 'Collapse frontmatter',
+    default: false
+} as const
+
+/**
  * Period types in display order (smallest to largest granularity).
  */
 const PERIOD_TYPE_ORDER: readonly PeriodType[] = [
@@ -47,6 +57,14 @@ export function createPeriodicReviewViewOptions(
                 } as ToggleOption)
             }
         }
+
+        // Collapse the note's frontmatter when it opens in a column.
+        options.push({
+            type: 'toggle',
+            key: COLLAPSE_FRONTMATTER_OPTION.key,
+            displayName: COLLAPSE_FRONTMATTER_OPTION.displayName,
+            default: COLLAPSE_FRONTMATTER_OPTION.default
+        } as ToggleOption)
 
         return options
     }
