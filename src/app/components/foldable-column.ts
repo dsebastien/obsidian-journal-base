@@ -62,7 +62,26 @@ export class FoldableColumn extends Component {
     toggleFold(): void {
         this.folded = !this.folded
         this.containerEl.classList.toggle('pr-column--folded', this.folded)
+        this.applyFoldVisibility()
         this.updateFoldButton()
+    }
+
+    /**
+     * Hide the selector and content inline when folded.
+     *
+     * The `.pr-column--folded .pr-column__content { display: none }` (and
+     * selector) rules live in `@layer jb-components`, which is always beaten by
+     * unlayered Obsidian/theme CSS regardless of specificity — so the layered
+     * `display: none` can be silently overridden, leaving the note + selector
+     * visible and squeezed into the 48px folded strip (per-character wrapping).
+     * Inline styles win over every cascade layer, so set them here. The RHS is a
+     * variable (not a static literal), so `no-static-styles-assignment` is happy.
+     * See `documentation/history/2026-06-20.md` for the sibling `position` case.
+     */
+    private applyFoldVisibility(): void {
+        const display = this.folded ? 'none' : ''
+        this.selectorEl.style.display = display
+        this.contentEl.style.display = display
     }
 
     private updateFoldButton(): void {
