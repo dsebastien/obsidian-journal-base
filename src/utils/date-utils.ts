@@ -46,10 +46,234 @@ export function parseDateFromFormat(filename: string, formatStr: string): Date |
 
     try {
         const parsed = parse(filename, dateFnsFormat, new Date())
-        return isValid(parsed) ? parsed : null
+        if (isValid(parsed)) {
+            return parsed
+        }
+    } catch {
+        // date-fns parse throws (a RangeError) for token combinations it considers
+        // contradictory even though moment.js accepts them — most notably a format
+        // that carries redundant tokens for the same unit, e.g. month-number plus
+        // month-name (`YYYY-MM-MMMM`). Fall through to the tolerant parser below.
+    }
+
+    // Tolerant fallback: extract the determinant date components directly from the
+    // filename via a regex derived from the moment format. This sidesteps date-fns's
+    // strict token-combination rules and only ever runs when the direct parse failed,
+    // so it cannot regress the happy path. See issue #42.
+    return parseDateFromFormatTolerant(filename, formatStr)
+}
+
+/**
+ * Lowercased month name (full and abbreviated) → 0-based month index.
+ * Built from date-fns so it follows the same locale as formatting.
+ */
+const MONTH_NAME_TO_INDEX: Map<string, number> = (() => {
+    const map = new Map<string, number>()
+    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const date = new Date(2000, monthIndex, 1)
+        map.set(format(date, 'MMMM').toLowerCase(), monthIndex)
+        map.set(format(date, 'MMM').toLowerCase(), monthIndex)
+    }
+    return map
+})()
+
+/**
+ * Determinant date components extracted from a filename.
+ * Only the fields needed to identify a periodic note's date are captured;
+ * decorative tokens (weekday names, redundant month names) are ignored once a
+ * more precise token has supplied the same unit.
+ */
+interface DateComponents {
+    year?: number
+    weekYear?: number
+    monthIndex?: number
+    day?: number
+    week?: number
+    quarter?: number
+    dayOfYear?: number
+}
+
+const ESCAPE_REGEX_CHARS = /[.*+?^${}()|[\]\\]/g
+function escapeRegex(text: string): string {
+    return text.replace(ESCAPE_REGEX_CHARS, '\\$&')
+}
+
+const NAME_PATTERN = "[A-Za-z\\u00C0-\\u024F'.]+"
+
+/**
+ * Moment tokens we recognise, longest-first so a longer token is matched before
+ * its own prefix (e.g. `MMMM` before `MM` before `M`). `capture` names the
+ * `DateComponents` field the captured digits feed; `null` means the token is
+ * decorative and consumed but discarded (weekday names).
+ */
+const TOKEN_TABLE: ReadonlyArray<{
+    token: string
+    pattern: string
+    capture: keyof DateComponents | 'monthName' | null
+}> = [
+    { token: 'YYYY', pattern: '\\d{4}', capture: 'year' },
+    { token: 'YY', pattern: '\\d{2}', capture: 'year' },
+    { token: 'gggg', pattern: '\\d{4}', capture: 'weekYear' },
+    { token: 'GGGG', pattern: '\\d{4}', capture: 'weekYear' },
+    { token: 'gg', pattern: '\\d{2}', capture: 'weekYear' },
+    { token: 'GG', pattern: '\\d{2}', capture: 'weekYear' },
+    { token: 'MMMM', pattern: NAME_PATTERN, capture: 'monthName' },
+    { token: 'MMM', pattern: NAME_PATTERN, capture: 'monthName' },
+    { token: 'MM', pattern: '\\d{2}', capture: 'monthIndex' },
+    { token: 'DDDD', pattern: '\\d{1,3}', capture: 'dayOfYear' },
+    { token: 'DDD', pattern: '\\d{1,3}', capture: 'dayOfYear' },
+    { token: 'DD', pattern: '\\d{2}', capture: 'day' },
+    { token: 'dddd', pattern: NAME_PATTERN, capture: null },
+    { token: 'ddd', pattern: NAME_PATTERN, capture: null },
+    { token: 'dd', pattern: NAME_PATTERN, capture: null },
+    { token: 'WW', pattern: '\\d{2}', capture: 'week' },
+    { token: 'ww', pattern: '\\d{2}', capture: 'week' },
+    { token: 'W', pattern: '\\d{1,2}', capture: 'week' },
+    { token: 'w', pattern: '\\d{1,2}', capture: 'week' },
+    { token: 'Q', pattern: '\\d', capture: 'quarter' },
+    { token: 'M', pattern: '\\d{1,2}', capture: 'monthIndex' },
+    { token: 'D', pattern: '\\d{1,2}', capture: 'day' }
+]
+
+/**
+ * Tolerant reverse-parse: build a regex from the moment format and pull the
+ * determinant numeric components straight out of the filename, then reconstruct
+ * the date. Returns null when the filename doesn't match the format shape or the
+ * captured components don't form a valid date.
+ */
+export function parseDateFromFormatTolerant(filename: string, formatStr: string): Date | null {
+    let regexSource = '^'
+    const captureOrder: Array<keyof DateComponents | 'monthName'> = []
+
+    let index = 0
+    while (index < formatStr.length) {
+        // Bracketed literal: [text] → literal text
+        if (formatStr[index] === '[') {
+            const end = formatStr.indexOf(']', index)
+            if (end !== -1) {
+                regexSource += escapeRegex(formatStr.slice(index + 1, end))
+                index = end + 1
+                continue
+            }
+        }
+
+        const rest = formatStr.slice(index)
+        const entry = TOKEN_TABLE.find(({ token }) => rest.startsWith(token))
+        if (entry) {
+            if (entry.capture === null) {
+                regexSource += `(?:${entry.pattern})`
+            } else {
+                regexSource += `(${entry.pattern})`
+                captureOrder.push(entry.capture)
+            }
+            index += entry.token.length
+            continue
+        }
+
+        // Any other character (separators like '-' '/' ' ') is a literal.
+        regexSource += escapeRegex(formatStr[index] ?? '')
+        index += 1
+    }
+    regexSource += '$'
+
+    let match: RegExpExecArray | null
+    try {
+        match = new RegExp(regexSource).exec(filename)
     } catch {
         return null
     }
+    if (!match) {
+        return null
+    }
+
+    const components: DateComponents = {}
+    captureOrder.forEach((field, position) => {
+        const raw = match?.[position + 1]
+        if (raw === undefined) {
+            return
+        }
+        if (field === 'monthName') {
+            // A precise numeric month wins over a decorative month name.
+            if (components.monthIndex === undefined) {
+                const resolved = MONTH_NAME_TO_INDEX.get(raw.toLowerCase())
+                if (resolved !== undefined) {
+                    components.monthIndex = resolved
+                }
+            }
+            return
+        }
+        const value = Number.parseInt(raw, 10)
+        if (Number.isNaN(value)) {
+            return
+        }
+        if ((field === 'year' || field === 'weekYear') && raw.length === 2) {
+            components[field] = 2000 + value
+        } else if (field === 'monthIndex') {
+            components.monthIndex = value - 1
+        } else {
+            components[field] = value
+        }
+    })
+
+    return buildDateFromComponents(components)
+}
+
+function buildDateFromComponents(components: DateComponents): Date | null {
+    const { year, weekYear, monthIndex, day, week, quarter, dayOfYear } = components
+
+    // Full year-month-day (covers daily and any format with a concrete day).
+    if (year !== undefined && monthIndex !== undefined && day !== undefined) {
+        const date = new Date(year, monthIndex, day)
+        // Reject out-of-range components: new Date silently rolls over (month 13 →
+        // next January), which would misattribute a non-periodic file to a date.
+        if (
+            date.getFullYear() === year &&
+            date.getMonth() === monthIndex &&
+            date.getDate() === day
+        ) {
+            return date
+        }
+        return null
+    }
+
+    // ISO week (weekly notes). Reconstruct via date-fns to reuse its week math.
+    if (week !== undefined && (weekYear !== undefined || year !== undefined)) {
+        const isoYear = weekYear ?? year
+        const date = parse(`${isoYear}-${String(week).padStart(2, '0')}`, 'RRRR-II', new Date())
+        return isValid(date) ? date : null
+    }
+
+    // Quarter.
+    if (year !== undefined && quarter !== undefined) {
+        if (quarter < 1 || quarter > 4) {
+            return null
+        }
+        const date = new Date(year, (quarter - 1) * 3, 1)
+        return isValid(date) ? date : null
+    }
+
+    // Month (monthly notes, including month-name-only formats).
+    if (year !== undefined && monthIndex !== undefined) {
+        if (monthIndex < 0 || monthIndex > 11) {
+            return null
+        }
+        const date = new Date(year, monthIndex, 1)
+        return isValid(date) ? date : null
+    }
+
+    // Day of year.
+    if (year !== undefined && dayOfYear !== undefined) {
+        const date = new Date(year, 0, dayOfYear)
+        return date.getFullYear() === year ? date : null
+    }
+
+    // Year only (yearly notes).
+    if (year !== undefined) {
+        const date = new Date(year, 0, 1)
+        return isValid(date) ? date : null
+    }
+
+    return null
 }
 
 /**
@@ -72,12 +296,17 @@ export function convertMomentToDateFns(momentFormat: string): string {
     let result = momentFormat.replace(/\[([^\]]+)\]/g, "'$1'")
 
     // Day of week tokens (lowercase d in moment = day of week)
-    // Must be done BEFORE day of month (D) conversion to avoid conflicts
-    // Using 'eeee' format (stand-alone) as recommended by date-fns community
-    result = result.replace(/dddd/g, 'eeee') // Full day name (e.g., "Monday")
-    result = result.replace(/ddd/g, 'eee') // Short day name (e.g., "Mon")
+    // Must be done BEFORE day of month (D) conversion to avoid conflicts.
+    // Use the formatting 'E' family, NOT the local 'e'/stand-alone 'c' family:
+    // date-fns refuses to PARSE a format that mixes a calendar-year token (`yyyy`)
+    // with a locale-week-dependent day token (`eeee`/`cccc`), throwing
+    // "mustn't contain `yyyy` and `eeee` at the same time". `EEEE` carries no
+    // week-year dependency, so it parses fine alongside `yyyy` and produces
+    // identical output when formatting. See issue #42.
+    result = result.replace(/dddd/g, 'EEEE') // Full day name (e.g., "Monday")
+    result = result.replace(/ddd/g, 'EEE') // Short day name (e.g., "Mon")
     // Only replace standalone dd (day of week), not after D
-    result = result.replace(/(?<!D)dd(?!d)/g, 'eeeeee') // Min day name (2-letter, e.g., "Mo")
+    result = result.replace(/(?<!D)dd(?!d)/g, 'EEEEEE') // Min day name (2-letter, e.g., "Mo")
 
     // Year tokens (must process longer tokens first)
     result = result.replace(/YYYY/g, 'yyyy') // 4-digit year

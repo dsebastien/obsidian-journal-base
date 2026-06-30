@@ -65,16 +65,19 @@ describe('date-utils', () => {
         })
 
         // Day of week tokens
-        test('converts full day name dddd to eeee', () => {
-            expect(convertMomentToDateFns('dddd')).toBe('eeee')
+        // The formatting 'E' family is used (not local 'e'/stand-alone 'c'): date-fns
+        // refuses to parse a format mixing `yyyy` with `eeee`/`cccc`, but `EEEE` is
+        // week-year-independent and parses fine. See issue #42.
+        test('converts full day name dddd to EEEE', () => {
+            expect(convertMomentToDateFns('dddd')).toBe('EEEE')
         })
 
-        test('converts short day name ddd to eee', () => {
-            expect(convertMomentToDateFns('ddd')).toBe('eee')
+        test('converts short day name ddd to EEE', () => {
+            expect(convertMomentToDateFns('ddd')).toBe('EEE')
         })
 
-        test('converts min day name dd to eeeeee', () => {
-            expect(convertMomentToDateFns('dd')).toBe('eeeeee')
+        test('converts min day name dd to EEEEEE', () => {
+            expect(convertMomentToDateFns('dd')).toBe('EEEEEE')
         })
 
         // Day of year tokens
@@ -224,6 +227,67 @@ describe('date-utils', () => {
         test('returns null for invalid date string', () => {
             const result = parseDateFromFormat('not-a-date', 'YYYY-MM-DD')
             expect(result).toBeNull()
+        })
+
+        // Issue #42: custom formats that date-fns parse rejects but moment accepts.
+        // These previously returned null, so existing notes showed as missing.
+        describe('issue #42 custom formats', () => {
+            test('parses daily format with weekday name (YYYY-MM-DD-dddd)', () => {
+                const result = parseDateFromFormat('2026-06-27-Saturday', 'YYYY-MM-DD-dddd')
+                expect(result).not.toBeNull()
+                expect(result?.getFullYear()).toBe(2026)
+                expect(result?.getMonth()).toBe(5) // June
+                expect(result?.getDate()).toBe(27)
+            })
+
+            test('parses daily format with short weekday name (YYYY-MM-DD-ddd)', () => {
+                const result = parseDateFromFormat('2026-06-27-Sat', 'YYYY-MM-DD-ddd')
+                expect(result).not.toBeNull()
+                expect(result?.getDate()).toBe(27)
+            })
+
+            test('parses monthly format with month name (YYYY-MM-MMMM)', () => {
+                const result = parseDateFromFormat('2026-06-June', 'YYYY-MM-MMMM')
+                expect(result).not.toBeNull()
+                expect(result?.getFullYear()).toBe(2026)
+                expect(result?.getMonth()).toBe(5) // June
+            })
+
+            test('parses monthly format with short month name (YYYY-MM-MMM)', () => {
+                const result = parseDateFromFormat('2026-06-Jun', 'YYYY-MM-MMM')
+                expect(result).not.toBeNull()
+                expect(result?.getMonth()).toBe(5)
+            })
+
+            test('parses month-name-only format with reordered tokens (MMMM-YYYY)', () => {
+                const result = parseDateFromFormat('June-2026', 'MMMM-YYYY')
+                expect(result).not.toBeNull()
+                expect(result?.getFullYear()).toBe(2026)
+                expect(result?.getMonth()).toBe(5)
+            })
+
+            test('weekday name does not shift the parsed day', () => {
+                // Sunday is the day after the 27th; the date must still be the 28th.
+                const result = parseDateFromFormat('2026-06-28-Sunday', 'YYYY-MM-DD-dddd')
+                expect(result?.getDate()).toBe(28)
+            })
+
+            test('round-trips: format then parse a weekday-suffixed daily note', () => {
+                const date = new Date(2026, 5, 27)
+                const filename = formatDate(date, 'YYYY-MM-DD-dddd')
+                expect(filename).toBe('2026-06-27-Saturday')
+                const parsed = parseDateFromFormat(filename, 'YYYY-MM-DD-dddd')
+                expect(parsed?.getDate()).toBe(27)
+            })
+
+            test('rejects out-of-range components (no silent rollover)', () => {
+                // Month 13 / day 99 must not roll over to a valid date.
+                expect(parseDateFromFormat('2026-13-99-Saturday', 'YYYY-MM-DD-dddd')).toBeNull()
+            })
+
+            test('returns null when filename does not match the format shape', () => {
+                expect(parseDateFromFormat('totally-unrelated', 'YYYY-MM-DD-dddd')).toBeNull()
+            })
         })
     })
 

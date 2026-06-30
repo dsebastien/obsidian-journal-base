@@ -22,16 +22,24 @@ Each period type (daily, weekly, monthly, quarterly, yearly) has these settings:
 
 Uses Moment.js format tokens:
 
-| Token    | Output        | Example |
-| -------- | ------------- | ------- |
-| `YYYY`   | 4-digit year  | 2025    |
-| `MM`     | 2-digit month | 01-12   |
-| `DD`     | 2-digit day   | 01-31   |
-| `gggg`   | ISO week year | 2025    |
-| `ww`     | ISO week      | 01-53   |
-| `[Q]`    | Literal "Q"   | Q       |
-| `Q`      | Quarter       | 1-4     |
-| `[text]` | Literal text  | text    |
+| Token    | Output             | Example  |
+| -------- | ------------------ | -------- |
+| `YYYY`   | 4-digit year       | 2025     |
+| `MM`     | 2-digit month      | 01-12    |
+| `MMMM`   | Full month name    | January  |
+| `MMM`    | Short month name   | Jan      |
+| `DD`     | 2-digit day        | 01-31    |
+| `dddd`   | Full weekday name  | Saturday |
+| `ddd`    | Short weekday name | Sat      |
+| `gggg`   | ISO week year      | 2025     |
+| `ww`     | ISO week           | 01-53    |
+| `[Q]`    | Literal "Q"        | Q        |
+| `Q`      | Quarter            | 1-4      |
+| `[text]` | Literal text       | text     |
+
+Decorative tokens such as the weekday name (`dddd`) and a month name combined with
+the month number (`YYYY-MM-MMMM`) are supported — for example `YYYY-MM-DD-dddd`
+produces `2025-01-15-Wednesday.md`.
 
 ## Default Formats
 
