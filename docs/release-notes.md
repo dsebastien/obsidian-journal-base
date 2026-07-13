@@ -1,5 +1,11 @@
 # Release Notes
 
+## 1.12.2 (2026-07-13)
+
+### Bug Fixes
+
+- **plugin:** reliably re-fold frontmatter after done toggle
+
 ## 1.12.1 (2026-07-13)
 
 ### Bug Fixes
