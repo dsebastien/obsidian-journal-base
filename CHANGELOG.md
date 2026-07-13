@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.1](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.0...1.12.1) (2026-07-13)
+
+### Bug Fixes
+
+* **plugin:** keep frontmatter folded after marking a period done ([123bd0b](https://github.com/dsebastien/obsidian-journal-bases/commit/123bd0b494b8e96d37d19a0dba00604ca4039eef))
+
 ## [1.12.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.11.2...1.12.0) (2026-06-30)
 
 ### Features
@@ -189,6 +195,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

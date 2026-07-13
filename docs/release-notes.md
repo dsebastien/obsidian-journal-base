@@ -1,5 +1,11 @@
 # Release Notes
 
+## 1.12.1 (2026-07-13)
+
+### Bug Fixes
+
+- **plugin:** keep frontmatter folded after marking a period done
+
 ## 1.12.0 (2026-06-30)
 
 ### Features
