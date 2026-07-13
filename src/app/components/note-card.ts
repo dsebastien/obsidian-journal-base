@@ -401,6 +401,16 @@ export class NoteCard extends Component {
 
                     // Use state-preserving update to maintain cursor and scroll
                     const updated = this.editor.setValuePreservingState(fileContent)
+
+                    // A minimal edit inside the frontmatter (e.g. toggling the
+                    // done property) intersects the fold CodeMirror installed on
+                    // open, so CodeMirror drops it and the raw frontmatter
+                    // reappears. Re-fold to keep it hidden, matching open-time
+                    // behaviour. Only meaningful in source mode.
+                    if (updated && this.collapseFrontmatter && this.mode === 'source') {
+                        this.editor.foldFrontmatter()
+                    }
+
                     return updated
                 }
             }
