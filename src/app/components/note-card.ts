@@ -392,6 +392,7 @@ export class NoteCard extends Component {
             if (this.editor) {
                 const editorContent = this.editor.getValue()
 
+                let updated = false
                 // Only update if content differs (external change)
                 if (fileContent !== editorContent) {
                     // If editor has focus and not forced, skip to avoid disrupting user
@@ -400,19 +401,21 @@ export class NoteCard extends Component {
                     }
 
                     // Use state-preserving update to maintain cursor and scroll
-                    const updated = this.editor.setValuePreservingState(fileContent)
-
-                    // A minimal edit inside the frontmatter (e.g. toggling the
-                    // done property) intersects the fold CodeMirror installed on
-                    // open, so CodeMirror drops it and the raw frontmatter
-                    // reappears. Re-fold to keep it hidden, matching open-time
-                    // behaviour. Only meaningful in source mode.
-                    if (updated && this.collapseFrontmatter && this.mode === 'source') {
-                        this.editor.foldFrontmatter()
-                    }
-
-                    return updated
+                    updated = this.editor.setValuePreservingState(fileContent)
                 }
+
+                // Re-apply the frontmatter fold if it was lost. Obsidian's
+                // embedded editor syncs external file changes on its own, so a
+                // change landing inside the folded frontmatter (e.g. toggling the
+                // done property, which is written inside the block) makes
+                // CodeMirror drop the fold and the raw properties reappear —
+                // often before this method runs, so the editor content already
+                // matches the file and the branch above is skipped. Re-fold
+                // unconditionally here to keep it hidden, matching open-time
+                // behaviour.
+                this.reapplyFrontmatterFold()
+
+                return updated
             }
         } catch (error) {
             log('Failed to refresh note content:', 'error', error)
@@ -455,6 +458,28 @@ export class NoteCard extends Component {
             setIcon(this.doneButton, isDone ? 'check-circle' : 'circle')
             this.doneButton.classList.toggle('pn-card__done-btn--active', isDone)
             this.doneButton.setAttribute('aria-label', isDone ? 'Mark as not done' : 'Mark as done')
+        }
+
+        // Toggling done writes the done property inside the note's frontmatter,
+        // which drops the fold that keeps it hidden. Restore it directly on this
+        // done-state change (the most reliable trigger, alongside refreshContent).
+        this.reapplyFrontmatterFold()
+    }
+
+    /**
+     * Re-fold the YAML frontmatter block if it should stay hidden. No-op unless
+     * the card is in source mode with frontmatter collapsing enabled and the
+     * user is not actively editing (so we never re-fold under their cursor).
+     * Folding an already-folded range is a harmless no-op.
+     */
+    private reapplyFrontmatterFold(): void {
+        if (
+            this.collapseFrontmatter &&
+            this.mode === 'source' &&
+            this.editor &&
+            !this.editor.hasFocus()
+        ) {
+            this.editor.foldFrontmatter()
         }
     }
 
