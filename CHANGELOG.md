@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.4](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.3...1.12.4) (2026-07-22)
+
+### Bug Fixes
+
+* **plugin:** harden periodic-note detection for custom formats ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42)) ([f5e6e33](https://github.com/dsebastien/obsidian-journal-bases/commit/f5e6e335e7303ee4f2ae81309d535fb80fa248d1))
+
 ## [1.12.3](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.2...1.12.3) (2026-07-17)
 
 ## [1.12.2](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.1...1.12.2) (2026-07-13)
@@ -203,6 +209,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

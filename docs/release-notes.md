@@ -1,5 +1,11 @@
 # Release Notes
 
+## 1.12.4 (2026-07-22)
+
+### Bug Fixes
+
+- **plugin:** harden periodic-note detection for custom formats ([#42](https://github.com/dsebastien/obsidian-journal-bases/issues/42))
+
 ## 1.12.3 (2026-07-17)
 
 ## 1.12.2 (2026-07-13)
