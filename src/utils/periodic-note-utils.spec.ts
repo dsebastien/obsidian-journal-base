@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { TFile } from 'obsidian'
-import { detectPeriodType, getFilenameFormat } from './periodic-note-utils'
+import { detectPeriodType, extractDateFromNote, getFilenameFormat } from './periodic-note-utils'
 import type { PluginSettings } from '../app/types'
 import { DEFAULT_SETTINGS } from '../app/types'
 
@@ -149,5 +149,55 @@ describe('detectPeriodType', () => {
                 'weekly'
             )
         })
+    })
+})
+
+// Issue #42 — nested folder paths + custom formats
+// https://github.com/dsebastien/obsidian-journal-base/issues/42
+// The reporter's daily notes live at Diary/01 Daily/{{YYYY}}/{{MM-MMMM}}/ with a
+// weekday-suffixed filename. detectPeriodType matches on folder alone, and
+// extractDateFromNote must reduce the path-prefixed format to just the filename
+// portion and still parse the weekday-suffixed basename.
+describe('extractDateFromNote — issue #42 nested folders and custom formats', () => {
+    test('detects a daily note in a deeply nested folder with a space in the folder name', () => {
+        const settings = buildSettings({
+            daily: {
+                enabled: true,
+                folder: 'Diary/01 Daily',
+                format: 'Diary/01 Daily/YYYY/MM-MMMM/YYYY-MM-DD-dddd',
+                template: ''
+            }
+        })
+        const file = mockFile('Diary/01 Daily/2026/06-June/2026-06-27-Saturday.md')
+
+        expect(detectPeriodType(file, settings)).toBe('daily')
+
+        const date = extractDateFromNote(file, settings.daily)
+        expect(date).not.toBeNull()
+        expect(date?.getFullYear()).toBe(2026)
+        expect(date?.getMonth()).toBe(5) // June
+        expect(date?.getDate()).toBe(27)
+    })
+
+    test('reduces a path-prefixed format to its filename portion before parsing', () => {
+        // getFilenameFormat drops the folder tokens; only YYYY-MM-DD-dddd is matched.
+        expect(getFilenameFormat('Diary/01 Daily/YYYY/MM-MMMM/YYYY-MM-DD-dddd')).toBe(
+            'YYYY-MM-DD-dddd'
+        )
+    })
+
+    test('detects a monthly note using a month-name subfolder (YYYY-MM-MMMM)', () => {
+        const config = {
+            enabled: true,
+            folder: 'Diary/02 Monthly',
+            format: 'Diary/02 Monthly/YYYY/YYYY-MM-MMMM',
+            template: ''
+        }
+        const file = mockFile('Diary/02 Monthly/2026/2026-06-June.md')
+
+        const date = extractDateFromNote(file, config)
+        expect(date).not.toBeNull()
+        expect(date?.getFullYear()).toBe(2026)
+        expect(date?.getMonth()).toBe(5) // June
     })
 })

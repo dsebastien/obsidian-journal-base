@@ -6,6 +6,7 @@ import {
     formatFilenameWithSuffix,
     getPeriodSuffix,
     getPreviousPeriod,
+    getStartOfPeriod,
     parseDateFromFormat,
     doesPeriodOverlapParent
 } from './date-utils'
@@ -229,6 +230,42 @@ describe('date-utils', () => {
             expect(result).toBeNull()
         })
 
+        // Regression guards for the Periodic Notes plugin default formats.
+        // syncFromPeriodicNotesPlugin copies these verbatim into our settings, so
+        // parseDateFromFormat must keep recognising them (weekly/quarterly/yearly had
+        // no explicit parse coverage before). See issue #42.
+        describe('Periodic Notes default formats', () => {
+            test('parses weekly ISO-week format (gggg-[W]ww)', () => {
+                const result = parseDateFromFormat('2026-W26', 'gggg-[W]ww')
+                expect(result).not.toBeNull()
+                // ISO week 26 of 2026 starts Monday 2026-06-22.
+                expect(getStartOfPeriod(result!, 'weekly')).toEqual(new Date(2026, 5, 22))
+            })
+
+            test('parses quarterly format (YYYY-[Q]Q)', () => {
+                const result = parseDateFromFormat('2026-Q4', 'YYYY-[Q]Q')
+                expect(result).not.toBeNull()
+                expect(result?.getFullYear()).toBe(2026)
+                expect(result?.getMonth()).toBe(9) // Q4 → October
+            })
+
+            test('rejects an out-of-range quarter (YYYY-[Q]Q)', () => {
+                expect(parseDateFromFormat('2026-Q5', 'YYYY-[Q]Q')).toBeNull()
+            })
+
+            test('parses yearly format (YYYY)', () => {
+                const result = parseDateFromFormat('2026', 'YYYY')
+                expect(result).not.toBeNull()
+                expect(result?.getFullYear()).toBe(2026)
+                expect(result?.getMonth()).toBe(0)
+                expect(result?.getDate()).toBe(1)
+            })
+
+            test('does not treat arbitrary text with a year as a yearly note', () => {
+                expect(parseDateFromFormat('Project 2026', 'YYYY')).toBeNull()
+            })
+        })
+
         // Issue #42: custom formats that date-fns parse rejects but moment accepts.
         // These previously returned null, so existing notes showed as missing.
         describe('issue #42 custom formats', () => {
@@ -270,6 +307,41 @@ describe('date-utils', () => {
                 // Sunday is the day after the 27th; the date must still be the 28th.
                 const result = parseDateFromFormat('2026-06-28-Sunday', 'YYYY-MM-DD-dddd')
                 expect(result?.getDate()).toBe(28)
+            })
+
+            test('an inconsistent weekday name is ignored, not honoured', () => {
+                // 2026-06-27 is a Saturday; a filename that (wrongly) says Monday must
+                // still resolve to the 27th — the numeric day is authoritative.
+                const result = parseDateFromFormat('2026-06-27-Monday', 'YYYY-MM-DD-dddd')
+                expect(result?.getFullYear()).toBe(2026)
+                expect(result?.getMonth()).toBe(5)
+                expect(result?.getDate()).toBe(27)
+            })
+
+            test('parses a leap day with weekday suffix (2024-02-29-Thursday)', () => {
+                const result = parseDateFromFormat('2024-02-29-Thursday', 'YYYY-MM-DD-dddd')
+                expect(result).not.toBeNull()
+                expect(result?.getMonth()).toBe(1) // February
+                expect(result?.getDate()).toBe(29)
+            })
+
+            test('a non-English month-name-only format returns null instead of misattributing', () => {
+                // MONTH_NAME_TO_INDEX is en-US; the Periodic Notes plugin renders MMMM
+                // in the user's moment locale. Unresolved names must NOT collapse every
+                // month onto January — that would re-create the #42 grey-note symptom for
+                // non-English vaults. Refusing (null) is correct: no false attribution.
+                const june = parseDateFromFormat('2026-juin', 'YYYY-MMMM')
+                const december = parseDateFromFormat('2026-decembre', 'YYYY-MMMM')
+                expect(june).toBeNull()
+                expect(december).toBeNull()
+            })
+
+            test('a numeric month still wins when a foreign month name is also present', () => {
+                // YYYY-MM-MMMM: the numeric MM is authoritative, so a non-English MMMM
+                // suffix is harmless and the note is still detected.
+                const result = parseDateFromFormat('2026-06-juin', 'YYYY-MM-MMMM')
+                expect(result).not.toBeNull()
+                expect(result?.getMonth()).toBe(5) // June from the numeric 06
             })
 
             test('round-trips: format then parse a weekday-suffixed daily note', () => {

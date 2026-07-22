@@ -41,6 +41,11 @@ Decorative tokens such as the weekday name (`dddd`) and a month name combined wi
 the month number (`YYYY-MM-MMMM`) are supported — for example `YYYY-MM-DD-dddd`
 produces `2025-01-15-Wednesday.md`.
 
+> **Note:** A month **name** (`MMMM`/`MMM`) is only recognised in English unless the
+> format also carries a numeric month (`MM`). Prefer a format that includes `MM`
+> (e.g. `YYYY-MM-MMMM`) so notes are detected regardless of language. A name-only
+> format such as `YYYY-MMMM` works for English month names but not localized ones.
+
 ## Default Formats
 
 | Period    | Format       | Example Output  |

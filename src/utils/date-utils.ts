@@ -187,12 +187,20 @@ export function parseDateFromFormatTolerant(filename: string, formatStr: string)
     }
 
     const components: DateComponents = {}
+    // Whether the format carried a month-NAME token (MMMM/MMM). MONTH_NAME_TO_INDEX
+    // is built from date-fns's en-US locale, so a name rendered in another locale
+    // (e.g. moment's `juin`, `Dezember`) won't resolve. When such a name is the ONLY
+    // source of the month we must NOT fall through to a partial date — every month
+    // would collapse onto the same January date and existence detection would fail
+    // for 11 of 12 notes. See issue #42.
+    let sawMonthName = false
     captureOrder.forEach((field, position) => {
         const raw = match?.[position + 1]
         if (raw === undefined) {
             return
         }
         if (field === 'monthName') {
+            sawMonthName = true
             // A precise numeric month wins over a decorative month name.
             if (components.monthIndex === undefined) {
                 const resolved = MONTH_NAME_TO_INDEX.get(raw.toLowerCase())
@@ -214,6 +222,13 @@ export function parseDateFromFormatTolerant(filename: string, formatStr: string)
             components[field] = value
         }
     })
+
+    // A month name was present but couldn't be resolved (non-English locale) and no
+    // numeric month token supplied the value: refuse rather than mis-attribute the
+    // note to January.
+    if (sawMonthName && components.monthIndex === undefined) {
+        return null
+    }
 
     return buildDateFromComponents(components)
 }

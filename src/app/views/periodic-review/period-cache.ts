@@ -18,8 +18,14 @@ import { generatePeriodsForContext } from './period-generator'
  * - Generated periods cached (invalidated when context changes)
  */
 export class PeriodCache {
-    // Date extraction cache - WeakMap so entries are garbage collected when TFile is removed
-    private dateCache: WeakMap<TFile, Date | null> = new WeakMap()
+    // Date extraction cache - WeakMap so entries are garbage collected when TFile is removed.
+    // Keyed on the TFile but also stamped with the basename and format the cached date
+    // was derived from: a rename (Obsidian reuses the TFile instance, mutating basename)
+    // or a periodic-note format change (e.g. syncFromPeriodicNotesPlugin copying a new
+    // format into settings) must invalidate the entry, otherwise a stale — often null —
+    // date keeps rendering the note grey. See issue #42.
+    private dateCache: WeakMap<TFile, { basename: string; format: string; date: Date | null }> =
+        new WeakMap()
 
     // Entries by period type - invalidated when data changes
     private entriesByTypeCache: Map<PeriodType, BasesEntry[]> = new Map()
@@ -36,12 +42,13 @@ export class PeriodCache {
      * Uses WeakMap so cache entries are automatically cleaned when TFile is garbage collected.
      */
     extractDate(file: TFile, config: PeriodicNoteConfig): Date | null {
-        if (this.dateCache.has(file)) {
-            return this.dateCache.get(file) ?? null
+        const cached = this.dateCache.get(file)
+        if (cached && cached.basename === file.basename && cached.format === config.format) {
+            return cached.date
         }
 
         const date = extractDateFromNote(file, config)
-        this.dateCache.set(file, date)
+        this.dateCache.set(file, { basename: file.basename, format: config.format, date })
         return date
     }
 
