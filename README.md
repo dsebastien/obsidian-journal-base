@@ -169,6 +169,7 @@ Both views share these capabilities:
 - **Periodic Notes plugin sync**: Automatically syncs settings when Periodic Notes plugin is enabled
 - **Templater support**: Full integration for template-based note creation
 - **Life Tracker integration**: Provides daily notes for Life Tracker commands (works in both views)
+- **What's new after updates.** After a plugin update, a one-time dialog shows the release notes you just received (including skipped versions) with ways to support development. Never shown on fresh installs or regular restarts.
 
 ---
 

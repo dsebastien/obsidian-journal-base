@@ -1,3 +1,4 @@
+import { registerWhatsNewDialog } from './whats-new'
 import { Notice, Plugin, type TFile } from 'obsidian'
 import {
     DEFAULT_SETTINGS,
@@ -82,6 +83,8 @@ export class JournalBasesPlugin extends Plugin {
      * Executed as soon as the plugin loads
      */
     override async onload(): Promise<void> {
+        // Must run before anything can call saveData (fresh-install detection)
+        registerWhatsNewDialog(this)
         log('Initializing', 'debug')
 
         // Initialize integration service

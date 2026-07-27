@@ -1,4 +1,9 @@
-import type { BasesDropdownOption, BasesSliderOption, BasesToggleOption, BasesAllOptions } from 'obsidian'
+import type {
+    BasesDropdownOption,
+    BasesSliderOption,
+    BasesToggleOption,
+    BasesAllOptions
+} from 'obsidian'
 import { DEFAULT_FUTURE_PERIODS } from './periodic-notes.constants'
 
 export function getPeriodicNotesViewOptions(): BasesAllOptions[] {
