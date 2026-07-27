@@ -1,4 +1,4 @@
-import type { ToggleOption, ViewOption } from 'obsidian'
+import type { BasesToggleOption, BasesAllOptions } from 'obsidian'
 import type { PluginSettings, PeriodType } from '../../types'
 
 /**
@@ -30,10 +30,10 @@ const PERIOD_TYPE_ORDER: readonly PeriodType[] = [
  */
 export function createPeriodicReviewViewOptions(
     getSettings: () => PluginSettings
-): () => ViewOption[] {
-    return (): ViewOption[] => {
+): () => BasesAllOptions[] {
+    return (): BasesAllOptions[] => {
         const settings = getSettings()
-        const options: ViewOption[] = []
+        const options: BasesAllOptions[] = []
 
         // Add column visibility toggles only for enabled period types
         for (const periodType of PERIOD_TYPE_ORDER) {
@@ -44,7 +44,7 @@ export function createPeriodicReviewViewOptions(
                     key: config.key,
                     displayName: config.displayName,
                     default: config.default
-                } as ToggleOption)
+                } as BasesToggleOption)
             }
         }
 

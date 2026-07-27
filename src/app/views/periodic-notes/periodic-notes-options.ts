@@ -1,7 +1,7 @@
-import type { DropdownOption, SliderOption, ToggleOption, ViewOption } from 'obsidian'
+import type { BasesDropdownOption, BasesSliderOption, BasesToggleOption, BasesAllOptions } from 'obsidian'
 import { DEFAULT_FUTURE_PERIODS } from './periodic-notes.constants'
 
-export function getPeriodicNotesViewOptions(): ViewOption[] {
+export function getPeriodicNotesViewOptions(): BasesAllOptions[] {
     return [
         {
             type: 'dropdown',
@@ -15,7 +15,7 @@ export function getPeriodicNotesViewOptions(): ViewOption[] {
                 quarterly: 'Quarterly',
                 yearly: 'Yearly'
             }
-        } as DropdownOption,
+        } as BasesDropdownOption,
         {
             type: 'slider',
             key: 'futurePeriods',
@@ -24,18 +24,18 @@ export function getPeriodicNotesViewOptions(): ViewOption[] {
             max: 12,
             step: 1,
             default: DEFAULT_FUTURE_PERIODS
-        } as SliderOption,
+        } as BasesSliderOption,
         {
             type: 'toggle',
             key: 'expandFirst',
             displayName: 'Expand first card',
             default: true
-        } as ToggleOption,
+        } as BasesToggleOption,
         {
             type: 'toggle',
             key: 'showMissing',
             displayName: 'Show missing periods',
             default: true
-        } as ToggleOption
+        } as BasesToggleOption
     ]
 }
