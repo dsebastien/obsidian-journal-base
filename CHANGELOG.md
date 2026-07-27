@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.4...1.13.0) (2026-07-27)
+
+### Features
+
+* **plugin:** show a what's new dialog once after plugin updates ([a8395a8](https://github.com/dsebastien/obsidian-journal-bases/commit/a8395a8e2d900ad2f4f88df70b24a383907fa893))
+
 ## [1.12.4](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.3...1.12.4) (2026-07-22)
 
 ### Bug Fixes
@@ -209,6 +215,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
