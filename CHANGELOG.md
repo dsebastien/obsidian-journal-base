@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.14.0...1.15.0) (2026-07-29)
+
+### Features
+
+* **plugin:** aggregate what's new dialogs across simultaneously updated plugins ([374948a](https://github.com/dsebastien/obsidian-journal-bases/commit/374948a80693e2e43ba85614e5e125400f54e76d))
+
 ## [1.14.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.13.0...1.14.0) (2026-07-29)
 
 ### Features
@@ -221,6 +227,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
