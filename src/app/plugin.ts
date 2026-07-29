@@ -1,4 +1,4 @@
-import { registerWhatsNewDialog } from './whats-new'
+import { registerWhatsNewView } from './whats-new'
 import { Notice, Plugin, type TFile } from 'obsidian'
 import {
     DEFAULT_SETTINGS,
@@ -84,7 +84,7 @@ export class JournalBasesPlugin extends Plugin {
      */
     override async onload(): Promise<void> {
         // Must run before anything can call saveData (fresh-install detection)
-        registerWhatsNewDialog(this)
+        registerWhatsNewView(this)
         log('Initializing', 'debug')
 
         // Initialize integration service
