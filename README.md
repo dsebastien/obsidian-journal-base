@@ -266,8 +266,21 @@ This is a **free and open source project**. All contributions are welcome:
 
 See the [issues](https://github.com/dsebastien/obsidian-journal-base/issues) and [discussions](https://github.com/dsebastien/obsidian-journal-base/discussions) in this repository.
 
-## News & Support
+<!-- support-cta -->
+## News & support
 
-To stay up to date about this plugin, Obsidian in general, Personal Knowledge Management and note-taking, subscribe to [my newsletter](https://dsebastien.net). The best way to support my work is to become a paid subscriber ❤️.
+To stay up to date about this plugin, Obsidian in general, Personal Knowledge Management and note-taking:
 
-This plugin is included in the [Obsidian Starter Kit](https://obsidianstarterkit.com).
+- Subscribe to [my newsletter](https://dsebastien.net/newsletter)
+- Subscribe to [my YouTube channel](https://youtube.com/@dsebastien)
+- Join the [Knowii community](https://www.store.dsebastien.net/product/knowii-community/) and learn to organize your notes and put your knowledge to work, together with fellow knowledge workers
+
+If this plugin is useful to you, here are the best ways to support my work ❤️:
+
+- [Join the Knowii community](https://www.store.dsebastien.net/product/knowii-community/)
+- [Become a GitHub Sponsor](https://github.com/sponsors/dsebastien)
+- [Buy me a coffee](https://www.buymeacoffee.com/dsebastien)
+- [Subscribe to my YouTube channel](https://youtube.com/@dsebastien)
+- [Check out my products](https://store.dsebastien.net)
+
+Found a bug or have an idea? [Open an issue](https://github.com/dsebastien/obsidian-journal-base/issues).
