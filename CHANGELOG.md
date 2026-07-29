@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.13.0...1.14.0) (2026-07-29)
+
+### Features
+
+* **plugin:** add Knowii community to the what's new dialog and harden it ([b14d3b3](https://github.com/dsebastien/obsidian-journal-bases/commit/b14d3b3dce785a33a5bb39dde6c36224c88f7149))
+
 ## [1.13.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.12.4...1.13.0) (2026-07-27)
 
 ### Features
@@ -215,6 +221,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
