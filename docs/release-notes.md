@@ -1,5 +1,20 @@
 # Release Notes
 
+## 1.16.0 (2026-08-07)
+
+### Features
+
+- **plugin:** add a debug logging setting
+- **plugin:** show what's new in a tab instead of a modal dialog
+- **plugin:** surface support CTAs everywhere users can see them
+
+### Bug Fixes
+
+- **build:** stop export-ignoring files the build and lint read
+- **deps:** clear all dependency advisories
+- **plugin:** drop !important from the periodic review responsive rules
+- **plugin:** use popout-correct element creation, drop redundant casts
+
 ## 1.15.0 (2026-07-29)
 
 ### Features

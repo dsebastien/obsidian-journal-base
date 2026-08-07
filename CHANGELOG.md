@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.15.0...1.16.0) (2026-08-07)
+
+### Features
+
+* **plugin:** add a debug logging setting ([8679d9b](https://github.com/dsebastien/obsidian-journal-bases/commit/8679d9b2990ea75415c8c73474c8b8605057df4d))
+* **plugin:** show what's new in a tab instead of a modal dialog ([1507336](https://github.com/dsebastien/obsidian-journal-bases/commit/1507336b083fdb7a3dc5dbc3526c01a92701823d))
+* **plugin:** surface support CTAs everywhere users can see them ([f6912ec](https://github.com/dsebastien/obsidian-journal-bases/commit/f6912ec56df8e3003283a8fd66d6a8b61b185d80))
+
+### Bug Fixes
+
+* **build:** stop export-ignoring files the build and lint read ([6b267be](https://github.com/dsebastien/obsidian-journal-bases/commit/6b267be44d8bfe69c81199d953dd49ca071cb6de))
+* **deps:** clear all dependency advisories ([1ca56a6](https://github.com/dsebastien/obsidian-journal-bases/commit/1ca56a60880a359ed167e844e3ab9855db28a002))
+* **plugin:** drop !important from the periodic review responsive rules ([fdee363](https://github.com/dsebastien/obsidian-journal-bases/commit/fdee363e34f2fd91e322e935f0ef1479a00939d9))
+* **plugin:** use popout-correct element creation, drop redundant casts ([a2003f2](https://github.com/dsebastien/obsidian-journal-bases/commit/a2003f2c168f50831aa2eaff4bdd939056a42119))
+
 ## [1.15.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.14.0...1.15.0) (2026-07-29)
 
 ### Features
@@ -227,6 +242,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
