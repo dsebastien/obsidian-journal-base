@@ -1,4 +1,4 @@
-import type { BasesToggleOption, BasesAllOptions } from 'obsidian'
+import type { BasesAllOptions } from 'obsidian'
 import type { PluginSettings, PeriodType } from '../../types'
 
 /**
@@ -44,7 +44,7 @@ export function createPeriodicReviewViewOptions(
                     key: config.key,
                     displayName: config.displayName,
                     default: config.default
-                } as BasesToggleOption)
+                })
             }
         }
 

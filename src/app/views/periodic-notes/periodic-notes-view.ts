@@ -401,7 +401,13 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
                 }
             } else if (item.type === 'missing') {
                 // Create missing card placeholder
-                const tempContainer = activeDocument.createElement('div')
+                // Detached scratch parent: `activeDocument.win.createDiv()` without
+                // a `parent` is not inserted anywhere; the rendered card is moved
+                // into the real container below. Going through `activeDocument.win`
+                // rather than the bare `createDiv()` global keeps the element owned
+                // by the ACTIVE window's document, which matters in popout windows.
+                // See `src/obsidian-window.d.ts`.
+                const tempContainer = activeDocument.win.createDiv()
                 this.renderMissingCard(tempContainer, item.date, config, periodType)
                 const missingElement = tempContainer.firstElementChild as HTMLElement
                 if (missingElement) {

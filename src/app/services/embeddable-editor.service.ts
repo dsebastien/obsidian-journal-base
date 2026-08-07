@@ -102,8 +102,14 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
     // @ts-ignore - Internal API
     const embedRegistry = app.embedRegistry as EmbedRegistry
 
-    // Create a temporary widget editor to extract the prototype
-    const tempContainer = activeDocument.createElement('div')
+    // Create a temporary widget editor to extract the prototype.
+    // `activeDocument.win.createDiv()` is the popout-correct spelling: the
+    // element is created by the ACTIVE window (a popout carries its own copy of
+    // the global bound to its own document), unlike the bare `createDiv()`
+    // global, which is always bound to the main document. Without a `parent` it
+    // returns a DETACHED element (never inserted into the DOM), which is what we
+    // want for this throwaway container. See `src/obsidian-window.d.ts`.
+    const tempContainer = activeDocument.win.createDiv()
     const widgetEditorView = embedRegistry.embedByExtension.md(
         { app, containerEl: tempContainer },
         null,
