@@ -66,15 +66,15 @@
         "@eslint/js": "9.39.2",
         "@tailwindcss/cli": "4.1.18",
         "@types/bun": "latest",
-        "commitizen": "4.3.1",
+        "commitizen": "4.3.2",
         "conventional-changelog-cli": "5.0.0",
         "conventional-changelog-conventionalcommits": "9.1.0",
-        "cz-customizable": "7.5.1",
+        "cz-customizable": "7.5.4",
         "eslint": "9.39.2",
         "eslint-config-prettier": "10.1.8",
-        "eslint-plugin-obsidianmd": "0.1.9",
+        "eslint-plugin-obsidianmd": "0.4.1",
         "globals": "17.0.0",
-        "obsidian": "1.12.0",
+        "obsidian": "1.13.1",
         "prettier": "3.7.4",
         "tailwindcss": "4.1.18",
         "typescript": "5.9.3",
@@ -87,5 +87,8 @@
         "date-fns": "4.1.0",
         "immer": "11.0.1",
         "zod": "4.1.13"
+    },
+    "overrides": {
+        "tmp": "0.2.7"
     }
 }
