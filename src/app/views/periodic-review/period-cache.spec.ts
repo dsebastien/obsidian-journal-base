@@ -1,24 +1,18 @@
 import { describe, expect, test } from 'bun:test'
-import type { TFile } from 'obsidian'
+import { TFile } from 'obsidian'
 import type { PeriodicNoteConfig } from '../../types'
 import { PeriodCache } from './period-cache'
 
-interface MockTFile {
-    path: string
-    name: string
-    basename: string
-    extension: string
-}
-
+// A real (mock-module) TFile instance rather than a structural object put through
+// a cast: `obsidianmd/no-tfile-tfolder-cast` forbids the cast, and the reviewer's
+// ruleset also forbids disabling that rule inline.
 function mockFile(basename: string): TFile {
-    const file: MockTFile = {
-        path: `Diary/${basename}.md`,
-        name: `${basename}.md`,
-        basename,
-        extension: 'md'
-    }
-    // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- structural mock for unit tests; extractDate only reads file.basename
-    return file as unknown as TFile
+    const file = new TFile()
+    file.path = `Diary/${basename}.md`
+    file.name = `${basename}.md`
+    file.basename = basename
+    file.extension = 'md'
+    return file
 }
 
 function config(format: string): PeriodicNoteConfig {
@@ -68,7 +62,7 @@ describe('PeriodCache.extractDate', () => {
         expect(before?.getDate()).toBe(27)
 
         // Simulate a rename: same TFile object, new basename.
-        ;(file as unknown as MockTFile).basename = '2026-06-28-Sunday'
+        file.basename = '2026-06-28-Sunday'
         const after = cache.extractDate(file, cfg)
         expect(after?.getDate()).toBe(28)
     })

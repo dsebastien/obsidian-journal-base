@@ -1,26 +1,20 @@
 import { describe, expect, test } from 'bun:test'
-import type { TFile } from 'obsidian'
+import { TFile } from 'obsidian'
 import { detectPeriodType, extractDateFromNote, getFilenameFormat } from './periodic-note-utils'
 import type { PluginSettings } from '../app/types'
 import { DEFAULT_SETTINGS } from '../app/types'
 
-interface MockTFile {
-    path: string
-    name: string
-    basename: string
-    extension: string
-}
-
+// A real (mock-module) TFile instance rather than a structural object put through
+// a cast: `obsidianmd/no-tfile-tfolder-cast` forbids the cast, and the reviewer's
+// ruleset also forbids disabling that rule inline.
 function mockFile(path: string): TFile {
     const basename = path.split('/').pop()?.replace(/\.md$/, '') ?? ''
-    const file: MockTFile = {
-        path,
-        name: `${basename}.md`,
-        basename,
-        extension: 'md'
-    }
-    // eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- structural mock for unit tests; detectPeriodType only reads file.path
-    return file as unknown as TFile
+    const file = new TFile()
+    file.path = path
+    file.name = `${basename}.md`
+    file.basename = basename
+    file.extension = 'md'
+    return file
 }
 
 function buildSettings(overrides: Partial<PluginSettings>): PluginSettings {
