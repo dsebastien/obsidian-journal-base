@@ -39,6 +39,22 @@ Periodic Notes settings sync.
   open. Disabling stops writes immediately and columns open expanded; any
   previously stored keys are ignored while off.
 
+### Troubleshooting
+
+| Setting           | Type   | Default | Description                                          |
+| ----------------- | ------ | ------- | ---------------------------------------------------- |
+| **Debug logging** | Toggle | Off     | Write verbose plugin output to the developer console |
+
+Backed by `PluginSettings.debugModeEnabled`. `src/utils/log.ts` holds a module-level
+flag that makes `log()` a no-op when off, so the shipped bundle emits nothing during
+normal operation (community-catalog review flags every live `console.*` call).
+
+`JournalBasesPlugin.applyDebugLogging()` pushes the setting into the logger via
+`setDebugLogging()`. It runs at the end of `loadSettings()` (both the fresh-install and
+the migration path) and at the start of `saveSettings()`. `saveSettings()` is the single
+choke point for settings writes — the settings tab's `updateSettings()` always calls it —
+so toggling the switch takes effect immediately, with no plugin reload.
+
 ### Settings Sync
 
 When **Periodic Notes** plugin is enabled with meaningful configuration:

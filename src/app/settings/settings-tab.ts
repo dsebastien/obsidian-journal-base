@@ -94,7 +94,7 @@ export class JournalBasesSettingTab extends PluginSettingTab {
         this.plugin = plugin
     }
 
-    display(): void {
+    override display(): void {
         const { containerEl } = this
         containerEl.empty()
 
@@ -114,6 +114,9 @@ export class JournalBasesSettingTab extends PluginSettingTab {
 
         // Render Periodic Review settings
         this.renderPeriodicReviewSection(containerEl)
+
+        // Render troubleshooting settings
+        this.renderTroubleshootingSection(containerEl)
 
         // Render support section
         this.renderSupportHeader(containerEl)
@@ -261,7 +264,7 @@ export class JournalBasesSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Property name')
-            .setDesc('Frontmatter property name used to mark periodic notes as done')
+            .setDesc('Frontmatter property name used to mark a periodic note as done')
             .addText((text) => {
                 text.setPlaceholder('periodic_review_completed')
                     .setValue(this.plugin.settings.donePropertyName)
@@ -302,6 +305,23 @@ export class JournalBasesSettingTab extends PluginSettingTab {
                             draft.rememberColumnState = value
                         })
                     })
+            })
+    }
+
+    private renderTroubleshootingSection(containerEl: HTMLElement): void {
+        new Setting(containerEl).setName('Troubleshooting').setHeading()
+
+        new Setting(containerEl)
+            .setName('Debug logging')
+            .setDesc(
+                'Write detailed plugin activity to the developer console. Keep this off unless you are investigating a problem.'
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this.plugin.settings.debugModeEnabled).onChange(async (value) => {
+                    await this.updateSettings((draft) => {
+                        draft.debugModeEnabled = value
+                    })
+                })
             })
     }
 

@@ -219,6 +219,13 @@ If the plugin isn't listed in the community catalog yet (or you want a specific 
 
 If you have the Periodic Notes plugin enabled, settings will sync automatically.
 
+### Troubleshooting
+
+The plugin writes nothing to the developer console by default. If something misbehaves,
+turn on **Settings → Journal Bases → Troubleshooting → Debug logging** to get detailed
+output in the developer console (**Ctrl/Cmd + Shift + I**). The switch applies
+immediately, with no reload. Turn it back off once you are done.
+
 ### Using the Views
 
 1. Create a new Base (or open an existing one)

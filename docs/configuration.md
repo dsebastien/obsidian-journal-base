@@ -101,6 +101,19 @@ Configured globally in **Settings > Journal Bases > Periodic Review**:
 | Collapse frontmatter  | Toggle | true    | Fold a note's YAML frontmatter when it opens in a review column.                 |
 | Remember column state | Toggle | true    | Remember each column's collapsed/expanded state in the Base file and restore it. |
 
+## Troubleshooting Settings
+
+Configured globally in **Settings > Journal Bases > Troubleshooting**:
+
+| Setting       | Type   | Default | Description                                              |
+| ------------- | ------ | ------- | -------------------------------------------------------- |
+| Debug logging | Toggle | false   | Write detailed plugin activity to the developer console. |
+
+The plugin is silent by default. Turn **Debug logging** on only when investigating a
+problem, then open the developer console (**Ctrl/Cmd + Shift + I**) to read the output.
+The change takes effect immediately — no reload needed. Turn it back off when you are
+done: verbose logging adds noise to the console for every other plugin too.
+
 ## Periodic Notes Plugin Sync
 
 When the Periodic Notes plugin is enabled:

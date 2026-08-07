@@ -28,6 +28,12 @@ export type PluginSettings = PeriodicNotesSettings & {
      * Default: true
      */
     rememberColumnState: boolean
+
+    /**
+     * Write verbose plugin output to the developer console, for troubleshooting.
+     * Default: false
+     */
+    debugModeEnabled: boolean
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -38,5 +44,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
     yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
     donePropertyName: DEFAULT_DONE_PROPERTY_NAME,
     collapseFrontmatter: true,
-    rememberColumnState: true
+    rememberColumnState: true,
+    debugModeEnabled: false
 }

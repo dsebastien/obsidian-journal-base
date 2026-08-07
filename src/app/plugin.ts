@@ -11,7 +11,7 @@ import {
 import { markPeriodWithCascade, isPeriodDone } from '../utils/done-reviews-utils'
 import { isNoteDone } from '../utils/frontmatter-utils'
 import { JournalBasesSettingTab } from './settings/settings-tab'
-import { log } from '../utils/log'
+import { log, setDebugLogging } from '../utils/log'
 import { produce } from 'immer'
 import type { Draft } from 'immer'
 import { PERIODIC_NOTES_VIEW_TYPE } from './views/periodic-notes/periodic-notes.constants'
@@ -23,12 +23,21 @@ import { createPeriodicReviewViewOptions } from './views/periodic-review/periodi
 import { PluginIntegrationService } from './services/plugin-integration.service'
 import { registerCommands } from './commands'
 
+/**
+ * Shape of the optional Life Tracker plugin, which may expose a file provider hook.
+ */
+interface LifeTrackerPlugin extends Plugin {
+    setActiveFileProvider?: (provider: LifeTrackerPluginFileProvider | null) => void
+}
+
 export class JournalBasesPlugin extends Plugin {
     declare app: AppWithPlugins
     /**
      * The plugin settings are immutable
+     *
+     * Narrows `Plugin.settings` (`unknown`, added in Obsidian 1.13.0) to this plugin's concrete type
      */
-    settings: PluginSettings = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
+    override settings: PluginSettings = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
 
     /**
      * Whether settings are synced from Periodic Notes plugin (makes settings read-only)
@@ -66,11 +75,8 @@ export class JournalBasesPlugin extends Plugin {
      * Register a file provider as active (called when view becomes visible)
      */
     setActiveFileProvider(provider: LifeTrackerPluginFileProvider | null): void {
-        const lifeTrackerPlugin = this.app.plugins.getPlugin('life-tracker') as
-            | (Plugin & {
-                  setActiveFileProvider?: (provider: LifeTrackerPluginFileProvider | null) => void
-              })
-            | null
+        const lifeTrackerPlugin: LifeTrackerPlugin | null =
+            this.app.plugins.getPlugin('life-tracker')
         if (
             lifeTrackerPlugin !== null &&
             typeof lifeTrackerPlugin.setActiveFileProvider === 'function'
@@ -252,6 +258,7 @@ export class JournalBasesPlugin extends Plugin {
 
         if (!loadedSettings) {
             log('Using default settings', 'debug')
+            this.applyDebugLogging()
             return
         }
 
@@ -275,15 +282,32 @@ export class JournalBasesPlugin extends Plugin {
             // Load rememberColumnState setting
             draft.rememberColumnState =
                 loadedSettings.rememberColumnState ?? DEFAULT_SETTINGS.rememberColumnState
+            // Load debugModeEnabled setting
+            draft.debugModeEnabled =
+                loadedSettings.debugModeEnabled ?? DEFAULT_SETTINGS.debugModeEnabled
         })
 
+        // Reflect the persisted debug logging preference as early as possible
+        this.applyDebugLogging()
+
         log('Settings loaded', 'debug', this.settings)
+    }
+
+    /**
+     * Apply the debug mode setting to the logger.
+     * Called whenever settings are loaded or saved, so toggling the setting in the
+     * settings tab takes effect immediately, without reloading the plugin.
+     */
+    private applyDebugLogging(): void {
+        setDebugLogging(this.settings.debugModeEnabled)
     }
 
     /**
      * Save the plugin settings
      */
     async saveSettings(): Promise<void> {
+        // Applied before logging, so enabling debug mode is visible from this call onwards
+        this.applyDebugLogging()
         log('Saving settings', 'debug', this.settings)
         await this.saveData(this.settings)
         log('Settings saved', 'debug', this.settings)
