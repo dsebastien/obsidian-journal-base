@@ -719,16 +719,23 @@
             @apply flex-col;
         }
 
+        /* Columns stack vertically here, so they must span the full width.
+           These override the base `.pr-column` (0,1,0) / `.pr-column--folded`
+           (0,2,0) widths purely by source order: same layer, same specificity,
+           declared later. No `!important` needed — the only competitors are our
+           own earlier rules in `@layer jb-components`, and nothing unlayered
+           targets these plugin-private class names. The `@apply w-full` above
+           already relies on the same mechanism to beat `w-[48px]`. */
         .pr-column {
             @apply w-full border-r-0 border-b shrink grow-0;
-            min-width: 100% !important;
-            max-width: 100% !important;
+            min-width: 100%;
+            max-width: 100%;
         }
 
         .pr-column.pr-column--folded {
             @apply w-full h-auto;
-            min-width: 100% !important;
-            max-width: 100% !important;
+            min-width: 100%;
+            max-width: 100%;
             flex-basis: auto;
         }
 
@@ -850,10 +857,13 @@
             min-width: 200px;
         }
 
+        /* Narrower folded strip on tablet. Same selector (0,2,0) as the base
+           `.pr-column--folded` rule but declared later in the same layer, so it
+           wins on source order alone. */
         .pr-column.pr-column--folded {
-            min-width: 40px !important;
-            max-width: 40px !important;
-            width: 40px !important;
+            min-width: 40px;
+            max-width: 40px;
+            width: 40px;
         }
 
         .pr-column__content {
