@@ -220,3 +220,15 @@ Done status is stored in each note's YAML frontmatter using the `periodic_review
 ### Done Status Reading
 
 When reading done status, always prefer `isDoneFile(file)` (reads frontmatter directly from the file reference) over `isDone(date, periodType)` (reconstructs the file path). Path reconstruction may not match the actual file path, leading to incorrect status.
+
+---
+
+## Build Integrity
+
+### Never `export-ignore` a file the build or the lint reads
+
+`.gitattributes` `export-ignore` entries MUST exclude only files that nothing in `bun install`, `bun run build`, `bun test` or `bun run lint` reads — `eslint.config.ts` included.
+
+Rationale: the community-catalog reviewer builds the **`git archive`**, not a clone. An `export-ignore`d file is absent there and present everywhere else, so the failure is invisible locally and in CI. This blocked the 1.15.0 review: `CHANGELOG.md` was export-ignored while `src/app/whats-new.ts` imports it with `{ type: 'text' }`, so the reviewer's build failed. Excluding `eslint.config.ts` is the quiet variant — the reviewer's eslint then falls back to its own ruleset instead of this repo's.
+
+Verify any change to the list by building an actual archive extract (`git archive --worktree-attributes` → `bun install` → `bun run build`), never by inspection.

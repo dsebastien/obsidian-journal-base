@@ -39,14 +39,12 @@
 *.txt text eol=lf
 *.xml text eol=lf
 
-# Don't include in releases
+# Don't include in source exports (git archive).
+# Only list files that nothing in `bun install`, `bun run build`, `bun test` or
+# `bun run lint` needs. Notably CHANGELOG.md must stay exported: src/app/whats-new.ts
+# imports it as bundled text, so removing it breaks the build.
 .github/ export-ignore
 .husky/ export-ignore
-CHANGELOG.md export-ignore
-prettier.config.cjs export-ignore
-eslint.config.ts export-ignore
-commitlint.config.ts export-ignore
-.cz-config.cjs export-ignore
 .editorconfig export-ignore
 .nvmrc export-ignore
 
