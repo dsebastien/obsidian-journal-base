@@ -3,7 +3,7 @@
     "name": "Journal Bases",
     "description": "Custom Base views for journaling and periodic reviews.",
     "version": "1.16.0",
-    "minAppVersion": "1.10.0",
+    "minAppVersion": "1.13.0",
     "isDesktopOnly": false,
     "author": "Sébastien Dubois",
     "authorUrl": "https://dsebastien.net",

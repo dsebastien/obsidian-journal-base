@@ -109,7 +109,7 @@ export class JournalBasesPlugin extends Plugin {
             log('Periodic Notes settings updated, syncing...', 'debug')
             void this.syncFromPeriodicNotesPlugin().then(() => {
                 // Refresh settings tab if open
-                this.settingTab?.display()
+                this.settingTab?.update()
             })
         })
 
@@ -119,14 +119,14 @@ export class JournalBasesPlugin extends Plugin {
             () => {
                 log('Periodic Notes plugin was enabled, syncing settings...', 'debug')
                 void this.syncFromPeriodicNotesPlugin().then(() => {
-                    this.settingTab?.display()
+                    this.settingTab?.update()
                 })
             },
             // On disabled: make settings editable again
             () => {
                 log('Periodic Notes plugin was disabled, settings now editable', 'debug')
                 this.isPeriodicNotesSynced = false
-                this.settingTab?.display()
+                this.settingTab?.update()
             }
         )
 
@@ -312,6 +312,36 @@ export class JournalBasesPlugin extends Plugin {
         await this.saveData(this.settings)
         log('Settings saved', 'debug', this.settings)
         this.notifySettingsChanged()
+    }
+
+    /** Serializes settings writes; see updateSettings. */
+    private settingsWriteChain: Promise<void> = Promise.resolve()
+
+    /**
+     * Apply a mutation to the settings (via immer) and persist the result.
+     * The single write path — the declarative settings tab routes every
+     * control edit through here so persistence happens in exactly one place.
+     */
+    updateSettings(mutator: (draft: Draft<PluginSettings>) => void): Promise<void> {
+        // Persist-then-commit: swap memory only after saveData() succeeds, so
+        // a rejected write rolls the control back to the on-disk truth.
+        // Serialized: writes queue and each mutation derives from the
+        // previous COMMITTED state — without this, overlapping calls produce
+        // from the same base across the save await and the second commit
+        // silently drops the first edit.
+        const run = async (): Promise<void> => {
+            const next = produce(this.settings, mutator)
+            await this.saveData(next)
+            this.settings = next
+            // Side effects only after the write landed: debug logging must
+            // not flip, and listeners must not re-read, on the strength of a
+            // value that was never persisted.
+            this.applyDebugLogging()
+            this.notifySettingsChanged()
+        }
+        const p = this.settingsWriteChain.then(run, run)
+        this.settingsWriteChain = p.catch(() => {})
+        return p
     }
 
     /**

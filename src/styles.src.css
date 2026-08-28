@@ -6,6 +6,17 @@
 /* Define layer order for cascade isolation */
 @layer jb-base, jb-components, jb-utilities;
 
+/*
+ * Row hosting the embedded support section. `.setting-item` is a flex ROW in
+ * Obsidian's own stylesheet, which is UNLAYERED — and unlayered CSS beats
+ * layered CSS regardless of specificity. This rule must stay OUTSIDE the
+ * @layer blocks (this stylesheet is layered), and the compound selector
+ * outranks the app rule at equal layer.
+ */
+.setting-item.jb-settings-embed {
+    display: block;
+}
+
 @import 'tailwindcss/theme' layer(theme) theme(reference);
 @import 'tailwindcss/utilities' layer(jb-utilities);
 

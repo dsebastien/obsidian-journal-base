@@ -2,17 +2,17 @@ import {
     AbstractInputSuggest,
     App,
     FuzzySuggestModal,
+    Notice,
     PluginSettingTab,
-    Setting,
     TFile
 } from 'obsidian'
-import type { TextComponent, ToggleComponent } from 'obsidian'
+import type { Setting, SettingDefinitionItem, SettingGroupItem } from 'obsidian'
 import type JournalBasesPlugin from '../../main'
-import type { PeriodType, PluginSettings } from '../types'
-import { produce } from 'immer'
-import type { Draft } from 'immer'
+import type { PeriodType } from '../types'
 import { BUY_ME_A_COFFEE_BADGE_DATA_URL } from '../assets/buy-me-a-coffee'
 import { renderSupportSection } from '../ui/support-links'
+
+const PERIOD_TYPES: PeriodType[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']
 
 const PERIOD_LABELS: Record<PeriodType, string> = {
     daily: 'Daily notes',
@@ -29,6 +29,10 @@ const PERIOD_FORMAT_HINTS: Record<PeriodType, string> = {
     quarterly: 'e.g., YYYY-[Q]Q',
     yearly: 'e.g., YYYY'
 }
+
+/** The three per-period scalar fields edited through `<period>.<field>` keys. */
+const PERIOD_FIELDS = ['enabled', 'folder', 'format', 'template'] as const
+type PeriodField = (typeof PERIOD_FIELDS)[number]
 
 class TemplateFileSuggest extends AbstractInputSuggest<TFile> {
     constructor(
@@ -86,6 +90,28 @@ class TemplateFilePickerModal extends FuzzySuggestModal<TFile> {
     }
 }
 
+/**
+ * Settings tab, declared rather than rendered (Obsidian 1.13+).
+ *
+ * `getSettingDefinitions()` REPLACES `display()`: when it returns a non-empty
+ * array, `display()` is never called. There is no partial adoption — the whole
+ * settings UI is declarative, or none of it. In exchange, Obsidian owns
+ * navigation, focus and ARIA, and every declared `name`/`desc` is indexed by
+ * the settings search.
+ *
+ * Pane-specific shapes:
+ *
+ * - Periodic Notes sync: when `isPeriodicNotesSynced`, a notice banner shows
+ *   (`visible:` predicate) and every period control is disabled through
+ *   `disabled:` predicates. `setControlValue` ALSO rejects synced writes —
+ *   the disabled state is UI, the rejection is the guarantee.
+ * - A period's Folder/Format/Template rows are additionally disabled while
+ *   the period itself is disabled. The Enabled toggle's write calls
+ *   `refreshDomState()` so those predicates re-evaluate without a re-render.
+ * - The Template row is a `render:` hook: it needs the inline
+ *   `TemplateFileSuggest`, the browse modal, and the clear button. Its
+ *   buttons re-sync the text input themselves instead of re-rendering.
+ */
 export class JournalBasesSettingTab extends PluginSettingTab {
     plugin: JournalBasesPlugin
 
@@ -94,241 +120,340 @@ export class JournalBasesSettingTab extends PluginSettingTab {
         this.plugin = plugin
     }
 
-    override display(): void {
-        const { containerEl } = this
-        containerEl.empty()
-
-        // Show sync notice if settings are synced from Periodic Notes plugin
-        if (this.plugin.isPeriodicNotesSynced) {
-            this.renderSyncNotice(containerEl)
-        }
-
-        // Render period type sections
-        const periodTypes: PeriodType[] = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']
-        for (const periodType of periodTypes) {
-            this.renderPeriodSection(containerEl, periodType)
-        }
-
-        // Render done status settings
-        this.renderDoneStatusSection(containerEl)
-
-        // Render Periodic Review settings
-        this.renderPeriodicReviewSection(containerEl)
-
-        // Render troubleshooting settings
-        this.renderTroubleshootingSection(containerEl)
-
-        // Render support section
-        this.renderSupportHeader(containerEl)
+    override getSettingDefinitions(): SettingDefinitionItem[] {
+        return [
+            {
+                name: '',
+                desc: 'Settings are synced from the Periodic Notes plugin. Configure settings there to make changes.',
+                searchable: false,
+                visible: (): boolean => this.plugin.isPeriodicNotesSynced,
+                // The no-op render hook is load-bearing: the framework skips
+                // a definition with neither control nor render.
+                render: (setting): void => {
+                    setting.settingEl.addClass('jb-sync-notice')
+                }
+            },
+            ...PERIOD_TYPES.map((periodType) => this.periodGroup(periodType)),
+            {
+                type: 'group',
+                heading: 'Done status',
+                items: [
+                    {
+                        name: 'Property name',
+                        desc: 'Frontmatter property name used to mark a periodic note as done',
+                        control: {
+                            type: 'text',
+                            key: 'donePropertyName',
+                            placeholder: 'periodic_review_completed'
+                        }
+                    }
+                ]
+            },
+            {
+                type: 'group',
+                heading: 'Periodic Review',
+                items: [
+                    {
+                        name: 'Collapse frontmatter',
+                        desc: "Fold a note's YAML frontmatter when it opens in a Periodic Review column",
+                        control: { type: 'toggle', key: 'collapseFrontmatter' }
+                    },
+                    {
+                        name: 'Remember column state',
+                        desc: "Remember each column's collapsed/expanded state in the Base view file and restore it when the view reopens",
+                        control: { type: 'toggle', key: 'rememberColumnState' }
+                    }
+                ]
+            },
+            {
+                type: 'group',
+                heading: 'Troubleshooting',
+                items: [
+                    {
+                        name: 'Debug logging',
+                        desc: 'Write detailed plugin activity to the developer console. Keep this off unless you are investigating a problem.',
+                        control: { type: 'toggle', key: 'debugModeEnabled' }
+                    }
+                ]
+            },
+            {
+                type: 'group',
+                // No heading: renderSupportSection draws its own.
+                items: [
+                    {
+                        name: 'Support',
+                        // Not a setting — keep it out of the settings search.
+                        searchable: false,
+                        render: (setting): void => {
+                            setting.infoEl.remove() // the section draws its own headings
+                            // `.setting-item` is a flex ROW. The support block
+                            // is a stack of full-width rows, so without this it
+                            // would lay heading, buttons and badge side by side.
+                            setting.settingEl.addClass('jb-settings-embed')
+                            renderSupportSection(setting.settingEl, (el) => {
+                                this.renderBuyMeACoffeeBadge(el)
+                            })
+                        }
+                    }
+                ]
+            }
+        ]
     }
 
-    private renderSyncNotice(containerEl: HTMLElement): void {
-        const noticeEl = containerEl.createDiv({ cls: 'setting-item mod-info jb-sync-notice' })
-        noticeEl.createDiv({
-            cls: 'setting-item-info',
-            text: 'Settings are synced from the Periodic Notes plugin. Configure settings there to make changes.'
-        })
+    // ─── Period sections ───────────────────────────────────────────────────
+
+    private isSynced(): boolean {
+        return this.plugin.isPeriodicNotesSynced
     }
 
-    private renderPeriodSection(containerEl: HTMLElement, periodType: PeriodType): void {
-        const settings = this.plugin.settings[periodType]
-        const isReadOnly = this.plugin.isPeriodicNotesSynced
-        const isDisabled = !settings.enabled
+    private isPeriodLocked(periodType: PeriodType): boolean {
+        return this.isSynced() || !this.plugin.settings[periodType].enabled
+    }
 
-        new Setting(containerEl).setName(PERIOD_LABELS[periodType]).setHeading()
+    private periodGroup(periodType: PeriodType): SettingDefinitionItem {
+        // `disabled:` lives on the CONTROL object (SettingControlBase), not
+        // on the definition. The Template row has no control, so its render
+        // hook applies the locked state itself; the Enabled write triggers a
+        // full update() so that row re-renders with fresh state.
+        const items: SettingGroupItem[] = [
+            {
+                name: 'Enabled',
+                desc: this.isSynced() ? 'Synced from Periodic Notes plugin' : undefined,
+                control: {
+                    type: 'toggle',
+                    key: `${periodType}.enabled`,
+                    disabled: (): boolean => this.isSynced()
+                }
+            },
+            {
+                name: 'Folder',
+                desc: 'Folder where notes are stored',
+                control: {
+                    type: 'text',
+                    key: `${periodType}.folder`,
+                    placeholder: 'e.g., Journal/Daily',
+                    disabled: (): boolean => this.isPeriodLocked(periodType)
+                }
+            },
+            {
+                name: 'Format',
+                desc: `Moment.js format string (${PERIOD_FORMAT_HINTS[periodType]})`,
+                control: {
+                    type: 'text',
+                    key: `${periodType}.format`,
+                    placeholder: PERIOD_FORMAT_HINTS[periodType],
+                    disabled: (): boolean => this.isPeriodLocked(periodType)
+                }
+            },
+            {
+                name: 'Template',
+                desc: 'Templater template file',
+                render: (setting): void => {
+                    this.renderTemplateControls(setting, periodType)
+                }
+            }
+        ]
+        return { type: 'group', heading: PERIOD_LABELS[periodType], items }
+    }
 
-        // Enabled toggle - always editable when not synced
-        const enabledSetting = new Setting(containerEl).setName('Enabled')
-        if (isReadOnly) {
-            enabledSetting.setDesc('Synced from Periodic Notes plugin')
+    /**
+     * The template row: text input with inline file autocomplete, a browse
+     * button opening the fuzzy picker, and a clear button. The buttons write
+     * through the same path as the input and re-sync the input's value
+     * themselves — no re-render needed.
+     */
+    private renderTemplateControls(setting: Setting, periodType: PeriodType): void {
+        let inputEl: HTMLInputElement | null = null
+
+        const write = (path: string): void => {
+            void this.setTemplate(periodType, path)
+                .then(() => {
+                    if (inputEl) {
+                        inputEl.value = this.plugin.settings[periodType].template
+                    }
+                })
+                .catch(() => {
+                    // Roll the input back to the stored truth on failure.
+                    if (inputEl) {
+                        inputEl.value = this.plugin.settings[periodType].template
+                    }
+                    new Notice('Failed to save settings.')
+                })
         }
-        enabledSetting.addToggle((toggle) => {
-            toggle.setValue(settings.enabled).setDisabled(isReadOnly)
-            this.setToggleReadOnlyState(toggle, isReadOnly)
-            if (!isReadOnly) {
-                toggle.onChange(async (value) => {
-                    await this.updateSettings((draft) => {
-                        draft[periodType].enabled = value
-                    })
-                    // Re-render to update read-only states
-                    this.display()
-                })
+
+        const locked = this.isPeriodLocked(periodType)
+
+        setting.addText((text) => {
+            inputEl = text.inputEl
+            text.setPlaceholder('Select a template file...').setValue(
+                this.plugin.settings[periodType].template
+            )
+            if (locked) {
+                text.inputEl.disabled = true
+                text.inputEl.classList.add('jb-input-readonly')
+                return
             }
-        })
-
-        // Folder setting
-        const folderSetting = new Setting(containerEl)
-            .setName('Folder')
-            .setDesc('Folder where notes are stored')
-        folderSetting.addText((text) => {
-            text.setPlaceholder('e.g., Journal/Daily').setValue(settings.folder)
-            this.setReadOnlyState(text, isReadOnly || isDisabled)
-            if (!isReadOnly && !isDisabled) {
-                text.onChange(async (value) => {
-                    await this.updateSettings((draft) => {
-                        draft[periodType].folder = value
-                    })
-                })
-            }
-        })
-
-        // Format setting
-        const formatSetting = new Setting(containerEl)
-            .setName('Format')
-            .setDesc(`Moment.js format string (${PERIOD_FORMAT_HINTS[periodType]})`)
-        formatSetting.addText((text) => {
-            text.setPlaceholder(PERIOD_FORMAT_HINTS[periodType]).setValue(settings.format)
-            this.setReadOnlyState(text, isReadOnly || isDisabled)
-            if (!isReadOnly && !isDisabled) {
-                text.onChange(async (value) => {
-                    await this.updateSettings((draft) => {
-                        draft[periodType].format = value
-                    })
-                })
-            }
-        })
-
-        // Template setting with file selector
-        const templateSetting = new Setting(containerEl)
-            .setName('Template')
-            .setDesc('Templater template file')
-
-        // Add text input for display
-        templateSetting.addText((text) => {
-            text.setPlaceholder('Select a template file...').setValue(settings.template)
-            this.setReadOnlyState(text, isReadOnly || isDisabled)
-
-            if (!isReadOnly && !isDisabled) {
-                new TemplateFileSuggest(this.app, text.inputEl, (file) => {
-                    void this.updateSettings((draft) => {
-                        draft[periodType].template = file.path
-                    }).then(() => this.display())
-                })
-
-                text.onChange(async (value) => {
-                    await this.updateSettings((draft) => {
-                        draft[periodType].template = value
-                    })
-                })
-            }
-        })
-
-        // Add browse button
-        if (!isReadOnly && !isDisabled) {
-            templateSetting.addButton((button) => {
-                button.setIcon('folder').setTooltip('Browse for template file')
-                button.onClick(() => {
-                    new TemplateFilePickerModal(this.app, (file) => {
-                        void this.updateSettings((draft) => {
-                            draft[periodType].template = file.path
-                        }).then(() => this.display())
-                    }).open()
-                })
+            new TemplateFileSuggest(this.app, text.inputEl, (file) => {
+                write(file.path)
             })
+            text.onChange((value) => {
+                write(value)
+            })
+        })
+
+        if (locked) {
+            return
         }
 
-        // Add clear button if template is set
-        if (settings.template && !isReadOnly && !isDisabled) {
-            templateSetting.addButton((button) => {
+        setting.addButton((button) => {
+            button.setIcon('folder').setTooltip('Browse for template file')
+            button.onClick(() => {
+                new TemplateFilePickerModal(this.app, (file) => {
+                    write(file.path)
+                }).open()
+            })
+        })
+
+        if (this.plugin.settings[periodType].template) {
+            setting.addButton((button) => {
                 button.setIcon('x').setTooltip('Clear template')
-                button.onClick(async () => {
-                    await this.updateSettings((draft) => {
-                        draft[periodType].template = ''
-                    })
-                    this.display()
+                button.onClick(() => {
+                    write('')
                 })
             })
         }
     }
 
-    private setReadOnlyState(text: TextComponent, readOnly: boolean): void {
-        if (readOnly) {
-            text.inputEl.disabled = true
-            text.inputEl.classList.add('jb-input-readonly')
+    /** Writes a period's template path; rejects while synced. */
+    private async setTemplate(periodType: PeriodType, path: string): Promise<void> {
+        if (this.isSynced()) {
+            throw new Error('Settings are synced from the Periodic Notes plugin.')
         }
-    }
-
-    private setToggleReadOnlyState(toggle: ToggleComponent, readOnly: boolean): void {
-        if (readOnly) {
-            toggle.toggleEl.classList.add('jb-input-readonly')
-        }
-    }
-
-    private async updateSettings(updater: (draft: Draft<PluginSettings>) => void): Promise<void> {
-        this.plugin.settings = produce(this.plugin.settings, updater)
-        await this.plugin.saveSettings()
-    }
-
-    private renderDoneStatusSection(containerEl: HTMLElement): void {
-        new Setting(containerEl).setName('Done status').setHeading()
-
-        new Setting(containerEl)
-            .setName('Property name')
-            .setDesc('Frontmatter property name used to mark a periodic note as done')
-            .addText((text) => {
-                text.setPlaceholder('periodic_review_completed')
-                    .setValue(this.plugin.settings.donePropertyName)
-                    .onChange(async (value) => {
-                        await this.updateSettings((draft) => {
-                            draft.donePropertyName = value.trim() || 'periodic_review_completed'
-                        })
-                    })
-            })
-    }
-
-    private renderPeriodicReviewSection(containerEl: HTMLElement): void {
-        new Setting(containerEl).setName('Periodic Review').setHeading()
-
-        new Setting(containerEl)
-            .setName('Collapse frontmatter')
-            .setDesc("Fold a note's YAML frontmatter when it opens in a Periodic Review column")
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(this.plugin.settings.collapseFrontmatter)
-                    .onChange(async (value) => {
-                        await this.updateSettings((draft) => {
-                            draft.collapseFrontmatter = value
-                        })
-                    })
-            })
-
-        new Setting(containerEl)
-            .setName('Remember column state')
-            .setDesc(
-                "Remember each column's collapsed/expanded state in the Base view file and restore it when the view reopens"
-            )
-            .addToggle((toggle) => {
-                toggle
-                    .setValue(this.plugin.settings.rememberColumnState)
-                    .onChange(async (value) => {
-                        await this.updateSettings((draft) => {
-                            draft.rememberColumnState = value
-                        })
-                    })
-            })
-    }
-
-    private renderTroubleshootingSection(containerEl: HTMLElement): void {
-        new Setting(containerEl).setName('Troubleshooting').setHeading()
-
-        new Setting(containerEl)
-            .setName('Debug logging')
-            .setDesc(
-                'Write detailed plugin activity to the developer console. Keep this off unless you are investigating a problem.'
-            )
-            .addToggle((toggle) => {
-                toggle.setValue(this.plugin.settings.debugModeEnabled).onChange(async (value) => {
-                    await this.updateSettings((draft) => {
-                        draft.debugModeEnabled = value
-                    })
-                })
-            })
-    }
-
-    private renderSupportHeader(containerEl: HTMLElement): void {
-        renderSupportSection(containerEl, (el) => {
-            this.renderBuyMeACoffeeBadge(el)
+        await this.plugin.updateSettings((draft) => {
+            draft[periodType].template = path
         })
+    }
+
+    // ─── Control values ────────────────────────────────────────────────────
+
+    private parsePeriodKey(key: string): { period: PeriodType; field: PeriodField } | null {
+        const dot = key.indexOf('.')
+        if (dot <= 0) {
+            return null
+        }
+        const period = key.slice(0, dot) as PeriodType
+        const field = key.slice(dot + 1) as PeriodField
+        if (!PERIOD_TYPES.includes(period) || !PERIOD_FIELDS.includes(field)) {
+            return null
+        }
+        return { period, field }
+    }
+
+    /**
+     * Reads the value behind a control `key`. Returning undefined/null makes
+     * the framework fall back to the control's declared `defaultValue`.
+     */
+    override getControlValue(key: string): unknown {
+        const periodKey = this.parsePeriodKey(key)
+        if (periodKey) {
+            return this.plugin.settings[periodKey.period][periodKey.field]
+        }
+        switch (key) {
+            case 'donePropertyName':
+                return this.plugin.settings.donePropertyName
+            case 'collapseFrontmatter':
+                return this.plugin.settings.collapseFrontmatter
+            case 'rememberColumnState':
+                return this.plugin.settings.rememberColumnState
+            case 'debugModeEnabled':
+                return this.plugin.settings.debugModeEnabled
+            default:
+                return undefined
+        }
+    }
+
+    /**
+     * Persists a control edit. Rejecting (not resolving) on failure is what
+     * lets the framework roll the control back to the stored truth.
+     *
+     * Period writes reject while settings are synced from Periodic Notes —
+     * the `disabled:` predicates are UI, this rejection is the guarantee.
+     */
+    override async setControlValue(key: string, value: unknown): Promise<void> {
+        const periodKey = this.parsePeriodKey(key)
+        if (periodKey) {
+            if (this.isSynced()) {
+                new Notice('Settings are synced from the Periodic Notes plugin.')
+                throw new Error('Settings are synced from the Periodic Notes plugin.')
+            }
+            const { period, field } = periodKey
+            if (field === 'enabled') {
+                const next = this.expectBoolean(key, value)
+                await this.plugin.updateSettings((draft) => {
+                    draft[period].enabled = next
+                })
+                // The other rows' locked states depend on this value. The
+                // declared controls' disabled: predicates could refresh in
+                // place, but the Template render row cannot — re-render the
+                // pane, exactly as the old tab did.
+                this.update()
+                return
+            }
+            const next = this.expectString(key, value)
+            await this.plugin.updateSettings((draft) => {
+                draft[period][field] = next
+            })
+            return
+        }
+        switch (key) {
+            case 'donePropertyName': {
+                const next = this.expectString(key, value).trim() || 'periodic_review_completed'
+                await this.plugin.updateSettings((draft) => {
+                    draft.donePropertyName = next
+                })
+                return
+            }
+            case 'collapseFrontmatter': {
+                const next = this.expectBoolean(key, value)
+                await this.plugin.updateSettings((draft) => {
+                    draft.collapseFrontmatter = next
+                })
+                return
+            }
+            case 'rememberColumnState': {
+                const next = this.expectBoolean(key, value)
+                await this.plugin.updateSettings((draft) => {
+                    draft.rememberColumnState = next
+                })
+                return
+            }
+            case 'debugModeEnabled': {
+                const next = this.expectBoolean(key, value)
+                await this.plugin.updateSettings((draft) => {
+                    draft.debugModeEnabled = next
+                })
+                return
+            }
+            default:
+                new Notice('Failed to save settings.')
+                throw new Error(`Setting "${key}" does not address a known field.`)
+        }
+    }
+
+    /** Rejects rather than coerces: a bad value must not reach the store. */
+    private expectBoolean(key: string, value: unknown): boolean {
+        if (typeof value !== 'boolean') {
+            throw new Error(`Setting "${key}" expects a boolean.`)
+        }
+        return value
+    }
+
+    /** Rejects rather than coerces: a bad value must not reach the store. */
+    private expectString(key: string, value: unknown): string {
+        if (typeof value !== 'string') {
+            throw new Error(`Setting "${key}" expects a string.`)
+        }
+        return value
     }
 
     private renderBuyMeACoffeeBadge(contentEl: HTMLElement | DocumentFragment, width = 175): void {
