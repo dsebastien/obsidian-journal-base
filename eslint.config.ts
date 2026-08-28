@@ -137,5 +137,24 @@ export default tseslint.config(
             // setting; it needs no per-file exemption from this list.
             'no-console': ['error', { allow: ['warn', 'error', 'debug'] }]
         }
+    },
+    {
+        // The headless test bootstrap creates the `window` global the rule
+        // wants everything else to use — its suggested replacement is exactly
+        // what this file defines. Tests are never bundled into the plugin and
+        // are not scanned by the community scorecard.
+        files: ['src/test/preload.ts'],
+        rules: {
+            'obsidianmd/no-global-this': 'off'
+        }
+    },
+    {
+        // Specs import the bun:test runner, which the mobile-compatibility
+        // rule reads as a Node builtin. Tests are never bundled into the
+        // plugin and are not scanned by the community scorecard.
+        files: ['**/*.spec.ts', 'src/test/**'],
+        rules: {
+            'obsidianmd/no-nodejs-modules': 'off'
+        }
     }
 )
