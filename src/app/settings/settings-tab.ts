@@ -258,27 +258,38 @@ export class JournalBasesSettingTab extends PluginSettingTab {
 
     /**
      * The template row: text input with inline file autocomplete, a browse
-     * button opening the fuzzy picker, and a clear button. The buttons write
-     * through the same path as the input and re-sync the input's value
-     * themselves — no re-render needed.
+     * button opening the fuzzy picker, and a clear button.
+     *
+     * Two write flavors, matching the old tab:
+     * - Typing writes per keystroke and NEVER touches the input on success —
+     *   re-syncing after each queued save would clobber text typed while a
+     *   slow write was in flight. Failure rolls back to the stored truth.
+     * - Picks (suggest, browse) and clear re-render the pane on success,
+     *   exactly as the old tab's display() calls did — which also keeps the
+     *   conditional clear button in sync. Failure rolls the input back.
      */
     private renderTemplateControls(setting: Setting, periodType: PeriodType): void {
         let inputEl: HTMLInputElement | null = null
 
-        const write = (path: string): void => {
+        const rollback = (): void => {
+            if (inputEl) {
+                inputEl.value = this.plugin.settings[periodType].template
+            }
+            new Notice('Failed to save settings.')
+        }
+
+        /** Keystroke write: fire-and-forget, input owns its value. */
+        const writeTyped = (path: string): void => {
+            void this.setTemplate(periodType, path).catch(rollback)
+        }
+
+        /** Pick/clear write: re-render on success so the row reflects it. */
+        const writePicked = (path: string): void => {
             void this.setTemplate(periodType, path)
                 .then(() => {
-                    if (inputEl) {
-                        inputEl.value = this.plugin.settings[periodType].template
-                    }
+                    this.update()
                 })
-                .catch(() => {
-                    // Roll the input back to the stored truth on failure.
-                    if (inputEl) {
-                        inputEl.value = this.plugin.settings[periodType].template
-                    }
-                    new Notice('Failed to save settings.')
-                })
+                .catch(rollback)
         }
 
         const locked = this.isPeriodLocked(periodType)
@@ -294,10 +305,10 @@ export class JournalBasesSettingTab extends PluginSettingTab {
                 return
             }
             new TemplateFileSuggest(this.app, text.inputEl, (file) => {
-                write(file.path)
+                writePicked(file.path)
             })
             text.onChange((value) => {
-                write(value)
+                writeTyped(value)
             })
         })
 
@@ -309,7 +320,7 @@ export class JournalBasesSettingTab extends PluginSettingTab {
             button.setIcon('folder').setTooltip('Browse for template file')
             button.onClick(() => {
                 new TemplateFilePickerModal(this.app, (file) => {
-                    write(file.path)
+                    writePicked(file.path)
                 }).open()
             })
         })
@@ -318,7 +329,7 @@ export class JournalBasesSettingTab extends PluginSettingTab {
             setting.addButton((button) => {
                 button.setIcon('x').setTooltip('Clear template')
                 button.onClick(() => {
-                    write('')
+                    writePicked('')
                 })
             })
         }

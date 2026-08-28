@@ -193,8 +193,11 @@ export class JournalBasesPlugin extends Plugin {
 
         log('Loaded settings from Periodic Notes plugin. Updating ours', 'debug', syncedSettings)
 
-        // Merge synced settings with current settings
-        this.settings = produce(this.settings, (draft: Draft<PluginSettings>) => {
+        // Merge synced settings with current settings — through the
+        // serialized write queue: an optimistic commit here could be
+        // overwritten by a queued control save producing from a stale base,
+        // and a failed persist would leave memory and disk disagreeing.
+        await this.updateSettings((draft) => {
             for (const periodType of PERIOD_TYPES) {
                 const synced = syncedSettings[periodType]
                 if (synced) {
@@ -202,9 +205,6 @@ export class JournalBasesPlugin extends Plugin {
                 }
             }
         })
-
-        // Save to disk so settings persist even if Periodic Notes is later disabled
-        await this.saveSettings()
 
         this.isPeriodicNotesSynced = true
         log('Settings synced from Periodic Notes plugin', 'debug', this.settings)

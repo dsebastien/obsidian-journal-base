@@ -51,9 +51,13 @@ normal operation (community-catalog review flags every live `console.*` call).
 
 `JournalBasesPlugin.applyDebugLogging()` pushes the setting into the logger via
 `setDebugLogging()`. It runs at the end of `loadSettings()` (both the fresh-install and
-the migration path) and at the start of `saveSettings()`. `saveSettings()` is the single
-choke point for settings writes — the settings tab's `updateSettings()` always calls it —
-so toggling the switch takes effect immediately, with no plugin reload.
+the migration path) and inside `plugin.updateSettings()` after each committed write.
+`plugin.updateSettings(mutator)` is the single choke point for settings writes — the
+serialized persist-then-commit queue (memory is swapped only after `saveData()`
+succeeds; side effects fire after the commit). The declarative settings tab and the
+Periodic Notes sync both route through it; `saveSettings()` is load-time-only. Never
+write via `saveData` directly, and never mutate `plugin.settings` before persisting —
+either reintroduces optimistic or lost writes.
 
 ### Settings Sync
 
