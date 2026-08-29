@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.16.0...2.0.0) (2026-08-29)
+
+### ⚠ BREAKING CHANGES
+
+* **plugin:** minAppVersion is now 1.13.0 (was 1.10.0). The settings pane
+uses the declarative settings API introduced in Obsidian 1.13.
+
+- getSettingDefinitions() replaces display(): five period sections as groups
+  (Enabled toggle + Folder/Format text controls behind <period>.<field> keys,
+  Template as a render: row keeping the inline file autocomplete, browse
+  modal and clear button — the buttons re-sync the input and roll it back on
+  a failed write), Done status / Periodic Review / Troubleshooting scalars,
+  and the support block. Everything is indexed by the settings search — which
+  is exactly what obsidianmd's prefer-setting-definitions warning asked for,
+  so the lint script now enforces --max-warnings 0.
+- Periodic Notes sync mode: the notice banner is a visible:-gated info row
+  and every period control carries a disabled: predicate — but the UI state
+  is not the guarantee: setControlValue REJECTS period writes while synced.
+  The sync-state listeners re-render via settingTab.update(); they called
+  display(), which never runs under the declarative API.
+- A period's rows are also disabled while the period is off; the Enabled
+  write re-renders via update() because the Template render row cannot be
+  refreshed by predicates.
+- updateSettings becomes the serialized persist-then-commit write path;
+  applyDebugLogging and notifySettingsChanged fire strictly AFTER the commit,
+  so a failed write can no longer flip debug logging or make listeners
+  re-read rolled-back state. saveSettings stays for load-time use.
+- Support block via .setting-item.jb-settings-embed OUTSIDE the stylesheet's
+  @layer blocks.
+- Tests: settings-guard.spec.ts + settings-write.spec.ts (13 tests incl.
+  synced rejection, daily.__proto__ rejection, definition structure;
+  mutation-checked against an optimistic commit, an unserialized chain, and
+  dropped side effects). build.changelog.spec.ts proves the define inlines
+  real content.
+- README states the 1.13 requirement; AGENTS.md gains the
+  declarative-settings section; documentation/history records the day.
+
+### Features
+
+* **plugin:** declare the settings tab (Obsidian 1.13 declarative settings) ([7a0f7ca](https://github.com/dsebastien/obsidian-journal-bases/commit/7a0f7ca8e684a405c11b55e9051c10215ad4280c))
+
+### Bug Fixes
+
+* **build:** align with the catalog reviewer's archive, ruleset and audit ([b5b5ffa](https://github.com/dsebastien/obsidian-journal-bases/commit/b5b5ffa8c009b03716ea75fb9f3ee1441c3eead6))
+* **plugin:** harden after adversarial review ([7865f81](https://github.com/dsebastien/obsidian-journal-bases/commit/7865f8111b5aff3f32b2ac9cb3420b98dafdb42d))
+
 ## [1.16.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.15.0...1.16.0) (2026-08-07)
 
 ### Features
@@ -242,6 +288,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

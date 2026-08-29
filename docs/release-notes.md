@@ -1,5 +1,51 @@
 # Release Notes
 
+## 2.0.0 (2026-08-29)
+
+### ⚠ BREAKING CHANGES
+
+- **plugin:** minAppVersion is now 1.13.0 (was 1.10.0). The settings pane
+  uses the declarative settings API introduced in Obsidian 1.13.
+
+* getSettingDefinitions() replaces display(): five period sections as groups
+  (Enabled toggle + Folder/Format text controls behind <period>.<field> keys,
+  Template as a render: row keeping the inline file autocomplete, browse
+  modal and clear button — the buttons re-sync the input and roll it back on
+  a failed write), Done status / Periodic Review / Troubleshooting scalars,
+  and the support block. Everything is indexed by the settings search — which
+  is exactly what obsidianmd's prefer-setting-definitions warning asked for,
+  so the lint script now enforces --max-warnings 0.
+* Periodic Notes sync mode: the notice banner is a visible:-gated info row
+  and every period control carries a disabled: predicate — but the UI state
+  is not the guarantee: setControlValue REJECTS period writes while synced.
+  The sync-state listeners re-render via settingTab.update(); they called
+  display(), which never runs under the declarative API.
+* A period's rows are also disabled while the period is off; the Enabled
+  write re-renders via update() because the Template render row cannot be
+  refreshed by predicates.
+* updateSettings becomes the serialized persist-then-commit write path;
+  applyDebugLogging and notifySettingsChanged fire strictly AFTER the commit,
+  so a failed write can no longer flip debug logging or make listeners
+  re-read rolled-back state. saveSettings stays for load-time use.
+* Support block via .setting-item.jb-settings-embed OUTSIDE the stylesheet's
+  @layer blocks.
+* Tests: settings-guard.spec.ts + settings-write.spec.ts (13 tests incl.
+  synced rejection, daily.**proto** rejection, definition structure;
+  mutation-checked against an optimistic commit, an unserialized chain, and
+  dropped side effects). build.changelog.spec.ts proves the define inlines
+  real content.
+* README states the 1.13 requirement; AGENTS.md gains the
+  declarative-settings section; documentation/history records the day.
+
+### Features
+
+- **plugin:** declare the settings tab (Obsidian 1.13 declarative settings)
+
+### Bug Fixes
+
+- **build:** align with the catalog reviewer's archive, ruleset and audit
+- **plugin:** harden after adversarial review
+
 ## 1.16.0 (2026-08-07)
 
 ### Features
