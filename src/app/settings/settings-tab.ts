@@ -24,7 +24,7 @@ const PERIOD_LABELS: Record<PeriodType, string> = {
 
 const PERIOD_FORMAT_HINTS: Record<PeriodType, string> = {
     daily: 'e.g., YYYY-MM-DD',
-    weekly: 'e.g., gggg-[W]ww',
+    weekly: 'e.g., GGGG-[W]WW',
     monthly: 'e.g., YYYY-MM',
     quarterly: 'e.g., YYYY-[Q]Q',
     yearly: 'e.g., YYYY'

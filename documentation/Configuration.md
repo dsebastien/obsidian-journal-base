@@ -99,20 +99,21 @@ _Column toggles only appear for period types enabled in plugin settings._
 
 Uses Moment.js format tokens. Common patterns:
 
-| Token    | Output             | Example  |
-| -------- | ------------------ | -------- |
-| `YYYY`   | 4-digit year       | 2025     |
-| `MM`     | 2-digit month      | 01-12    |
-| `MMMM`   | Full month name    | January  |
-| `MMM`    | Short month name   | Jan      |
-| `DD`     | 2-digit day        | 01-31    |
-| `dddd`   | Full weekday name  | Saturday |
-| `ddd`    | Short weekday name | Sat      |
-| `gggg`   | ISO week year      | 2025     |
-| `ww`     | ISO week           | 01-53    |
-| `[Q]`    | Literal "Q"        | Q        |
-| `Q`      | Quarter            | 1-4      |
-| `[text]` | Literal text       | text     |
+| Token    | Output                                                    | Example  |
+| -------- | --------------------------------------------------------- | -------- |
+| `YYYY`   | 4-digit year                                              | 2025     |
+| `MM`     | 2-digit month                                             | 01-12    |
+| `MMMM`   | Full month name                                           | January  |
+| `MMM`    | Short month name                                          | Jan      |
+| `DD`     | 2-digit day                                               | 01-31    |
+| `dddd`   | Full weekday name                                         | Saturday |
+| `ddd`    | Short weekday name                                        | Sat      |
+| `GGGG`   | ISO week year (the year the ISO week belongs to)          | 2025     |
+| `gggg`   | Locale week year (starts weeks on Sunday — prefer `GGGG`) | 2025     |
+| `ww`     | ISO week                                                  | 01-53    |
+| `[Q]`    | Literal "Q"                                               | Q        |
+| `Q`      | Quarter                                                   | 1-4      |
+| `[text]` | Literal text                                              | text     |
 
 **Decorative / redundant tokens** (e.g. weekday name `dddd`, or a month name
 alongside the month number as in `YYYY-MM-MMMM`) are supported for both formatting
@@ -125,7 +126,7 @@ fails. See `documentation/history/2026-06-30.md` (issue #42).
 **Default Formats**:
 
 - Daily: `YYYY-MM-DD`
-- Weekly: `gggg-[W]ww`
+- Weekly: `GGGG-[W]WW`
 - Monthly: `YYYY-MM`
 - Quarterly: `YYYY-[Q]Q`
 - Yearly: `YYYY`

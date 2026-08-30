@@ -22,7 +22,10 @@ export class NoteCreationService {
     ): Promise<TFile | null> {
         const normalizedDate = getStartOfPeriod(date, periodType)
         const filename = formatDate(normalizedDate, config.format)
-        const filePath = `${config.folder}/${filename}.md`
+        // No leading slash when there is no folder: Obsidian treats '/Note.md'
+        // and 'Note.md' as different paths and only the latter exists.
+        const folder = config.folder.replace(/\/+$/, '')
+        const filePath = folder ? `${folder}/${filename}.md` : `${filename}.md`
 
         // Check if file already exists
         const existingFile = this.app.vault.getFileByPath(filePath)
@@ -31,8 +34,11 @@ export class NoteCreationService {
             return existingFile
         }
 
-        // Ensure folder exists
-        const folderPath = config.folder
+        // Ensure folder exists. Derived from the resolved path, not from
+        // config.folder: a format may itself contain '/' (e.g. GGGG/WW/YYYY-MM-DD),
+        // and those segments have to exist too or vault.create throws.
+        const lastSlash = filePath.lastIndexOf('/')
+        const folderPath = lastSlash === -1 ? '' : filePath.slice(0, lastSlash)
         await this.ensureFolderExists(folderPath)
 
         // Create with template if configured

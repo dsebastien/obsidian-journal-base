@@ -444,8 +444,9 @@ describe('NoteCreationService', () => {
                 )
 
                 expect(result).not.toBeNull()
-                // Should create file at vault root
-                expect(app.vault.create).toHaveBeenCalledWith('/2024-01-15.md', '')
+                // At the vault root, with no leading slash: Obsidian treats
+                // '/Note.md' and 'Note.md' as different paths.
+                expect(app.vault.create).toHaveBeenCalledWith('2024-01-15.md', '')
             })
         })
 
@@ -767,5 +768,32 @@ describe('NoteCreationService', () => {
                 expect(createCall?.[0]).toMatch(new RegExp(`^${folder}/`))
             }
         })
+    })
+})
+
+describe('formats that contain folder segments', () => {
+    test('creates the subfolders the format contributes, not just config.folder', async () => {
+        // A daily format of GGGG/WW/YYYY-MM-DD puts the note three levels deep.
+        // Creating only config.folder left the parents missing and vault.create
+        // threw.
+        const app = createMockApp({ existingFolders: [] })
+        const service = new NoteCreationService(app as unknown as App)
+
+        const config: PeriodicNoteConfig = {
+            enabled: true,
+            folder: '40 Journal/41 Daily Notes',
+            format: 'GGGG/WW/YYYY-MM-DD',
+            template: ''
+        }
+
+        const result = await service.createPeriodicNote(new Date(2024, 11, 30), config, 'daily')
+
+        expect(result).not.toBeNull()
+        expect(app.vault.createFolder).toHaveBeenCalledWith('40 Journal/41 Daily Notes/2025')
+        expect(app.vault.createFolder).toHaveBeenCalledWith('40 Journal/41 Daily Notes/2025/01')
+        expect(app.vault.create).toHaveBeenCalledWith(
+            '40 Journal/41 Daily Notes/2025/01/2024-12-30.md',
+            ''
+        )
     })
 })

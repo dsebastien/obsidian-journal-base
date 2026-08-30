@@ -38,7 +38,11 @@ export type PluginSettings = PeriodicNotesSettings & {
 
 export const DEFAULT_SETTINGS: PluginSettings = {
     daily: { enabled: false, folder: '', format: 'YYYY-MM-DD', template: '' },
-    weekly: { enabled: false, folder: '', format: 'gggg-[W]ww', template: '' },
+    // ISO week tokens: GGGG is the year the week number belongs to, WW the ISO
+    // week. The locale forms (gggg/ww) start the week on Sunday, so every Sunday
+    // resolves to the following week, and pairing a calendar year with a week
+    // number splits a week across two folders every New Year.
+    weekly: { enabled: false, folder: '', format: 'GGGG-[W]WW', template: '' },
     monthly: { enabled: false, folder: '', format: 'YYYY-MM', template: '' },
     quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
     yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },

@@ -22,20 +22,21 @@ Each period type (daily, weekly, monthly, quarterly, yearly) has these settings:
 
 Uses Moment.js format tokens:
 
-| Token    | Output             | Example  |
-| -------- | ------------------ | -------- |
-| `YYYY`   | 4-digit year       | 2025     |
-| `MM`     | 2-digit month      | 01-12    |
-| `MMMM`   | Full month name    | January  |
-| `MMM`    | Short month name   | Jan      |
-| `DD`     | 2-digit day        | 01-31    |
-| `dddd`   | Full weekday name  | Saturday |
-| `ddd`    | Short weekday name | Sat      |
-| `gggg`   | ISO week year      | 2025     |
-| `ww`     | ISO week           | 01-53    |
-| `[Q]`    | Literal "Q"        | Q        |
-| `Q`      | Quarter            | 1-4      |
-| `[text]` | Literal text       | text     |
+| Token    | Output                                                    | Example  |
+| -------- | --------------------------------------------------------- | -------- |
+| `YYYY`   | 4-digit year                                              | 2025     |
+| `MM`     | 2-digit month                                             | 01-12    |
+| `MMMM`   | Full month name                                           | January  |
+| `MMM`    | Short month name                                          | Jan      |
+| `DD`     | 2-digit day                                               | 01-31    |
+| `dddd`   | Full weekday name                                         | Saturday |
+| `ddd`    | Short weekday name                                        | Sat      |
+| `GGGG`   | ISO week year (the year the ISO week belongs to)          | 2025     |
+| `gggg`   | Locale week year (starts weeks on Sunday — prefer `GGGG`) | 2025     |
+| `ww`     | ISO week                                                  | 01-53    |
+| `[Q]`    | Literal "Q"                                               | Q        |
+| `Q`      | Quarter                                                   | 1-4      |
+| `[text]` | Literal text                                              | text     |
 
 Decorative tokens such as the weekday name (`dddd`) and a month name combined with
 the month number (`YYYY-MM-MMMM`) are supported — for example `YYYY-MM-DD-dddd`
@@ -51,7 +52,7 @@ produces `2025-01-15-Wednesday.md`.
 | Period    | Format       | Example Output  |
 | --------- | ------------ | --------------- |
 | Daily     | `YYYY-MM-DD` | `2025-01-15.md` |
-| Weekly    | `gggg-[W]ww` | `2025-W03.md`   |
+| Weekly    | `GGGG-[W]WW` | `2025-W03.md`   |
 | Monthly   | `YYYY-MM`    | `2025-01.md`    |
 | Quarterly | `YYYY-[Q]Q`  | `2025-Q1.md`    |
 | Yearly    | `YYYY`       | `2025.md`       |
