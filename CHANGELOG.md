@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0](https://github.com/dsebastien/obsidian-journal-bases/compare/2.0.0...2.1.0) (2026-08-30)
+
+### Features
+
+* **build:** fail the build on a lockfile the catalog review cannot parse ([7a3a42b](https://github.com/dsebastien/obsidian-journal-bases/commit/7a3a42bcac554e8bd9cb36e9a034516c204e4dfe))
+* **build:** make the rule floor check that it is still wired in ([1c75553](https://github.com/dsebastien/obsidian-journal-bases/commit/1c755530c8c8964670bbf998326ee1fbf642f21a))
+* **build:** refuse commits that loosen the rules instead of fixing the finding ([4c75a2a](https://github.com/dsebastien/obsidian-journal-bases/commit/4c75a2ae922a8c5e3dfc50bdb5763ad87789c64d))
+
+### Bug Fixes
+
+* **plugin:** create the folders a date format contributes, and default to ISO weeks ([e9a2b2d](https://github.com/dsebastien/obsidian-journal-bases/commit/e9a2b2d93267d91cf7cd1c96b659a47e3a4f673e))
+
 ## [2.0.0](https://github.com/dsebastien/obsidian-journal-bases/compare/1.16.0...2.0.0) (2026-08-29)
 
 ### ⚠ BREAKING CHANGES
@@ -288,6 +300,7 @@ uses the declarative settings API introduced in Obsidian 1.13.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

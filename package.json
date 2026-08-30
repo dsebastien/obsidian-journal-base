@@ -1,6 +1,6 @@
 {
     "name": "journal-bases",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "Custom Base views for journaling and periodic reviews.",
     "author": {
         "name": "Sébastien Dubois",

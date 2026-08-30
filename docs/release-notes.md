@@ -1,5 +1,17 @@
 # Release Notes
 
+## 2.1.0 (2026-08-30)
+
+### Features
+
+- **build:** fail the build on a lockfile the catalog review cannot parse
+- **build:** make the rule floor check that it is still wired in
+- **build:** refuse commits that loosen the rules instead of fixing the finding
+
+### Bug Fixes
+
+- **plugin:** create the folders a date format contributes, and default to ISO weeks
+
 ## 2.0.0 (2026-08-29)
 
 ### ⚠ BREAKING CHANGES
