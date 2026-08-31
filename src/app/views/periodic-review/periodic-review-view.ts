@@ -15,7 +15,6 @@ import {
     PERIOD_TYPE_ORDER,
     PERIOD_TYPE_LABELS,
     getChildPeriodTypes,
-    getParentPeriodTypes,
     getColumnFoldedConfigKey
 } from './periodic-review.constants'
 import { SelectionContext, type SelectionContextSnapshot } from './selection-context'
@@ -392,22 +391,10 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private updateVirtualSelector(state: ColumnState, config: PeriodicNoteConfig): void {
         if (!state.virtualSelector) return
 
-        const selectorEl = state.column.getSelectorEl()
-
-        // Always clear any parent missing message divs first
-        const parentMissingEl = selectorEl.querySelector('.pr-parent-missing')
-        if (parentMissingEl) {
-            parentMissingEl.remove()
-        }
-
-        const parentMissingMessage = this.getParentMissingMessage(state.periodType)
-        if (parentMissingMessage) {
-            state.virtualSelector.clear()
-            this.renderParentMissingMessage(selectorEl, parentMissingMessage)
-            state.column.getContentEl().empty()
-            return
-        }
-
+        // A parent period without a note on disk no longer blanks this column:
+        // the selection context still carries the year/quarter/month/week the
+        // child list needs, so the periods stay visible and selectable and a
+        // child note can be created before its parent exists.
         const items = this.buildVirtualItems(state, config)
 
         if (items.length === 0) {
@@ -547,25 +534,6 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
                     }
                 })
         })
-    }
-
-    private getParentMissingMessage(periodType: PeriodType): string | null {
-        // Find the first visible parent that doesn't exist
-        const parentTypes = getParentPeriodTypes(periodType)
-
-        for (const parentType of parentTypes) {
-            if (this.columns.has(parentType) && !this.context.exists(parentType)) {
-                return `Select an existing ${parentType} note or create one first`
-            }
-        }
-
-        return null
-    }
-
-    private renderParentMissingMessage(containerEl: HTMLElement, message: string): void {
-        containerEl
-            .createDiv({ cls: 'pr-parent-missing' })
-            .createDiv({ cls: 'pr-parent-missing__text', text: message })
     }
 
     private getAvailableDatesForColumn(

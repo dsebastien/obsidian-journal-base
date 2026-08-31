@@ -554,14 +554,6 @@
     }
 
     /* Message when parent period doesn't exist */
-    .pr-parent-missing {
-        @apply flex items-center justify-center p-4 text-center;
-        color: var(--text-muted);
-    }
-
-    .pr-parent-missing__text {
-        @apply text-sm italic max-w-xs leading-relaxed;
-    }
 
     /* Section styling */
     .pr-section {
@@ -841,14 +833,6 @@
 
         .pn-create-large__btn {
             @apply px-4 py-2 text-sm gap-2;
-        }
-
-        .pr-parent-missing {
-            @apply p-2;
-        }
-
-        .pr-parent-missing__text {
-            @apply text-xs;
         }
     }
 
