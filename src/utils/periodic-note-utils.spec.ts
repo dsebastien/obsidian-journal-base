@@ -79,6 +79,61 @@ describe('detectPeriodType', () => {
         expect(detectPeriodType(mockFile('Journal/Weekly/2026-W20.md'), settings)).toBeNull()
     })
 
+    // Issue #44 — non-regression
+    // https://github.com/dsebastien/obsidian-journal-base/issues/44
+    describe('issue #44 — several period types sharing one folder', () => {
+        const sharedFolderSettings = buildSettings({
+            daily: {
+                enabled: true,
+                folder: 'DAILY',
+                format: 'YYYY/YYYY.Q/YYYY-MM-DD',
+                template: ''
+            },
+            weekly: {
+                enabled: true,
+                folder: 'DAILY',
+                format: 'YYYY/gggg-[W]ww',
+                template: ''
+            }
+        })
+
+        test('weekly notes are recognised when daily and weekly share a folder', () => {
+            expect(detectPeriodType(mockFile('DAILY/2026/2026-W35.md'), sharedFolderSettings)).toBe(
+                'weekly'
+            )
+        })
+
+        test('daily notes keep their type when daily and weekly share a folder', () => {
+            expect(
+                detectPeriodType(mockFile('DAILY/2026/2026.3/2026-08-31.md'), sharedFolderSettings)
+            ).toBe('daily')
+        })
+
+        test('a name matching no configured format falls back to the folder match', () => {
+            expect(detectPeriodType(mockFile('DAILY/Scratch.md'), sharedFolderSettings)).toBe(
+                'daily'
+            )
+        })
+
+        test('a nested folder still wins over a same-folder format match', () => {
+            const settings = buildSettings({
+                daily: { enabled: true, folder: 'Journal', format: 'YYYY-MM-DD', template: '' },
+                weekly: {
+                    enabled: true,
+                    folder: 'Journal/Weekly',
+                    format: 'gggg-[W]ww',
+                    template: ''
+                }
+            })
+
+            // The daily format would round-trip this name, but the weekly folder is
+            // more specific, so folder specificity still decides.
+            expect(detectPeriodType(mockFile('Journal/Weekly/2026-W11.md'), settings)).toBe(
+                'weekly'
+            )
+        })
+    })
+
     // Issue #41 — non-regression
     // https://github.com/dsebastien/obsidian-journal-base/issues/41
     describe('issue #41 — nested folder prefixes', () => {
