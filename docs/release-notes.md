@@ -1,5 +1,11 @@
 # Release Notes
 
+## 2.1.1 (2026-08-31)
+
+### Bug Fixes
+
+- **plugin:** stop Templater duplicating a nested format's subfolders
+
 ## 2.1.0 (2026-08-30)
 
 ### Features

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.0...2.1.1) (2026-08-31)
+
+### Bug Fixes
+
+* **plugin:** stop Templater duplicating a nested format's subfolders ([7bfec11](https://github.com/dsebastien/obsidian-journal-bases/commit/7bfec110493a9029bb07cb22fe83fcedec02257e)), closes [#43](https://github.com/dsebastien/obsidian-journal-bases/issues/43)
+
 ## [2.1.0](https://github.com/dsebastien/obsidian-journal-bases/compare/2.0.0...2.1.0) (2026-08-30)
 
 ### Features
@@ -300,6 +306,7 @@ uses the declarative settings API introduced in Obsidian 1.13.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
