@@ -21,35 +21,46 @@ export class NoteCreationService {
         periodType: PeriodType
     ): Promise<TFile | null> {
         const normalizedDate = getStartOfPeriod(date, periodType)
-        const filename = formatDate(normalizedDate, config.format)
+        // A format may itself contain '/' (e.g. GGGG/WW/YYYY-MM-DD), so this is a
+        // folder-relative path, not just a name.
+        const formattedPath = formatDate(normalizedDate, config.format)
         // No leading slash when there is no folder: Obsidian treats '/Note.md'
         // and 'Note.md' as different paths and only the latter exists.
         const folder = config.folder.replace(/\/+$/, '')
-        const filePath = folder ? `${folder}/${filename}.md` : `${filename}.md`
+        const filePath = folder ? `${folder}/${formattedPath}.md` : `${formattedPath}.md`
 
         // Check if file already exists
         const existingFile = this.app.vault.getFileByPath(filePath)
         if (existingFile) {
-            new Notice(`Note already exists: ${filename}`)
+            new Notice(`Note already exists: ${formattedPath}`)
             return existingFile
         }
 
         // Ensure folder exists. Derived from the resolved path, not from
-        // config.folder: a format may itself contain '/' (e.g. GGGG/WW/YYYY-MM-DD),
-        // and those segments have to exist too or vault.create throws.
+        // config.folder: the segments a format contributes have to exist too or
+        // vault.create throws.
         const lastSlash = filePath.lastIndexOf('/')
         const folderPath = lastSlash === -1 ? '' : filePath.slice(0, lastSlash)
         await this.ensureFolderExists(folderPath)
 
         // Create with template if configured
         if (config.template && this.integrationService.isTemplaterEnabled()) {
+            // Templater joins the folder and filename it is given. folderPath already
+            // holds the subfolders the format contributed, so hand it the base name
+            // only -- passing the whole formatted path duplicates that hierarchy.
+            const lastSlashInFormattedPath = formattedPath.lastIndexOf('/')
+            const baseFilename =
+                lastSlashInFormattedPath === -1
+                    ? formattedPath
+                    : formattedPath.slice(lastSlashInFormattedPath + 1)
+
             const file = await this.integrationService.createFileFromTemplate(
                 config.template,
                 folderPath,
-                filename
+                baseFilename
             )
             if (file) {
-                new Notice(`Created: ${filename}`)
+                new Notice(`Created: ${formattedPath}`)
                 return file
             }
             // Fall through to create empty file if template fails
@@ -58,11 +69,11 @@ export class NoteCreationService {
         // Create empty file (fallback or no template configured)
         try {
             const file = await this.app.vault.create(filePath, '')
-            new Notice(`Created: ${filename}`)
+            new Notice(`Created: ${formattedPath}`)
             return file
         } catch (error) {
             log('Failed to create periodic note:', 'error', error)
-            new Notice(`Failed to create note: ${filename}`, 5000)
+            new Notice(`Failed to create note: ${formattedPath}`, 5000)
             return null
         }
     }

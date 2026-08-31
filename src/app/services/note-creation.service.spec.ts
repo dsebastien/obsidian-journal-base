@@ -557,6 +557,121 @@ describe('NoteCreationService', () => {
                 )
             })
 
+            test('passes only the base filename to Templater when the format has subfolders', async () => {
+                const createdFile: MockTFile = { path: 'DAILY/2026/2026.3/2026-08-30.md' }
+                const templateFile: MockTFile = { path: 'Templates/Daily.md' }
+                const mockCreateFn = mock(async () => createdFile)
+                const mockTemplater = {
+                    templater: {
+                        create_new_note_from_template: mockCreateFn
+                    }
+                }
+                const app = createMockApp({
+                    enabledPlugins: ['templater-obsidian'],
+                    templaterPlugin: mockTemplater
+                })
+                app.vault.getFileByPath = mock((path: string) => {
+                    if (path === 'Templates/Daily.md') return templateFile
+                    return null
+                })
+
+                const service = new NoteCreationService(app as unknown as App)
+
+                const config: PeriodicNoteConfig = {
+                    enabled: true,
+                    folder: 'DAILY',
+                    format: 'YYYY/YYYY.Q/YYYY-MM-DD',
+                    template: 'Templates/Daily.md'
+                }
+
+                const result = await service.createPeriodicNote(
+                    new Date(2026, 7, 30),
+                    config,
+                    'daily'
+                )
+
+                expect(result).toBe(createdFile as unknown as import('obsidian').TFile)
+                // Templater joins folder + filename: the format's subfolders belong to
+                // the folder argument only, never to both.
+                expect(mockCreateFn).toHaveBeenCalledWith(
+                    templateFile,
+                    'DAILY/2026/2026.3',
+                    '2026-08-30',
+                    false
+                )
+            })
+
+            test('passes the base filename to Templater when no folder is configured', async () => {
+                const createdFile: MockTFile = { path: '2026/2026.3/2026-08-30.md' }
+                const templateFile: MockTFile = { path: 'Templates/Daily.md' }
+                const mockCreateFn = mock(async () => createdFile)
+                const mockTemplater = {
+                    templater: {
+                        create_new_note_from_template: mockCreateFn
+                    }
+                }
+                const app = createMockApp({
+                    enabledPlugins: ['templater-obsidian'],
+                    templaterPlugin: mockTemplater
+                })
+                app.vault.getFileByPath = mock((path: string) => {
+                    if (path === 'Templates/Daily.md') return templateFile
+                    return null
+                })
+
+                const service = new NoteCreationService(app as unknown as App)
+
+                const config: PeriodicNoteConfig = {
+                    enabled: true,
+                    folder: '',
+                    format: 'YYYY/YYYY.Q/YYYY-MM-DD',
+                    template: 'Templates/Daily.md'
+                }
+
+                await service.createPeriodicNote(new Date(2026, 7, 30), config, 'daily')
+
+                expect(mockCreateFn).toHaveBeenCalledWith(
+                    templateFile,
+                    '2026/2026.3',
+                    '2026-08-30',
+                    false
+                )
+            })
+
+            test('creates the folders a nested format contributes before templating', async () => {
+                const createdFile: MockTFile = { path: 'DAILY/2026/2026.3/2026-08-30.md' }
+                const templateFile: MockTFile = { path: 'Templates/Daily.md' }
+                const mockCreateFn = mock(async () => createdFile)
+                const mockTemplater = {
+                    templater: {
+                        create_new_note_from_template: mockCreateFn
+                    }
+                }
+                const app = createMockApp({
+                    enabledPlugins: ['templater-obsidian'],
+                    templaterPlugin: mockTemplater,
+                    existingFolders: ['DAILY']
+                })
+                app.vault.getFileByPath = mock((path: string) => {
+                    if (path === 'Templates/Daily.md') return templateFile
+                    return null
+                })
+
+                const service = new NoteCreationService(app as unknown as App)
+
+                const config: PeriodicNoteConfig = {
+                    enabled: true,
+                    folder: 'DAILY',
+                    format: 'YYYY/YYYY.Q/YYYY-MM-DD',
+                    template: 'Templates/Daily.md'
+                }
+
+                await service.createPeriodicNote(new Date(2026, 7, 30), config, 'daily')
+
+                expect(app.vault.createFolder).toHaveBeenCalledWith('DAILY/2026')
+                expect(app.vault.createFolder).toHaveBeenCalledWith('DAILY/2026/2026.3')
+            })
+
             test('falls back to empty file when Templater is not enabled', async () => {
                 const app = createMockApp({
                     enabledPlugins: [], // Templater not enabled
