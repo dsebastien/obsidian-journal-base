@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.2](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.1...2.1.2) (2026-08-31)
+
+### Bug Fixes
+
+* **plugin:** keep review columns visible when a parent note is missing ([23a011d](https://github.com/dsebastien/obsidian-journal-bases/commit/23a011d70345599d1fe84427e549dd092b0b7451))
+* **plugin:** recognize notes when several periodic types share one folder ([f009a84](https://github.com/dsebastien/obsidian-journal-bases/commit/f009a842b5cfd4287ffa191f61eaf6dee8205671)), closes [#44](https://github.com/dsebastien/obsidian-journal-bases/issues/44)
+
 ## [2.1.1](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.0...2.1.1) (2026-08-31)
 
 ### Bug Fixes
@@ -306,6 +313,7 @@ uses the declarative settings API introduced in Obsidian 1.13.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 

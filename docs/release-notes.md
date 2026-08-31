@@ -1,5 +1,12 @@
 # Release Notes
 
+## 2.1.2 (2026-08-31)
+
+### Bug Fixes
+
+- **plugin:** keep review columns visible when a parent note is missing
+- **plugin:** recognize notes when several periodic types share one folder
+
 ## 2.1.1 (2026-08-31)
 
 ### Bug Fixes
