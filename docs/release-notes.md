@@ -1,5 +1,16 @@
 # Release Notes
 
+## 2.1.3 (2026-09-23)
+
+### Bug Fixes
+
+- **all:** tidy the lint port after review
+- **build:** exclude bun-types alongside @types/bun from the release-age gate
+- **build:** harden the release path from the template
+- **build:** rebuild versions.json from the published releases
+- **deps:** move the fast-uri override off the vulnerable line
+- **plugin:** type Obsidian internals instead of suppressing the checker, and lowercase the newsletter line
+
 ## 2.1.2 (2026-08-31)
 
 ### Bug Fixes

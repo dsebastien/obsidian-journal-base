@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.3](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.2...2.1.3) (2026-09-23)
+
+### Bug Fixes
+
+* **all:** tidy the lint port after review ([8ed7a1a](https://github.com/dsebastien/obsidian-journal-bases/commit/8ed7a1aab920c3033b42c3397d22114ec5815d08))
+* **build:** exclude bun-types alongside @types/bun from the release-age gate ([c8f208d](https://github.com/dsebastien/obsidian-journal-bases/commit/c8f208ddd6c156b0115c42e40e8cd65644d52564))
+* **build:** harden the release path from the template ([de5813f](https://github.com/dsebastien/obsidian-journal-bases/commit/de5813f158cc98a80a3bcefd379da9b081d5da90))
+* **build:** rebuild versions.json from the published releases ([e50171b](https://github.com/dsebastien/obsidian-journal-bases/commit/e50171bc78bcb1719a9cd73e0c141e2e30824e33))
+* **deps:** move the fast-uri override off the vulnerable line ([ce65e45](https://github.com/dsebastien/obsidian-journal-bases/commit/ce65e452cf254a3e9871fce22f80b774266ac181))
+* **plugin:** type Obsidian internals instead of suppressing the checker, and lowercase the newsletter line ([f728fba](https://github.com/dsebastien/obsidian-journal-bases/commit/f728fba328f4c3e7ae93c3f110da088ceab4d619))
+
 ## [2.1.2](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.1...2.1.2) (2026-08-31)
 
 ### Bug Fixes
@@ -313,6 +324,7 @@ uses the declarative settings API introduced in Obsidian 1.13.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
