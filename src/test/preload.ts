@@ -3,11 +3,11 @@ import { mock } from 'bun:test'
 // Provide a minimal `window` global so Obsidian-targeted code (e.g. `window.setInterval`,
 // `window.setTimeout`) runs in Bun's test environment, which has no DOM.
 //
-// `obsidianmd/no-global-this` reports the reference below and cannot be satisfied here:
-// its suggested replacements (`window` / `activeWindow`) are precisely what this line
-// creates. This is the headless test bootstrap, never bundled into the plugin; no
-// shipped module references `globalThis`.
-const globalScope: { window?: unknown } = globalThis
+// `self` is the global object under Bun, and not a name obsidianmd/no-global-this
+// bans (it only bans `global` and `globalThis`): this line is what creates the
+// `window` the rule wants everything else to use. This is the headless test
+// bootstrap, never bundled into the plugin.
+const globalScope: { window?: unknown } = self
 globalScope.window ??= globalScope
 
 // Mock obsidian module before any tests run

@@ -81,13 +81,13 @@ function createMockApp(
             }
             return null
         }),
-        create: mock(async (path: string, _content: string) => {
+        create: mock((path: string, _content: string) => {
             const file: MockTFile = { path, name: path.split('/').pop() }
-            return createdFile ?? file
+            return Promise.resolve(createdFile ?? file)
         }),
-        createFolder: mock(async (path: string) => {
+        createFolder: mock((path: string) => {
             createdFolders.push(path)
-            return { path, name: path.split('/').pop() } as MockTFolder
+            return Promise.resolve({ path, name: path.split('/').pop() } as MockTFolder)
         })
     }
 
@@ -516,7 +516,7 @@ describe('NoteCreationService', () => {
             test('uses Templater when template is configured and Templater is enabled', async () => {
                 const createdFile: MockTFile = { path: 'Daily/2024-01-15.md' }
                 const templateFile: MockTFile = { path: 'Templates/Daily.md' }
-                const mockCreateFn = mock(async () => createdFile)
+                const mockCreateFn = mock(() => Promise.resolve(createdFile))
                 const mockTemplater = {
                     templater: {
                         create_new_note_from_template: mockCreateFn
@@ -560,7 +560,7 @@ describe('NoteCreationService', () => {
             test('passes only the base filename to Templater when the format has subfolders', async () => {
                 const createdFile: MockTFile = { path: 'DAILY/2026/2026.3/2026-08-30.md' }
                 const templateFile: MockTFile = { path: 'Templates/Daily.md' }
-                const mockCreateFn = mock(async () => createdFile)
+                const mockCreateFn = mock(() => Promise.resolve(createdFile))
                 const mockTemplater = {
                     templater: {
                         create_new_note_from_template: mockCreateFn
@@ -604,7 +604,7 @@ describe('NoteCreationService', () => {
             test('passes the base filename to Templater when no folder is configured', async () => {
                 const createdFile: MockTFile = { path: '2026/2026.3/2026-08-30.md' }
                 const templateFile: MockTFile = { path: 'Templates/Daily.md' }
-                const mockCreateFn = mock(async () => createdFile)
+                const mockCreateFn = mock(() => Promise.resolve(createdFile))
                 const mockTemplater = {
                     templater: {
                         create_new_note_from_template: mockCreateFn
@@ -641,7 +641,7 @@ describe('NoteCreationService', () => {
             test('creates the folders a nested format contributes before templating', async () => {
                 const createdFile: MockTFile = { path: 'DAILY/2026/2026.3/2026-08-30.md' }
                 const templateFile: MockTFile = { path: 'Templates/Daily.md' }
-                const mockCreateFn = mock(async () => createdFile)
+                const mockCreateFn = mock(() => Promise.resolve(createdFile))
                 const mockTemplater = {
                     templater: {
                         create_new_note_from_template: mockCreateFn
@@ -716,9 +716,7 @@ describe('NoteCreationService', () => {
                 const app = createMockApp({
                     existingFolders: ['Daily']
                 })
-                app.vault.create = mock(async () => {
-                    throw new Error('Failed to create file')
-                })
+                app.vault.create = mock(() => Promise.reject(new Error('Failed to create file')))
                 const service = new NoteCreationService(app as unknown as App)
 
                 const config: PeriodicNoteConfig = {
@@ -812,9 +810,7 @@ describe('NoteCreationService', () => {
                 existingFile,
                 existingFolders: ['Daily']
             })
-            app.vault.create = mock(async () => {
-                throw new Error('Failed')
-            })
+            app.vault.create = mock(() => Promise.reject(new Error('Failed')))
             // Override getFileByPath to simulate no existing file initially but creation fails
             app.vault.getFileByPath = mock(() => null)
             app.workspace.getLeaf = mock(() => mockLeaf)

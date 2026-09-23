@@ -1,12 +1,12 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import { afterEach, describe, expect, spyOn, test, type Mock } from 'bun:test'
 
 import { LOG_PREFIX, isDebugLoggingEnabled, log, setDebugLogging } from './log'
 
 type ConsoleSpies = {
-    debug: ReturnType<typeof spyOn>
-    info: ReturnType<typeof spyOn>
-    warn: ReturnType<typeof spyOn>
-    error: ReturnType<typeof spyOn>
+    debug: Mock<Console['debug']>
+    info: Mock<Console['info']>
+    warn: Mock<Console['warn']>
+    error: Mock<Console['error']>
 }
 
 let activeSpies: ConsoleSpies | undefined

@@ -99,8 +99,7 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
     }
 
     // Access the internal embed registry
-    // @ts-ignore - Internal API
-    const embedRegistry = app.embedRegistry as EmbedRegistry
+    const { embedRegistry } = app as App & { embedRegistry: EmbedRegistry }
 
     // Create a temporary widget editor to extract the prototype.
     // `activeDocument.win.createDiv()` is the popout-correct spelling: the
@@ -209,7 +208,6 @@ export class EmbeddableEditor extends Component {
         }
 
         // Create the editor instance
-        // @ts-ignore - Using internal constructor
         this.editor = new EditorConstructor(this.app, this.containerEl, owner)
 
         // Set up the mock references for command compatibility
@@ -236,8 +234,9 @@ export class EmbeddableEditor extends Component {
         // Handle focus events
         this.registerDomEvent(editorView.contentDOM, 'focusin', () => {
             this.app.keymap.pushScope(this.scope)
-            // @ts-ignore - Internal API
-            this.app.workspace.activeEditor = this.editor.owner
+            // workspace.activeEditor is typed as a MarkdownFileInfo; the editor's
+            // owner is the MarkdownView mock Obsidian's commands expect there.
+            ;(this.app.workspace as { activeEditor: unknown }).activeEditor = this.editor.owner
         })
 
         this.registerDomEvent(editorView.contentDOM, 'blur', () => {
