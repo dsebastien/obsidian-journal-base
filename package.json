@@ -45,9 +45,9 @@
         "tsc": "tsc --noEmit",
         "tsc:watch": "tsc --noEmit --watch --preserveWatchOutput",
         "tscw": "bun run tsc:watch",
-        "lint": "eslint . --max-warnings 0",
+        "lint": "node scripts/require-node.mjs && eslint . --max-warnings 0",
         "lint:strict": "eslint . --max-warnings 0",
-        "lint:fix": "eslint . --fix",
+        "lint:fix": "node scripts/require-node.mjs && eslint . --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "test": "bun test --isolate",
@@ -78,6 +78,7 @@
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-obsidianmd": "0.4.1",
         "globals": "17.0.0",
+        "jiti": "2.6.1",
         "obsidian": "1.13.1",
         "prettier": "3.7.4",
         "tailwindcss": "4.1.18",
@@ -94,6 +95,7 @@
     },
     "overrides": {
         "fast-uri": "3.1.7",
-        "tmp": "0.2.7"
+        "tmp": "0.2.7",
+        "js-yaml": "4.3.2"
     }
 }
