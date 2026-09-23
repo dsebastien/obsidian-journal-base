@@ -1,4 +1,4 @@
-import { App, Component, TFile, Scope } from 'obsidian'
+import { App, Component, TFile, Scope, type MarkdownFileInfo } from 'obsidian'
 import { EditorView } from '@codemirror/view'
 import { EditorSelection, type SelectionRange } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
@@ -236,7 +236,9 @@ export class EmbeddableEditor extends Component {
             this.app.keymap.pushScope(this.scope)
             // workspace.activeEditor is typed as a MarkdownFileInfo; the editor's
             // owner is the MarkdownView mock Obsidian's commands expect there.
-            ;(this.app.workspace as { activeEditor: unknown }).activeEditor = this.editor.owner
+            ;(
+                this.app.workspace as { activeEditor: MarkdownFileInfo | MarkdownViewMock | null }
+            ).activeEditor = this.editor.owner
         })
 
         this.registerDomEvent(editorView.contentDOM, 'blur', () => {

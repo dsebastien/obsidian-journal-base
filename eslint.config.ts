@@ -170,10 +170,6 @@ export default defineConfig([
             // The preset ships these two off; nothing here gets switched off.
             'no-new-func': 'error',
             'obsidianmd/prefer-active-doc': 'error',
-            // Never disable obsidianmd/* rules here: the community catalog
-            // reviewer runs its own ruleset against the git archive, so a
-            // local disable only hides the finding until submission.
-            // Brand names are the supported escape hatch for sentence-case.
             // Sentence case is a community-review requirement, so the rule is an
             // ERROR here rather than off. The catalog reviewer runs its OWN
             // ruleset against the source archive, so switching it off locally
@@ -187,9 +183,9 @@ export default defineConfig([
             //   plugin's own Base view names included. A new brand in a UI string
             //   is reported until it is added here — loud, which is the point.
             // - `ignoreRegex` matches whole strings: an input placeholder that is
-            //   a sentence fragment, a frontmatter property key that must stay
-            //   lowercase, and the fleet-wide newsletter line kept byte-identical
-            //   with `obsidian-plugin-template`.
+            //   a sentence fragment, and a frontmatter property key that must stay
+            //   lowercase. The fleet-wide newsletter line needs no entry: it is in
+            //   sentence case.
             'obsidianmd/ui/sentence-case': [
                 'error',
                 {

@@ -55,6 +55,9 @@
 #     && bun install && bun run build
 .github/ export-ignore
 .husky/ export-ignore
+prettier.config.cjs export-ignore
+commitlint.config.ts export-ignore
+.cz-config.cjs export-ignore
 .editorconfig export-ignore
 .nvmrc export-ignore
 

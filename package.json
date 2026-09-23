@@ -46,7 +46,7 @@
         "tsc:watch": "tsc --noEmit --watch --preserveWatchOutput",
         "tscw": "bun run tsc:watch",
         "lint": "node scripts/require-node.mjs && eslint . --max-warnings 0",
-        "lint:strict": "eslint . --max-warnings 0",
+        "lint:strict": "node scripts/require-node.mjs && eslint . --max-warnings 0",
         "lint:fix": "node scripts/require-node.mjs && eslint . --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
