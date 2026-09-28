@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.4](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.3...2.1.4) (2026-09-28)
+
+### Bug Fixes
+
+* **plugin:** keep the support block from stacking on every settings refresh ([c244a61](https://github.com/dsebastien/obsidian-journal-bases/commit/c244a61daa187045175f297fbc7ce8527432a5cc))
+
 ## [2.1.3](https://github.com/dsebastien/obsidian-journal-bases/compare/2.1.2...2.1.3) (2026-09-23)
 
 ### Bug Fixes
@@ -324,6 +330,7 @@ uses the declarative settings API introduced in Obsidian 1.13.
 ### Bug Fixes
 
 * **all:** if periodic-notes is not available on startup, the existing settings are kept ([634960a](https://github.com/dsebastien/obsidian-journal-bases/commit/634960aecdc5baa51c5d8a0d460bf7cc5c9ed4c7))
+
 
 
 
