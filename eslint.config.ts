@@ -3,6 +3,17 @@ import tseslint from 'typescript-eslint'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import globals from 'globals'
 import obsidianmd from 'eslint-plugin-obsidianmd'
+// Passing `brands` REPLACES the plugin's default list rather than extending it
+// (see sentenceCaseUtil.js: `options?.brands ?? DEFAULT_BRANDS`). Listing only
+// this plugin's own names would therefore silently strip "Obsidian", "Git",
+// "Markdown", "GitHub", "Windows" and the other 40-odd defaults — and the
+// community catalog reviewer, which runs the plugin's own ruleset, would keep
+// enforcing every one of them. The loss shows up as findings you never see
+// locally, not as findings that go away.
+// Deep path because the package exports only its default plugin object; it is
+// pinned exactly, and a break here is a loud module-resolution error, never a
+// silent shrinking of the list.
+import { DEFAULT_BRANDS } from 'eslint-plugin-obsidianmd/dist/lib/rules/ui/brands.js'
 import { defineConfig } from 'eslint/config'
 
 // eslint-plugin-obsidianmd 0.4.x lowered these rules from error to warn in its
@@ -190,9 +201,10 @@ export default defineConfig([
             // text gets reported:
             //
             // - `brands` REPLACES the plugin's default list (`?? DEFAULT_BRANDS`),
-            //   so this array must carry every brand this codebase names, this
-            //   plugin's own Base view names included. A new brand in a UI string
-            //   is reported until it is added here — loud, which is the point.
+            //   so it spreads DEFAULT_BRANDS first (see the import) and adds only
+            //   the names the defaults lack, this plugin's own Base view names
+            //   included. A new brand in a UI string is reported until it is
+            //   added here — loud, which is the point.
             // - `ignoreRegex` matches whole strings: an input placeholder that is
             //   a sentence fragment, and a frontmatter property key that must stay
             //   lowercase. The fleet-wide newsletter line needs no entry: it is in
@@ -202,24 +214,9 @@ export default defineConfig([
                 {
                     enforceCamelCaseLower: true,
                     brands: [
-                        // Defaults this codebase relies on
-                        'Obsidian',
-                        'Obsidian Sync',
-                        'Obsidian Publish',
-                        'iCloud',
-                        'iOS',
-                        'macOS',
-                        'Windows',
-                        'Linux',
-                        'Android',
-                        'GitHub',
+                        ...DEFAULT_BRANDS,
+                        // Funding link, not among the defaults
                         'GitHub Sponsors',
-                        'Git',
-                        'YouTube',
-                        'Markdown',
-                        'JavaScript',
-                        'TypeScript',
-                        'Node.js',
                         // Obsidian's own feature name for `.base` files and the
                         // views they host; the manifest description uses it too.
                         'Base',
