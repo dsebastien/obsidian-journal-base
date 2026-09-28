@@ -499,10 +499,11 @@ Repo-specific shapes, decided deliberately:
   `setDesc` (so anything appended to `descEl` goes too), then the hook.
   Controls added with `addButton`/`addText` are cleared, but anything the hook
   appends elsewhere in the row (a support block, an embedded editor, a status
-  block) stays and is appended again: every refresh stacks another copy. Render such content into a wrapper and return a
-  cleanup that removes it: create `el` with `setting.settingEl.createDiv()`,
-  draw into it, and `return () => el.remove()`. Obsidian calls the cleanup
-  before re-running the hook. Verified in Obsidian 1.13.7, where fleet
+  block) stays and is appended again: every refresh stacks another copy.
+  Render such content into a wrapper and return a cleanup that removes it:
+  create `el` with `setting.settingEl.createDiv()`, draw into it, and
+  `return () => el.remove()`. Obsidian calls the cleanup before re-running
+  the hook. Verified in Obsidian 1.13.7, where fleet
   plugins using this template's Support row went from 1 to 3 copies after
   two `update()` calls; a stacked editor also kept its stale copy on top,
   whose Save wrote an outdated list.
@@ -734,6 +735,10 @@ export default class MyPlugin extends Plugin {
     }
 }
 ```
+
+(Flat settings only: nested defaults going through Immer start from
+`createDefaultSettings()`, see "Never `produce()` from the shared
+`DEFAULT_SETTINGS`".)
 
 **settings.ts**:
 
