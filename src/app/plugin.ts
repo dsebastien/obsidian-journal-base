@@ -2,6 +2,7 @@ import { registerWhatsNewView } from './whats-new'
 import { Notice, Plugin, type TFile } from 'obsidian'
 import {
     DEFAULT_SETTINGS,
+    createDefaultSettings,
     PERIOD_TYPES,
     type PluginSettings,
     type PeriodType,
@@ -37,7 +38,7 @@ export class JournalBasesPlugin extends Plugin {
      *
      * Narrows `Plugin.settings` (`unknown`, added in Obsidian 1.13.0) to this plugin's concrete type
      */
-    override settings: PluginSettings = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
+    override settings: PluginSettings = produce(createDefaultSettings(), () => {})
 
     /**
      * Whether settings are synced from Periodic Notes plugin (makes settings read-only)

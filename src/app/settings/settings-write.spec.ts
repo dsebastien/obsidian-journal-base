@@ -1,8 +1,9 @@
 import { describe, expect, test, mock } from 'bun:test'
 import { produce } from 'immer'
+import type { App, PluginManifest } from 'obsidian'
 import JournalBasesPlugin from '../../main'
 import { JournalBasesSettingTab } from './settings-tab'
-import { DEFAULT_SETTINGS } from '../types'
+import { DEFAULT_SETTINGS, PERIOD_TYPES, createDefaultSettings } from '../types'
 
 /**
  * Behavioral coverage for the settings write path.
@@ -42,7 +43,7 @@ function createHarness(options?: { saveData?: () => Promise<void>; synced?: bool
 
     const plugin = Object.create(JournalBasesPlugin.prototype) as JournalBasesPlugin
     const internals = plugin as unknown as Record<string, unknown>
-    internals['settings'] = produce(DEFAULT_SETTINGS, () => DEFAULT_SETTINGS)
+    internals['settings'] = produce(createDefaultSettings(), () => {})
     internals['settingsWriteChain'] = Promise.resolve()
     internals['saveData'] = saveData
     internals['applyDebugLogging'] = applyDebugLogging
@@ -280,5 +281,64 @@ describe('setting definitions', () => {
         expect(notice).toBeDefined()
         expect(typeof notice!.visible).toBe('function')
         expect(notice!.render).toBeDefined()
+    })
+})
+
+describe('default settings', () => {
+    const expectDefaultsNotFrozen = (): void => {
+        expect(Object.isFrozen(DEFAULT_SETTINGS)).toBe(false)
+        for (const periodType of PERIOD_TYPES) {
+            expect(Object.isFrozen(DEFAULT_SETTINGS[periodType])).toBe(false)
+        }
+    }
+
+    test('constructing the plugin never freezes the shared defaults', () => {
+        const plugin = new JournalBasesPlugin({} as App, {} as PluginManifest)
+        expect(Object.isFrozen(plugin.settings)).toBe(true)
+        expectDefaultsNotFrozen()
+    })
+
+    test('loadSettings with no stored data never freezes the shared defaults', async () => {
+        // Built without the constructor: its field initializer is the other
+        // test's case. An empty store changes nothing, so the produced
+        // settings would BE the base if it were the shared constant.
+        for (const stored of [null, {}]) {
+            const { plugin } = createHarness()
+            const settings = plugin.settings
+            Object.assign(plugin, {
+                loadData: (): Promise<unknown> => Promise.resolve(stored)
+            })
+
+            await plugin.loadSettings()
+
+            // Immer deep-freezes what produce returns, including subtrees
+            // shared with its base: producing from DEFAULT_SETTINGS froze the
+            // constant for the rest of the process.
+            expect(plugin.settings).toBe(settings)
+            expectDefaultsNotFrozen()
+        }
+    })
+
+    test('loadSettings with stored data never freezes the shared period defaults', async () => {
+        // No stored periods: the produced settings keep sharing every period
+        // object with the base, which is how producing from the constant
+        // froze them.
+        const { plugin } = createHarness()
+        Object.assign(plugin, {
+            loadData: (): Promise<unknown> => Promise.resolve({ donePropertyName: 'reviewed' })
+        })
+
+        await plugin.loadSettings()
+
+        expect(plugin.settings.donePropertyName).toBe('reviewed')
+        expect(Object.isFrozen(plugin.settings.daily)).toBe(true)
+        expectDefaultsNotFrozen()
+    })
+
+    test('each default settings object is an independent copy', () => {
+        const one = createDefaultSettings()
+        one.daily.folder = 'Journal'
+        expect(createDefaultSettings().daily.folder).toBe('')
+        expect(DEFAULT_SETTINGS.daily.folder).toBe('')
     })
 })

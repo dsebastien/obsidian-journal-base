@@ -36,18 +36,33 @@ export type PluginSettings = PeriodicNotesSettings & {
     debugModeEnabled: boolean
 }
 
-export const DEFAULT_SETTINGS: PluginSettings = {
-    daily: { enabled: false, folder: '', format: 'YYYY-MM-DD', template: '' },
-    // ISO week tokens: GGGG is the year the week number belongs to, WW the ISO
-    // week. The locale forms (gggg/ww) start the week on Sunday, so every Sunday
-    // resolves to the following week, and pairing a calendar year with a week
-    // number splits a week across two folders every New Year.
-    weekly: { enabled: false, folder: '', format: 'GGGG-[W]WW', template: '' },
-    monthly: { enabled: false, folder: '', format: 'YYYY-MM', template: '' },
-    quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
-    yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
-    donePropertyName: DEFAULT_DONE_PROPERTY_NAME,
-    collapseFrontmatter: true,
-    rememberColumnState: true,
-    debugModeEnabled: false
+/**
+ * A fresh default settings object, safe to hand to Immer.
+ *
+ * `produce` deep-freezes what it returns, including any subtree it shares
+ * with its base. Producing from the shared DEFAULT_SETTINGS froze that
+ * constant (and its arrays) for the rest of the process, so any later code
+ * or test touching it failed with "Attempted to assign to readonly
+ * property". Produce from this instead, and keep it deep-fresh: build
+ * nested arrays and objects as new values, never by spreading DEFAULT_SETTINGS.
+ */
+export function createDefaultSettings(): PluginSettings {
+    return {
+        daily: { enabled: false, folder: '', format: 'YYYY-MM-DD', template: '' },
+        // ISO week tokens: GGGG is the year the week number belongs to, WW the ISO
+        // week. The locale forms (gggg/ww) start the week on Sunday, so every Sunday
+        // resolves to the following week, and pairing a calendar year with a week
+        // number splits a week across two folders every New Year.
+        weekly: { enabled: false, folder: '', format: 'GGGG-[W]WW', template: '' },
+        monthly: { enabled: false, folder: '', format: 'YYYY-MM', template: '' },
+        quarterly: { enabled: false, folder: '', format: 'YYYY-[Q]Q', template: '' },
+        yearly: { enabled: false, folder: '', format: 'YYYY', template: '' },
+        donePropertyName: DEFAULT_DONE_PROPERTY_NAME,
+        collapseFrontmatter: true,
+        rememberColumnState: true,
+        debugModeEnabled: false
+    }
 }
+
+/** The defaults, for reading and comparing. Never produce from it. */
+export const DEFAULT_SETTINGS: PluginSettings = createDefaultSettings()

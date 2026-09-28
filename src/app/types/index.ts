@@ -9,7 +9,11 @@ export type { PeriodicNoteConfig } from './periodic-note-config.intf'
 export type { PeriodicNotesSettings } from './periodic-notes-settings.type'
 
 export type { PluginSettings } from './plugin-settings.type'
-export { DEFAULT_SETTINGS, DEFAULT_DONE_PROPERTY_NAME } from './plugin-settings.type'
+export {
+    DEFAULT_SETTINGS,
+    DEFAULT_DONE_PROPERTY_NAME,
+    createDefaultSettings
+} from './plugin-settings.type'
 
 export type { AppWithPlugins } from './app-with-plugins.intf'
 
