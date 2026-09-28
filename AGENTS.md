@@ -494,10 +494,12 @@ Repo-specific shapes, decided deliberately:
   discard: the control is silently absent at runtime. Never call
   `settingEl.remove()`.
 - **`update()` re-runs a `render:` hook on the SAME row and resets only its
-  control area (`controlEl`).** Controls added with `addButton`/`addText` are
-  cleared, but anything the hook appends elsewhere in the row (a support
-  block, help text, a status line) stays and is appended again: every refresh
-  stacks another copy. Render such content into a wrapper and return a
+  name, description and control area.** Obsidian 1.13.7 runs the previous
+  cleanup, then `setting.clear()` (empties `controlEl`), `setName` and
+  `setDesc` (so anything appended to `descEl` goes too), then the hook.
+  Controls added with `addButton`/`addText` are cleared, but anything the hook
+  appends elsewhere in the row (a support block, an embedded editor, a status
+  block) stays and is appended again: every refresh stacks another copy. Render such content into a wrapper and return a
   cleanup that removes it: create `el` with `setting.settingEl.createDiv()`,
   draw into it, and `return () => el.remove()`. Obsidian calls the cleanup
   before re-running the hook. Verified in Obsidian 1.13.7, where fleet

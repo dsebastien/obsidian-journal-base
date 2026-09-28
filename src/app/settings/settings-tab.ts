@@ -191,7 +191,7 @@ export class JournalBasesSettingTab extends PluginSettingTab {
                             // would lay heading, buttons and badge side by side.
                             setting.settingEl.addClass('jb-settings-embed')
                             // In a wrapper removed by the returned cleanup: update() re-runs
-                            // this hook on the SAME row and only resets its control area, so
+                            // this hook on the SAME row and only resets name, description and control area, so
                             // content appended straight to settingEl would pile up.
                             const blockEl = setting.settingEl.createDiv()
                             renderSupportSection(blockEl, (el) => {
