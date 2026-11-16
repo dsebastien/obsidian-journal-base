@@ -223,6 +223,27 @@ When reading done status, always prefer `isDoneFile(file)` (reads frontmatter di
 
 ---
 
+## Component Lifecycle
+
+### Every component MUST be loaded, and every editor MUST be destroyed
+
+Obsidian's `Component.unload()` returns at once when the component was never loaded (`if (!this._loaded) return`). A component that nobody loaded never runs `onunload()` and never unloads its children, and nothing reports it.
+
+- A component that renders from its constructor (`NoteCard`, `FoldableColumn`) MUST call `this.load()` in that constructor, before it renders. Every other component MUST reach its parent through `addChild()`.
+- The owner of an `EmbeddableEditor` MUST call `editor.destroy()` when it drops the editor, in addition to `removeChild()`. `destroy()` is safe to call more than once and does not depend on the load state.
+- The temporary embed that `resolveEditorPrototype()` creates is never loaded, so its editor MUST be destroyed directly (`editMode.destroy()`).
+- An async method that creates an editor or renders (`NoteCard.loadContent`) MUST check, after each `await`, that the card is still loaded and that no newer load started.
+- A reading-view render MUST get its own child component, removed before the next render.
+- A view MUST NOT render after `onunload()`. Bases can call `onDataUpdated()` on a view that is already closed, and a debounced or async callback can fire late. Both views set `isUnloaded` first in `onunload()`, and `onDataUpdated()` (and the debounced `doDataUpdate()`) return at once when it is set. A view that renders after unload builds cards and editors that nothing unloads.
+
+### An idle data update MUST NOT dispatch an editor transaction or write a file
+
+A data update arrives for every change to any note of the base. It MUST NOT dispatch a transaction to a card editor when nothing changed (`foldFrontmatter()` checks `foldedRanges` first), and a card MUST NOT write content that the vault already has (`NoteCard.lastSyncedContent`). A transaction runs the editor extensions of every plugin, and a write runs every `modify` listener of the vault: the cost of both belongs to other plugins and can be very large.
+
+Rationale: issue #55. No card was ever loaded, so no embedded editor was ever destroyed. Each leaked editor is a live CodeMirror view that keeps the editor extensions of every plugin, and it gets every update that another plugin dispatches to "all editors". One leaked editor with a 3 MB note cost about 4 seconds of main-thread time for each such update, in a vault where the Periodic Review view was not even open. See `documentation/history/2026-11-16.md`.
+
+---
+
 ## Build Integrity
 
 ### Never `export-ignore` a file the build or the lint reads

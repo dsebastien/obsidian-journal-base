@@ -182,7 +182,14 @@ constructor(
 `foldFrontmatter()` dispatches a CodeMirror `foldEffect` (from `@codemirror/language`,
 externalized at build) over the range from `findFrontmatterFoldRange()` in
 `utils/frontmatter.ts`. Used by `NoteCard` when the global `collapseFrontmatter`
-setting is on.
+setting is on. It dispatches nothing when `foldedRanges` already has that range:
+the card calls it on every data update, and a transaction that changes nothing
+still runs the editor extensions of every plugin.
+
+`destroy()` destroys the underlying editor and its CodeMirror view. It is safe to
+call more than once and does not depend on the Component load state; `onunload()`
+calls it. The owner MUST call it when it drops the editor (see "Component
+Lifecycle" in `Business Rules.md`).
 
 #### EditorState Type
 
