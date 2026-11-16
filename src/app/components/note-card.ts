@@ -51,6 +51,11 @@ export class NoteCard extends Component {
     private onNext?: () => void
     private collapseFrontmatter: boolean
     private doneButton: HTMLButtonElement | null = null
+    /** Owns the children of the current reading-view render (embeds, post-processors). */
+    private renderChild: Component | null = null
+    /** Incremented by each content load, so a slower earlier load can tell it is stale. */
+    private loadGeneration = 0
+    private isUnloaded = false
 
     constructor(
         parent: HTMLElement,
@@ -74,6 +79,11 @@ export class NoteCard extends Component {
         this.mode = this.forcedMode ?? 'view'
         this.expanded = this.foldable ? initiallyExpanded : true // Always expanded if not foldable
         this.saveDebounced = debounce((content: string) => this.saveContent(content), 1000, true)
+        // The card renders (and can open an editor) from its constructor, so it
+        // is loaded from its constructor too. `Component.unload()` returns at
+        // once on a component that was never loaded: without this, `unload()`
+        // ran no cleanup and every editor the card opened stayed alive.
+        this.load()
         this.containerEl = this.render(parent)
     }
 
@@ -215,23 +225,24 @@ export class NoteCard extends Component {
     }
 
     private async loadContent(): Promise<void> {
+        if (this.isUnloaded) return
         if (this.contentLoaded && this.mode === 'view') return
 
+        const generation = ++this.loadGeneration
         this.contentEl.empty()
         this.destroyEditor()
+        this.destroyRender()
 
         try {
             const content = await this.app.vault.cachedRead(this.file)
 
+            // The card was unloaded, or a newer load started, while the file was
+            // read. An editor created now would have no owner to destroy it.
+            if (this.isUnloaded || generation !== this.loadGeneration) return
+
             if (this.mode === 'view') {
                 // Render read-only markdown
-                await MarkdownRenderer.render(
-                    this.app,
-                    content,
-                    this.contentEl,
-                    this.file.path,
-                    this
-                )
+                await this.renderMarkdown(content)
                 this.lastRenderedContent = content
                 this.contentLoaded = true
             } else {
@@ -324,8 +335,37 @@ export class NoteCard extends Component {
 
     private destroyEditor(): void {
         if (this.editor) {
-            this.removeChild(this.editor)
+            const editor = this.editor
             this.editor = null
+            this.removeChild(editor)
+            // removeChild() only reaches the editor when it was loaded. Destroy it
+            // directly as well (a no-op when the line above already did).
+            editor.destroy()
+        }
+    }
+
+    /**
+     * Render the note as read-only markdown. Each render gets its own child
+     * component, so the children of the previous render are unloaded when the
+     * content is rendered again, and not only when the card goes away.
+     */
+    private async renderMarkdown(content: string): Promise<void> {
+        this.destroyRender()
+        const renderChild = this.addChild(new Component())
+        this.renderChild = renderChild
+        await MarkdownRenderer.render(
+            this.app,
+            content,
+            this.contentEl,
+            this.file.path,
+            renderChild
+        )
+    }
+
+    private destroyRender(): void {
+        if (this.renderChild) {
+            this.removeChild(this.renderChild)
+            this.renderChild = null
         }
     }
 
@@ -376,13 +416,7 @@ export class NoteCard extends Component {
                 }
 
                 this.contentEl.empty()
-                await MarkdownRenderer.render(
-                    this.app,
-                    fileContent,
-                    this.contentEl,
-                    this.file.path,
-                    this
-                )
+                await this.renderMarkdown(fileContent)
                 this.lastRenderedContent = fileContent
                 return true
             }
@@ -491,6 +525,8 @@ export class NoteCard extends Component {
     }
 
     override onunload(): void {
+        this.isUnloaded = true
         this.destroyEditor()
+        this.destroyRender()
     }
 }

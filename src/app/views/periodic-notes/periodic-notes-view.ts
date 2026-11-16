@@ -32,6 +32,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     private currentMode: PeriodType | null = null
     private currentEntries: BasesEntry[] = [] // Filtered entries for the current mode
     private unsubscribeFromDoneReviews: (() => void) | null = null
+    private isUnloaded: boolean = false
 
     constructor(controller: QueryController, scrollEl: HTMLElement, plugin: JournalBasesPlugin) {
         super(controller)
@@ -105,6 +106,10 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     }
 
     override onDataUpdated(): void {
+        // Bases can deliver an update after the view was closed. Rendering then
+        // would build cards (and their editors) that nothing unloads.
+        if (this.isUnloaded) return
+
         // Get current options from view config
         const mode = (this.config.get('mode') as PeriodType) ?? 'daily'
         const futurePeriods = (this.config.get('futurePeriods') as number) ?? 3
@@ -584,6 +589,9 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     }
 
     override onunload(): void {
+        // First: no update may render from here on (see onDataUpdated)
+        this.isUnloaded = true
+
         // Unregister as file provider
         this.plugin.setActiveFileProvider(null)
         this.unsubscribeFromDoneReviews?.()

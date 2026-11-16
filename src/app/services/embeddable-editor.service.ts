@@ -131,7 +131,11 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
     ) as { constructor: ScrollableMarkdownEditorConstructor }
     cachedEditorPrototype = MarkdownEditorPrototype.constructor
 
-    // Clean up the temporary instance
+    // Clean up the temporary instance. The widget was never loaded, and
+    // `Component.unload()` returns at once on a component that is not loaded
+    // (`if (!this._loaded) return`), so `unload()` alone leaves the probe
+    // editor (a live CodeMirror view) behind. Destroy it explicitly.
+    editMode.destroy()
     widgetEditorView.unload()
 
     return cachedEditorPrototype
@@ -269,7 +273,7 @@ export class EmbeddableEditor extends Component {
         this.editor.onUpdate = (update: unknown, changed: boolean) => {
             originalOnUpdate(update, changed)
             // Only fire onChange for user-initiated changes, not external updates
-            if (changed && this.onChange && !this.isUpdatingExternally) {
+            if (changed && this.onChange && !this.isUpdatingExternally && !this.isDestroyed) {
                 this.onChange(this.getValue())
             }
         }
@@ -465,17 +469,47 @@ export class EmbeddableEditor extends Component {
         return this.isUpdatingExternally
     }
 
-    override onunload(): void {
+    /**
+     * Whether the underlying editor was destroyed.
+     */
+    isEditorDestroyed(): boolean {
+        return this.isDestroyed
+    }
+
+    /**
+     * Destroy the underlying Obsidian editor and its CodeMirror view.
+     *
+     * Safe to call more than once. It does NOT depend on the Component
+     * lifecycle: `Component.unload()` is a no-op on a component that was never
+     * loaded, and an editor that is not destroyed stays alive (with every editor
+     * extension of every plugin) for the rest of the session. Owners call this
+     * directly in addition to `removeChild()` / `unload()`.
+     */
+    destroy(): void {
         if (this.isDestroyed) return
+        // Set first: from here on no editor update can reach onChange, so the
+        // teardown can never be saved as the content of the note.
         this.isDestroyed = true
 
         // Clean up scope
         this.app.keymap.popScope(this.scope)
 
-        // Destroy the editor
-        if (this.editor) {
-            this.editor.destroy()
+        if (!this.editor) return
+
+        // Do not leave the workspace pointing at the owner of a dead editor
+        const workspace = this.app.workspace as {
+            activeEditor: MarkdownFileInfo | MarkdownViewMock | null
         }
+        if (workspace.activeEditor === this.editor.owner) {
+            workspace.activeEditor = null
+        }
+
+        // Destroy the editor
+        this.editor.destroy()
+    }
+
+    override onunload(): void {
+        this.destroy()
     }
 }
 

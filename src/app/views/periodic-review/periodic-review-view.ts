@@ -45,6 +45,7 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     private enabledTypes: PeriodType[] = []
     private visibleTypes: PeriodType[] = []
     private isFirstLoad: boolean = true
+    private isUnloaded: boolean = false
     private unsubscribeFromSettings: (() => void) | null = null
     private unsubscribeFromDoneReviews: (() => void) | null = null
 
@@ -182,6 +183,11 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
      * Called when Base data updates. Uses debouncing to batch rapid updates.
      */
     override onDataUpdated(): void {
+        // Bases can deliver an update after the view was closed (a queued
+        // notification, a settings callback, the end of a note creation).
+        // Rendering then would build columns and editors that nothing unloads.
+        if (this.isUnloaded) return
+
         // Increment data version for cache invalidation
         this.dataVersion++
         this.cache.incrementDataVersion()
@@ -194,6 +200,9 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
      * Actual data update logic (called after debounce).
      */
     private doDataUpdate(): void {
+        // The debounced call can fire after the view was closed
+        if (this.isUnloaded) return
+
         // Check if we can do an incremental update (structure unchanged, just data changed)
         const newEnabledTypes = getEnabledPeriodTypes(this.plugin.settings)
         const newVisibleTypes = this.getVisiblePeriodTypes(newEnabledTypes)
@@ -968,6 +977,12 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
     }
 
     override onunload(): void {
+        // First: no update may render from here on (see onDataUpdated)
+        this.isUnloaded = true
+        this.debouncedDataUpdate.cancel()
+
+        // Unregister as file provider
+        this.plugin.setActiveFileProvider(null)
         this.unsubscribeFromSettings?.()
         this.unsubscribeFromDoneReviews?.()
         this.cleanupColumns()

@@ -25,6 +25,9 @@ export class FoldableColumn extends Component {
         super()
         this.folded = options?.initiallyFolded ?? false
         this.onFoldChange = options?.onFoldChange
+        // Loaded from the constructor, like NoteCard: unload() does nothing on
+        // a component that was never loaded.
+        this.load()
         this.containerEl = this.render(parent)
     }
 
