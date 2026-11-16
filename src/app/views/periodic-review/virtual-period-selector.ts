@@ -11,6 +11,33 @@ export interface VirtualPeriodItem {
 }
 
 /**
+ * Whether two item lists render the same rows, in the same order.
+ *
+ * The entry objects are not compared by identity: Bases can give new entry
+ * objects for the same files on each data update. The file path is compared.
+ */
+export function haveSameRows(a: VirtualPeriodItem[], b: VirtualPeriodItem[]): boolean {
+    if (a.length !== b.length) return false
+
+    for (let i = 0; i < a.length; i++) {
+        const itemA = a[i]!
+        const itemB = b[i]!
+        if (
+            itemA.date.getTime() !== itemB.date.getTime() ||
+            itemA.label !== itemB.label ||
+            itemA.isMissing !== itemB.isMissing ||
+            itemA.isCurrent !== itemB.isCurrent ||
+            itemA.isDone !== itemB.isDone ||
+            (itemA.entry?.file.path ?? null) !== (itemB.entry?.file.path ?? null)
+        ) {
+            return false
+        }
+    }
+
+    return true
+}
+
+/**
  * Virtual scrolling component for period selectors.
  * Only renders visible items + buffer for optimal performance.
  * Critical for yearly views with 50+ weeks.
@@ -69,8 +96,23 @@ export class VirtualPeriodSelector extends Component {
     /**
      * Set items and trigger render.
      * Call this when the available periods change.
+     *
+     * Most data updates change the content of a note and not the list of
+     * periods. When the new items render the same rows as the current ones, the
+     * DOM is left alone and only the item data is taken over.
+     *
+     * @returns true if the rows were rendered again, false if they were kept
      */
-    setItems(items: VirtualPeriodItem[]): void {
+    setItems(items: VirtualPeriodItem[]): boolean {
+        if (this.itemPool.size > 0 && haveSameRows(this.items, items)) {
+            // The rendered rows hold their item object (the click handlers read
+            // it), so the new data goes into the existing objects.
+            for (let i = 0; i < items.length; i++) {
+                Object.assign(this.items[i]!, items[i])
+            }
+            return false
+        }
+
         this.items = items
         this.updateTotalHeight()
 
@@ -91,6 +133,7 @@ export class VirtualPeriodSelector extends Component {
         this.itemPool.clear()
 
         this.renderVisibleItems()
+        return true
     }
 
     /**

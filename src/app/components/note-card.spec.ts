@@ -170,6 +170,73 @@ describe('NoteCard lifecycle (issue #55)', () => {
         expect(isLoaded(secondRender)).toBe(false)
     })
 
+    describe('saving', () => {
+        async function createCardInSourceMode(): Promise<NoteCard> {
+            const card = createCard()
+            card.setMode('source')
+            fake.resolveReads('note content')
+            await flushPromises()
+            return card
+        }
+
+        test('a mode change without an edit writes nothing', async () => {
+            // A write of unchanged content makes every plugin that listens to
+            // `modify` work again, for nothing.
+            const card = await createCardInSourceMode()
+
+            card.setMode('edit')
+            fake.resolveReads('note content')
+            await flushPromises()
+            card.setMode('view')
+            fake.resolveReads('note content')
+            await flushPromises()
+
+            expect(fake.saved).toEqual([])
+        })
+
+        test('a mode change after an edit writes the edit once', async () => {
+            const card = await createCardInSourceMode()
+            const editor = FakeMarkdownEditor.instances[0] as FakeMarkdownEditor
+
+            editor.content = 'edited content'
+            // The delayed save (immediate in the specs) and the save of the
+            // mode change both get the same content
+            editor.onUpdate({}, true)
+            card.setMode('view')
+            await flushPromises()
+
+            expect(fake.saved).toEqual(['edited content'])
+        })
+
+        test('writes each new edit', async () => {
+            await createCardInSourceMode()
+            const editor = FakeMarkdownEditor.instances[0] as FakeMarkdownEditor
+
+            for (const content of ['one', 'two', 'note content']) {
+                editor.content = content
+                editor.onUpdate({}, true)
+                await flushPromises()
+            }
+
+            // The last edit goes back to the first content: it is a change
+            // against what was last written, so it is written too
+            expect(fake.saved).toEqual(['one', 'two', 'note content'])
+        })
+
+        test('after an external change, a mode change does not write the old content back', async () => {
+            const card = await createCardInSourceMode()
+
+            // The file changed on disk and the card took the new content
+            const refresh = card.refreshContent(true)
+            fake.resolveReads('changed by another tool')
+            await refresh
+            card.setMode('view')
+            await flushPromises()
+
+            expect(fake.saved).toEqual([])
+        })
+    })
+
     test('saves an edit that was made before the card was unloaded', async () => {
         const card = await createEditorCard()
         const editor = FakeMarkdownEditor.instances[0] as FakeMarkdownEditor

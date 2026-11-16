@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { TFile } from 'obsidian'
-import { detectPeriodType, extractDateFromNote, getFilenameFormat } from './periodic-note-utils'
+import { TFile, type BasesEntry } from 'obsidian'
+import {
+    createPeriodTypeDetector,
+    detectPeriodType,
+    extractDateFromNote,
+    filterEntriesByPeriodType,
+    getFilenameFormat,
+    groupEntriesByPeriodType,
+    sortEntriesByDate
+} from './periodic-note-utils'
 import type { PluginSettings } from '../app/types'
 import { DEFAULT_SETTINGS } from '../app/types'
 
@@ -248,5 +256,117 @@ describe('extractDateFromNote — issue #42 nested folders and custom formats', 
         expect(date).not.toBeNull()
         expect(date?.getFullYear()).toBe(2026)
         expect(date?.getMonth()).toBe(5) // June
+    })
+})
+
+// Performance pass of 2026-11-16: a base with a few thousand periodic notes is
+// classified and sorted on every data update. These helpers must give the same
+// results as the per-file functions, with less work.
+describe('classifying and sorting many entries', () => {
+    const settings = buildSettings({
+        daily: { enabled: true, folder: 'Journal', format: 'YYYY-MM-DD', template: '' },
+        weekly: { enabled: true, folder: 'Journal/Weekly', format: 'gggg-[W]ww', template: '' },
+        monthly: { enabled: true, folder: 'Journal', format: 'YYYY-MM', template: '' },
+        quarterly: {
+            enabled: false,
+            folder: 'Journal/Quarterly',
+            format: 'YYYY-[Q]Q',
+            template: ''
+        }
+    })
+
+    function entry(path: string): BasesEntry {
+        return { file: mockFile(path) } as unknown as BasesEntry
+    }
+
+    const paths = [
+        'Journal/2026-05-15.md',
+        'Journal/Weekly/2026-W20.md',
+        'Journal/2026-05.md',
+        'Inbox/note.md',
+        'Journal/Quarterly/2026-Q2.md',
+        'Journal/2026-05-14.md',
+        'Journal/Scratch.md',
+        'JournalArchive/2024-01-01.md'
+    ]
+
+    test('createPeriodTypeDetector gives the result of detectPeriodType for every file', () => {
+        const detect = createPeriodTypeDetector(settings)
+
+        for (const path of paths) {
+            expect(detect(mockFile(path))).toBe(detectPeriodType(mockFile(path), settings))
+        }
+    })
+
+    test('groupEntriesByPeriodType gives the groups of filterEntriesByPeriodType', () => {
+        const entries = paths.map(entry)
+        const groups = groupEntriesByPeriodType(entries, settings)
+
+        for (const periodType of ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'] as const) {
+            expect(groups.get(periodType) ?? []).toEqual(
+                filterEntriesByPeriodType(entries, periodType, settings)
+            )
+        }
+        // A file that matches no enabled period type is in no group
+        const grouped = [...groups.values()].flat().map((e) => e.file.path)
+        expect(grouped).not.toContain('Inbox/note.md')
+        expect(grouped).not.toContain('JournalArchive/2024-01-01.md')
+    })
+
+    describe('sortEntriesByDate', () => {
+        const names = [
+            '2026-03-01',
+            'not-a-date',
+            '2026-01-15',
+            '2026-12-31',
+            'draft',
+            '2026-01-15'
+        ]
+        const entries = names.map((name, index) => entry(`Journal/${index}/${name}.md`))
+        const basenames = (sorted: BasesEntry[]): string[] => sorted.map((e) => e.file.basename)
+
+        test('sorts newest first by default, entries without a date last', () => {
+            expect(basenames(sortEntriesByDate(entries, settings.daily))).toEqual([
+                '2026-12-31',
+                '2026-03-01',
+                '2026-01-15',
+                '2026-01-15',
+                'not-a-date',
+                'draft'
+            ])
+        })
+
+        test('sorts oldest first when ascending, entries without a date first', () => {
+            expect(basenames(sortEntriesByDate(entries, settings.daily, true))).toEqual([
+                'not-a-date',
+                'draft',
+                '2026-01-15',
+                '2026-01-15',
+                '2026-03-01',
+                '2026-12-31'
+            ])
+        })
+
+        test('keeps the input order of entries with the same date, and does not change the input', () => {
+            const sorted = sortEntriesByDate(entries, settings.daily)
+
+            expect(sorted[2]).toBe(entries[2] as BasesEntry)
+            expect(sorted[3]).toBe(entries[5] as BasesEntry)
+            expect(basenames(entries)).toEqual(names)
+        })
+
+        test('reads the date of each entry once', () => {
+            const many = Array.from({ length: 200 }, (_, index) =>
+                entry(`Journal/2026-01-${String((index % 28) + 1).padStart(2, '0')}.md`)
+            )
+            let reads = 0
+
+            sortEntriesByDate(many, settings.daily, false, (file, config) => {
+                reads++
+                return extractDateFromNote(file, config)
+            })
+
+            expect(reads).toBe(many.length)
+        })
     })
 })

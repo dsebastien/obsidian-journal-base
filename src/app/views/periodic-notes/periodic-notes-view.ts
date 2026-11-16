@@ -6,11 +6,12 @@ import type { PeriodType, PeriodicNoteConfig, LifeTrackerPluginFileProvider } fr
 import { NoteCard, CreateNoteButton, PeriodTabs, type CardMode } from '../../components'
 import { NoteCreationService } from '../../services/note-creation.service'
 import {
-    detectPeriodType,
+    createPeriodTypeDetector,
     extractDateFromNote,
     getEnabledPeriodTypes
 } from '../../../utils/periodic-note-utils'
 import { findMissingDates, getStartOfPeriod, sortDatesDescending } from '../../../utils/date-utils'
+import { getCardOrderSignature } from './card-order'
 
 /**
  * State for preserving card state during reconciliation
@@ -31,6 +32,8 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
     private noteCards: Map<string, NoteCard> = new Map() // Keyed by file path
     private currentMode: PeriodType | null = null
     private currentEntries: BasesEntry[] = [] // Filtered entries for the current mode
+    // Signature of the card order that the DOM shows now, null when not known
+    private renderedOrderSignature: string | null = null
     private unsubscribeFromDoneReviews: (() => void) | null = null
     private isUnloaded: boolean = false
 
@@ -143,8 +146,9 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
         }
 
         // Filter entries by current mode and sort by date descending (newest to oldest)
+        const detectType = createPeriodTypeDetector(this.plugin.settings)
         this.currentEntries = this.data.data
-            .filter((entry) => detectPeriodType(entry.file, this.plugin.settings) === mode)
+            .filter((entry) => detectType(entry.file) === mode)
             .map((entry) => ({
                 entry,
                 date: extractDateFromNote(entry.file, periodConfig)
@@ -311,8 +315,19 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             }
         }
 
+        // Most data updates change the content of a note and not the list of
+        // notes. When the DOM already shows this exact list, leave it alone:
+        // the rebuild below removes and adds every card of the view.
+        const orderSignature = getCardOrderSignature(expectedOrder, config)
+        if (orderSignature === this.renderedOrderSignature) {
+            return
+        }
+
         // If there's an active editor, use careful DOM manipulation
         if (activeEditorPath) {
+            // This path leaves the card with the active editor where it is, so
+            // the DOM order is not known to match the expected order afterwards.
+            this.renderedOrderSignature = null
             this.reconcileDOMWithActiveEditor(
                 expectedOrder,
                 config,
@@ -322,6 +337,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             )
         } else {
             // No active editor - safe to do simple rebuild
+            this.renderedOrderSignature = orderSignature
             this.cardsContainerEl.empty()
             for (const item of expectedOrder) {
                 if (item.type === 'card' && item.entry) {
@@ -586,6 +602,7 @@ export class PeriodicNotesView extends BasesView implements LifeTrackerPluginFil
             card.unload()
         }
         this.noteCards.clear()
+        this.renderedOrderSignature = null
     }
 
     override onunload(): void {

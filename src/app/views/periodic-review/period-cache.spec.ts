@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { TFile } from 'obsidian'
-import type { PeriodicNoteConfig } from '../../types'
+import { TFile, type BasesEntry } from 'obsidian'
+import { DEFAULT_SETTINGS, type PeriodicNoteConfig, type PluginSettings } from '../../types'
 import { PeriodCache } from './period-cache'
 
 // A real (mock-module) TFile instance rather than a structural object put through
@@ -65,5 +65,89 @@ describe('PeriodCache.extractDate', () => {
         file.basename = '2026-06-28-Sunday'
         const after = cache.extractDate(file, cfg)
         expect(after?.getDate()).toBe(28)
+    })
+})
+
+describe('PeriodCache.getEntriesByType', () => {
+    const settings: PluginSettings = {
+        ...DEFAULT_SETTINGS,
+        daily: { enabled: true, folder: 'Diary', format: 'YYYY-MM-DD', template: '' },
+        monthly: { enabled: true, folder: 'Months', format: 'YYYY-MM', template: '' }
+    }
+
+    function entryAt(path: string): BasesEntry {
+        const file = mockFile(path.split('/').pop() ?? '')
+        file.path = `${path}.md`
+        return { file } as unknown as BasesEntry
+    }
+
+    const data = [
+        entryAt('Diary/2026-06-01'),
+        entryAt('Months/2026-05'),
+        entryAt('Diary/2026-06-03'),
+        entryAt('Inbox/note'),
+        entryAt('Months/2026-06'),
+        entryAt('Diary/2026-06-02')
+    ]
+    const basenames = (entries: BasesEntry[]): string[] => entries.map((e) => e.file.basename)
+
+    test('returns the entries of one period type, newest first', () => {
+        const cache = new PeriodCache()
+
+        expect(basenames(cache.getEntriesByType(data, 'daily', settings, 1))).toEqual([
+            '2026-06-03',
+            '2026-06-02',
+            '2026-06-01'
+        ])
+        expect(basenames(cache.getEntriesByType(data, 'monthly', settings, 1))).toEqual([
+            '2026-06',
+            '2026-05'
+        ])
+        expect(cache.getEntriesByType(data, 'weekly', settings, 1)).toEqual([])
+    })
+
+    test('returns the cached list for the same data version', () => {
+        const cache = new PeriodCache()
+
+        const first = cache.getEntriesByType(data, 'daily', settings, 1)
+        expect(cache.getEntriesByType(data, 'daily', settings, 1)).toBe(first)
+    })
+
+    test('reads new data when the data version changes', () => {
+        const cache = new PeriodCache()
+        cache.getEntriesByType(data, 'daily', settings, 1)
+        cache.getEntriesByType(data, 'monthly', settings, 1)
+
+        const newer = [...data, entryAt('Diary/2026-06-04'), entryAt('Months/2026-07')]
+
+        expect(basenames(cache.getEntriesByType(newer, 'daily', settings, 2))[0]).toBe('2026-06-04')
+        expect(basenames(cache.getEntriesByType(newer, 'monthly', settings, 2))[0]).toBe('2026-07')
+    })
+
+    test('a new data version does not parse again the file names it already knows', () => {
+        const cache = new PeriodCache()
+        const formatDaily = settings.daily.format
+        let formatReads = 0
+        // The format is read once for each file name that is parsed
+        const countingSettings: PluginSettings = {
+            ...settings,
+            daily: {
+                ...settings.daily,
+                get format(): string {
+                    formatReads++
+                    return formatDaily
+                }
+            }
+        }
+
+        cache.getEntriesByType(data, 'daily', countingSettings, 1)
+        const readsOfFirstVersion = formatReads
+        expect(readsOfFirstVersion).toBeGreaterThan(0)
+
+        cache.getEntriesByType(data, 'daily', countingSettings, 2)
+        const readsOfSecondVersion = formatReads - readsOfFirstVersion
+
+        // Only the cache checks read the format now (one per entry), no parse
+        expect(readsOfSecondVersion).toBeLessThan(readsOfFirstVersion)
     })
 })

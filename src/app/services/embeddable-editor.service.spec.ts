@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { Component } from 'obsidian'
+import { unfoldEffect } from '@codemirror/language'
 import { EmbeddableEditor } from './embeddable-editor.service'
 import {
     FakeElement,
@@ -118,6 +119,66 @@ describe('EmbeddableEditor lifecycle (issue #55)', () => {
         editor.destroy()
 
         expect(fake.workspace.activeEditor).toBeNull()
+    })
+
+    describe('foldFrontmatter', () => {
+        const note = '---\ntitle: Note\n---\nBody\n'
+
+        function createEditorWith(content: string): EmbeddableEditor {
+            return new EmbeddableEditor(fake.app, new FakeElement().asHTMLElement(), {
+                initialContent: content
+            })
+        }
+
+        test('folds the frontmatter block', () => {
+            const editor = createEditorWith(note)
+
+            expect(editor.foldFrontmatter()).toBe(true)
+            expect(createdEditor().dispatched.length).toBe(1)
+        })
+
+        test('dispatches nothing when the block is already folded', () => {
+            // The card re-folds on every data update. A transaction that changes
+            // nothing still runs every editor extension of every plugin.
+            const editor = createEditorWith(note)
+            editor.foldFrontmatter()
+
+            expect(editor.foldFrontmatter()).toBe(false)
+            expect(editor.foldFrontmatter()).toBe(false)
+            expect(createdEditor().dispatched.length).toBe(1)
+        })
+
+        test('folds again when the fold was lost', () => {
+            const editor = createEditorWith(note)
+            editor.foldFrontmatter()
+            const inner = createdEditor()
+            // Obsidian drops the fold when it syncs a change inside the block
+            // (the done property, for example)
+            inner.cm.dispatch({
+                effects: unfoldEffect.of({ from: 0, to: '---\ntitle: Note\n---'.length })
+            })
+
+            expect(editor.foldFrontmatter()).toBe(true)
+            expect(inner.dispatched.length).toBe(3)
+        })
+
+        test('keeps the block folded when it grows', () => {
+            const editor = createEditorWith(note)
+            editor.foldFrontmatter()
+            const inner = createdEditor()
+            // CodeMirror moves the end of the folded range with the edit
+            inner.cm.dispatch({ changes: { from: 4, insert: 'done: true\n' } })
+
+            expect(editor.foldFrontmatter()).toBe(false)
+            expect(inner.dispatched.length).toBe(2)
+        })
+
+        test('dispatches nothing for a note without frontmatter', () => {
+            const editor = createEditorWith('Body only\n')
+
+            expect(editor.foldFrontmatter()).toBe(false)
+            expect(createdEditor().dispatched.length).toBe(0)
+        })
     })
 
     test('leaves workspace.activeEditor alone when it is another editor', () => {

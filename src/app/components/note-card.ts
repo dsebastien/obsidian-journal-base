@@ -55,6 +55,12 @@ export class NoteCard extends Component {
     private renderChild: Component | null = null
     /** Incremented by each content load, so a slower earlier load can tell it is stale. */
     private loadGeneration = 0
+    /**
+     * The note content that this card last read from, or wrote to, the vault.
+     * A save of exactly this content is skipped: it changes nothing on disk, but
+     * a write makes every plugin that listens to `modify` do its work again.
+     */
+    private lastSyncedContent: string | null = null
     private isUnloaded = false
 
     constructor(
@@ -247,6 +253,7 @@ export class NoteCard extends Component {
                 this.contentLoaded = true
             } else {
                 // Create embedded editor
+                this.lastSyncedContent = content
                 const editorContainer = this.contentEl.createDiv({ cls: 'pn-card__editor' })
                 this.editor = new EmbeddableEditor(this.app, editorContainer, {
                     initialContent: content,
@@ -325,9 +332,22 @@ export class NoteCard extends Component {
     }
 
     private async saveContent(content: string): Promise<void> {
+        // Nothing to write: the vault already has this content (a mode change
+        // with no edit, or the delayed save that follows an immediate one).
+        if (content === this.lastSyncedContent) return
+
+        // Recorded before the write, not after it: a second save of the same
+        // content can start while this write is still in progress.
+        const previousContent = this.lastSyncedContent
+        this.lastSyncedContent = content
+
         try {
             await this.app.vault.modify(this.file, content)
         } catch (error) {
+            // The write failed, so a later save of this content must try again
+            if (this.lastSyncedContent === content) {
+                this.lastSyncedContent = previousContent
+            }
             log('Failed to save content:', 'error', error)
             new Notice('Failed to save changes')
         }
@@ -436,6 +456,7 @@ export class NoteCard extends Component {
 
                     // Use state-preserving update to maintain cursor and scroll
                     updated = this.editor.setValuePreservingState(fileContent)
+                    this.lastSyncedContent = fileContent
                 }
 
                 // Re-apply the frontmatter fold if it was lost. Obsidian's
@@ -485,13 +506,20 @@ export class NoteCard extends Component {
      * Called when done reviews change externally.
      */
     setDoneState(isDone: boolean): void {
-        this.isDone = isDone
-        this.containerEl.classList.toggle('pn-card--done', isDone)
+        // The review view calls this on every data update: only touch the DOM
+        // when the state really changed.
+        if (isDone !== this.isDone) {
+            this.isDone = isDone
+            this.containerEl.classList.toggle('pn-card--done', isDone)
 
-        if (this.doneButton) {
-            setIcon(this.doneButton, isDone ? 'check-circle' : 'circle')
-            this.doneButton.classList.toggle('pn-card__done-btn--active', isDone)
-            this.doneButton.setAttribute('aria-label', isDone ? 'Mark as not done' : 'Mark as done')
+            if (this.doneButton) {
+                setIcon(this.doneButton, isDone ? 'check-circle' : 'circle')
+                this.doneButton.classList.toggle('pn-card__done-btn--active', isDone)
+                this.doneButton.setAttribute(
+                    'aria-label',
+                    isDone ? 'Mark as not done' : 'Mark as done'
+                )
+            }
         }
 
         // Toggling done writes the done property inside the note's frontmatter,

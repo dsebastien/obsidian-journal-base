@@ -411,11 +411,17 @@ export class PeriodicReviewView extends BasesView implements LifeTrackerPluginFi
             return
         }
 
-        state.virtualSelector.setItems(items)
+        const rowsRendered = state.virtualSelector.setItems(items)
 
         if (state.selectedDate) {
-            state.virtualSelector.setSelection(state.selectedDate)
-            state.virtualSelector.scrollToSelection()
+            // Rows kept and same selection: nothing to mark, and no reason to
+            // scroll the list back to the selection while the user reads it.
+            const selectionChanged =
+                state.virtualSelector.getSelection()?.getTime() !== state.selectedDate.getTime()
+            if (rowsRendered || selectionChanged) {
+                state.virtualSelector.setSelection(state.selectedDate)
+                state.virtualSelector.scrollToSelection()
+            }
         }
     }
 

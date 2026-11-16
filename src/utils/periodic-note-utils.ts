@@ -58,33 +58,77 @@ function matchesFormat(basename: string, format: string): boolean {
  * previously detected notes keep their type.
  */
 export function detectPeriodType(file: TFile, settings: PluginSettings): PeriodType | null {
+    return createPeriodTypeDetector(settings)(file)
+}
+
+/**
+ * Build a `detectPeriodType` for one settings value.
+ *
+ * The candidate list (enabled period types, most specific folder first) depends
+ * only on the settings. Callers that classify many files build it once here
+ * instead of once per file: a base with a few thousand periodic notes is
+ * classified on every data update.
+ */
+export function createPeriodTypeDetector(
+    settings: PluginSettings
+): (file: TFile) => PeriodType | null {
     const candidates = (['daily', 'weekly', 'monthly', 'quarterly', 'yearly'] as PeriodType[])
         .map((periodType) => ({ periodType, config: settings[periodType] }))
         .filter(({ config }) => config.enabled && config.folder)
         .sort((a, b) => b.config.folder.length - a.config.folder.length)
 
-    const folderMatches = candidates.filter(({ config }) =>
-        isPathInFolder(file.path, config.folder)
-    )
+    return (file: TFile): PeriodType | null => {
+        const folderMatches = candidates.filter(({ config }) =>
+            isPathInFolder(file.path, config.folder)
+        )
 
-    if (folderMatches.length === 0) {
-        return null
+        if (folderMatches.length === 0) {
+            return null
+        }
+
+        // Only the most specific folder competes: a nested folder still wins outright
+        // over a parent one, so format matching is used solely to break ties between
+        // period types configured with the very same folder.
+        const bestFolderLength = folderMatches[0]!.config.folder.length
+        const tied = folderMatches.filter(({ config }) => config.folder.length === bestFolderLength)
+
+        if (tied.length > 1) {
+            const formatMatch = tied.find(({ config }) =>
+                matchesFormat(file.basename, config.format)
+            )
+            if (formatMatch) {
+                return formatMatch.periodType
+            }
+        }
+
+        return tied[0]!.periodType
     }
+}
 
-    // Only the most specific folder competes: a nested folder still wins outright
-    // over a parent one, so format matching is used solely to break ties between
-    // period types configured with the very same folder.
-    const bestFolderLength = folderMatches[0]!.config.folder.length
-    const tied = folderMatches.filter(({ config }) => config.folder.length === bestFolderLength)
+/**
+ * Split entries by period type in one pass. Entries that match no enabled
+ * period type are left out. The order of the entries is kept inside each group.
+ */
+export function groupEntriesByPeriodType(
+    entries: BasesEntry[],
+    settings: PluginSettings
+): Map<PeriodType, BasesEntry[]> {
+    const detect = createPeriodTypeDetector(settings)
+    const groups = new Map<PeriodType, BasesEntry[]>()
 
-    if (tied.length > 1) {
-        const formatMatch = tied.find(({ config }) => matchesFormat(file.basename, config.format))
-        if (formatMatch) {
-            return formatMatch.periodType
+    for (const entry of entries) {
+        const periodType = detect(entry.file)
+        if (!periodType) continue
+
+        const group = groups.get(periodType)
+        if (group) {
+            group.push(entry)
+        } else {
+            groups.set(periodType, [entry])
         }
     }
 
-    return tied[0]!.periodType
+    return groups
 }
 
 function isPathInFolder(filePath: string, folder: string): boolean {
@@ -110,28 +154,40 @@ export function filterEntriesByPeriodType(
     periodType: PeriodType,
     settings: PluginSettings
 ): BasesEntry[] {
-    return entries.filter((entry) => detectPeriodType(entry.file, settings) === periodType)
+    const detect = createPeriodTypeDetector(settings)
+    return entries.filter((entry) => detect(entry.file) === periodType)
 }
 
 /**
  * Sort entries by date (newest first by default)
+ *
+ * The date of each entry is read once, before the sort, and not inside the
+ * comparator: a comparator that parses two file names on every comparison
+ * parses each name about `log2(n)` times.
+ *
+ * @param extractDate - Optional date reader, for callers that cache dates
  */
 export function sortEntriesByDate(
     entries: BasesEntry[],
     config: PeriodicNoteConfig,
-    ascending: boolean = false
+    ascending: boolean = false,
+    extractDate: (file: TFile, config: PeriodicNoteConfig) => Date | null = extractDateFromNote
 ): BasesEntry[] {
-    return [...entries].sort((a, b) => {
-        const dateA = extractDateFromNote(a.file, config)
-        const dateB = extractDateFromNote(b.file, config)
+    const dated = entries.map((entry) => {
+        const date = extractDate(entry.file, config)
+        return { entry, time: date ? date.getTime() : null }
+    })
 
-        if (!dateA && !dateB) return 0
-        if (!dateA) return ascending ? -1 : 1
-        if (!dateB) return ascending ? 1 : -1
+    dated.sort((a, b) => {
+        if (a.time === null && b.time === null) return 0
+        if (a.time === null) return ascending ? -1 : 1
+        if (b.time === null) return ascending ? 1 : -1
 
-        const diff = dateA.getTime() - dateB.getTime()
+        const diff = a.time - b.time
         return ascending ? diff : -diff
     })
+
+    return dated.map(({ entry }) => entry)
 }
 
 /**

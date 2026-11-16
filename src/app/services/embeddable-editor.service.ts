@@ -1,8 +1,12 @@
 import { App, Component, TFile, Scope, type MarkdownFileInfo } from 'obsidian'
 import { EditorView } from '@codemirror/view'
-import { EditorSelection, type SelectionRange } from '@codemirror/state'
+import {
+    EditorSelection,
+    type EditorState as CodeMirrorState,
+    type SelectionRange
+} from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
-import { foldEffect } from '@codemirror/language'
+import { foldEffect, foldedRanges } from '@codemirror/language'
 import { findFrontmatterFoldRange } from '../../utils/frontmatter'
 import { log } from '../../utils/log'
 import { computeMinimalEdit } from '../../utils/text-diff'
@@ -139,6 +143,21 @@ function resolveEditorPrototype(app: App): ScrollableMarkdownEditorConstructor {
     widgetEditorView.unload()
 
     return cachedEditorPrototype
+}
+
+/**
+ * Whether exactly this range is folded in the editor state.
+ */
+function isRangeFolded(state: CodeMirrorState, range: { from: number; to: number }): boolean {
+    let folded = false
+    foldedRanges(state).between(range.from, range.to, (from, to) => {
+        if (from === range.from && to === range.to) {
+            folded = true
+            return false
+        }
+        return undefined
+    })
+    return folded
 }
 
 export type EditorMode = 'source' | 'preview'
@@ -344,12 +363,22 @@ export class EmbeddableEditor extends Component {
      * folding state Obsidian installs in its editors. No-op when there is no
      * frontmatter or the block is unterminated.
      *
+     * Does nothing when the block is already folded. A fold transaction for a
+     * folded range changes nothing, but it is still a transaction: every editor
+     * extension of every plugin runs on it, and some of them cost time in
+     * proportion to the size of the note (or worse). The card re-folds on every
+     * data update, so this check is what keeps an idle view cheap.
+     *
      * @returns true if a fold was dispatched, false otherwise
      */
     foldFrontmatter(): boolean {
         const editorView = this.editor.cm
         const range = findFrontmatterFoldRange(editorView.state.doc.toString())
         if (!range) {
+            return false
+        }
+
+        if (isRangeFolded(editorView.state, range)) {
             return false
         }
 

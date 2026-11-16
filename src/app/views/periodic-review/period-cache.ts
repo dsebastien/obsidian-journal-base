@@ -2,7 +2,7 @@ import type { TFile, BasesEntry } from 'obsidian'
 import type { PeriodType, PeriodicNoteConfig, PluginSettings } from '../../types'
 import {
     extractDateFromNote,
-    filterEntriesByPeriodType,
+    groupEntriesByPeriodType,
     sortEntriesByDate
 } from '../../../utils/periodic-note-utils'
 import type { SelectionContext } from './selection-context'
@@ -29,6 +29,8 @@ export class PeriodCache {
 
     // Entries by period type - invalidated when data changes
     private entriesByTypeCache: Map<PeriodType, BasesEntry[]> = new Map()
+    // All entries split by period type, unsorted - built once per data version
+    private entryGroups: Map<PeriodType, BasesEntry[]> | null = null
     private entriesCacheDataVersion: number = -1
 
     // Generated periods cache - invalidated when context changes
@@ -65,6 +67,7 @@ export class PeriodCache {
         // Invalidate cache if data changed
         if (dataVersion !== this.entriesCacheDataVersion) {
             this.entriesByTypeCache.clear()
+            this.entryGroups = null
             this.entriesCacheDataVersion = dataVersion
         }
 
@@ -73,9 +76,16 @@ export class PeriodCache {
             return cached
         }
 
-        const entries = filterEntriesByPeriodType(data, periodType, settings)
+        // One pass over the data for all period types, and not one pass per
+        // column. The sort reads each date through the date cache, which outlives
+        // a data version: after the first update a file name is parsed again only
+        // when the file was renamed or the format changed.
+        this.entryGroups ??= groupEntriesByPeriodType(data, settings)
+        const entries = this.entryGroups.get(periodType) ?? []
         const config = settings[periodType]
-        const sorted = sortEntriesByDate(entries, config, false)
+        const sorted = sortEntriesByDate(entries, config, false, (file, cfg) =>
+            this.extractDate(file, cfg)
+        )
 
         this.entriesByTypeCache.set(periodType, sorted)
         return sorted
@@ -113,6 +123,7 @@ export class PeriodCache {
      */
     invalidateAll(): void {
         this.entriesByTypeCache.clear()
+        this.entryGroups = null
         this.periodsCache.clear()
         this.periodsCacheContextHash = ''
         this.currentDataVersion++
